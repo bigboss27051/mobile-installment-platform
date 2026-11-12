@@ -6,7 +6,12 @@ import { SandboxPaymentAdapter } from './sandbox-payment.adapter';
 @Module({
   imports: [ConfigModule],
   providers: [
-    SandboxPaymentAdapter,
+    {
+      provide: SandboxPaymentAdapter,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        new SandboxPaymentAdapter(configService),
+    },
     {
       provide: PAYMENT_GATEWAY,
       inject: [ConfigService, SandboxPaymentAdapter],
