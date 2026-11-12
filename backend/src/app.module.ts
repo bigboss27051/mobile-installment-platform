@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
+import { ApplicationsModule } from './applications/applications.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
@@ -24,6 +25,7 @@ import { TenantsModule } from './tenants/tenants.module';
     PrismaModule,
     TenantsModule,
     PlansModule,
+    ApplicationsModule,
     AuthModule,
     CustomersModule,
     KycModule,
