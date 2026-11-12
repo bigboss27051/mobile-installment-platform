@@ -12,7 +12,7 @@ Backend contract creation from APPROVED applications, `r1d-v1` flat/reducing sch
 
 ## Status
 
-Spec approved. Implementation plan next (`docs/superpowers/plans/`).
+Spec approved. Implementation plan ready: `docs/superpowers/plans/2026-11-12-r1d-contract-schedule.md` — awaiting execution.
 
 ## Out of Scope
 
