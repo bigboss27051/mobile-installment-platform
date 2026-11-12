@@ -9,6 +9,15 @@ import { PrismaService } from '../src/prisma/prisma.service';
 describe('Tenant isolation (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
+  const createdTenantIds: string[] = [];
+  const createdUserIds: string[] = [];
+
+  function trackRegistration(regBody: {
+    data: { user: { id: string; tenantId: string } };
+  }) {
+    createdUserIds.push(regBody.data.user.id);
+    createdTenantIds.push(regBody.data.user.tenantId);
+  }
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -30,14 +39,26 @@ describe('Tenant isolation (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.refreshToken.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.branch.deleteMany();
-    await prisma.tenant.deleteMany();
+    if (createdUserIds.length > 0) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: { in: createdUserIds } },
+      });
+      await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+    }
+    if (createdTenantIds.length > 0) {
+      await prisma.branch.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
+      await prisma.tenant.deleteMany({ where: { id: { in: createdTenantIds } } });
+    }
     await app.close();
   });
 
-  it('tenant A token cannot read tenant B via forged path semantics on /tenants/me', async () => {
+  it('GET /tenants/me without Authorization returns 401', async () => {
+    await request(app.getHttpServer()).get('/api/v1/tenants/me').expect(401);
+  });
+
+  it('GET /tenants/me returns caller tenant from JWT (not another tenant)', async () => {
     const regA = await request(app.getHttpServer())
       .post('/api/v1/auth/register-owner')
       .send({
@@ -49,6 +70,7 @@ describe('Tenant isolation (e2e)', () => {
         ownerFullName: 'Owner A',
       })
       .expect(201);
+    trackRegistration(regA.body);
 
     const regB = await request(app.getHttpServer())
       .post('/api/v1/auth/register-owner')
@@ -61,6 +83,7 @@ describe('Tenant isolation (e2e)', () => {
         ownerFullName: 'Owner B',
       })
       .expect(201);
+    trackRegistration(regB.body);
 
     const tokenA = regA.body.data.accessToken as string;
     const tenantBId = regB.body.data.user.tenantId as string;
@@ -70,7 +93,7 @@ describe('Tenant isolation (e2e)', () => {
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200);
 
-    expect(me.body.data.id).not.toEqual(tenantBId);
     expect(me.body.data.id).toEqual(regA.body.data.user.tenantId);
+    expect(me.body.data.id).not.toEqual(tenantBId);
   });
 });
