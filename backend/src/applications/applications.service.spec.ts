@@ -1,20 +1,39 @@
-import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { ApplicationStatus, InterestMethod, PlatformRole, Prisma } from '@prisma/client';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  ApplicationStatus,
+  InterestMethod,
+  KycCaseStatus,
+  PlatformRole,
+  Prisma,
+  ScorecardBand,
+} from '@prisma/client';
 import { ApplicationsService } from './applications.service';
 
 describe('ApplicationsService', () => {
+  const inventory = {
+    reserve: jest.fn(),
+    release: jest.fn(),
+  };
+
   const prisma = {
     customer: { findFirst: jest.fn() },
+    kycCase: { findFirst: jest.fn() },
     installmentPlan: { findFirst: jest.fn() },
     imeiUnit: { findFirst: jest.fn() },
     application: {
       findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
       findMany: jest.fn(),
     },
   };
 
-  const service = new ApplicationsService(prisma as never);
+  const service = new ApplicationsService(prisma as never, inventory as never);
 
   const tenantCtx = {
     tenantId: 'tenant-a',
@@ -244,5 +263,187 @@ describe('ApplicationsService', () => {
     await expect(service.getById(tenantCtx, 'missing')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('blocks submit when customer has no approved KYC case', async () => {
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('2000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.DRAFT,
+      submittedAt: null,
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      scorecard: null,
+    });
+    prisma.kycCase.findFirst.mockResolvedValue(null);
+
+    await expect(service.submit(tenantCtx, 'app-1')).rejects.toBeInstanceOf(ConflictException);
+    expect(inventory.reserve).not.toHaveBeenCalled();
+  });
+
+  it('submits DRAFT application, reserves IMEI, and persists scorecard', async () => {
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('3000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.DRAFT,
+      submittedAt: null,
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      scorecard: null,
+    });
+    prisma.kycCase.findFirst.mockResolvedValue({ id: 'kyc-1', status: KycCaseStatus.APPROVED });
+    inventory.reserve.mockResolvedValue({ id: 'imei-1' });
+    const submittedAt = new Date('2026-01-02T00:00:00.000Z');
+    prisma.application.update.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('3000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.SUBMITTED,
+      submittedAt,
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: submittedAt,
+      scorecard: {
+        id: 'sc-1',
+        tenantId: 'tenant-a',
+        applicationId: 'app-1',
+        score: 85,
+        band: ScorecardBand.HIGH,
+        reasonsJson: [
+          { code: 'DP_OK', message: 'Down payment is between 20% and 30% of principal' },
+          { code: 'TERM_SHORT', message: 'Installment term is six months or shorter' },
+        ],
+        version: 'r1c-v1',
+        createdAt: submittedAt,
+      },
+    });
+
+    await expect(service.submit(tenantCtx, 'app-1')).resolves.toEqual(
+      expect.objectContaining({
+        id: 'app-1',
+        status: ApplicationStatus.SUBMITTED,
+        submittedAt,
+        scorecard: expect.objectContaining({
+          score: 85,
+          band: ScorecardBand.HIGH,
+          version: 'r1c-v1',
+        }),
+      }),
+    );
+
+    expect(inventory.reserve).toHaveBeenCalledWith(tenantCtx, 'imei-1', {
+      reason: 'application:app-1',
+    });
+    expect(prisma.application.update).toHaveBeenCalledTimes(1);
+    expect(inventory.release).not.toHaveBeenCalled();
+  });
+
+  it('does not flip application status when reserve fails', async () => {
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('3000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.DRAFT,
+      submittedAt: null,
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      scorecard: null,
+    });
+    prisma.kycCase.findFirst.mockResolvedValue({ id: 'kyc-1', status: KycCaseStatus.APPROVED });
+    inventory.reserve.mockRejectedValue(new ConflictException('IMEI unavailable'));
+
+    await expect(service.submit(tenantCtx, 'app-1')).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.application.update).not.toHaveBeenCalled();
+  });
+
+  it('releases reservation when DB write fails after reserve', async () => {
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('3000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.DRAFT,
+      submittedAt: null,
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      scorecard: null,
+    });
+    prisma.kycCase.findFirst.mockResolvedValue({ id: 'kyc-1', status: KycCaseStatus.APPROVED });
+    inventory.reserve.mockResolvedValue({ id: 'imei-1' });
+    prisma.application.update.mockRejectedValue(new Error('db exploded'));
+
+    await expect(service.submit(tenantCtx, 'app-1')).rejects.toThrow('db exploded');
+    expect(inventory.release).toHaveBeenCalledWith(tenantCtx, 'imei-1', {
+      reason: 'application:app-1:compensation',
+    });
+  });
+
+  it('maps computeScorecard errors to BadRequestException during submit', async () => {
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('14000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.DRAFT,
+      submittedAt: null,
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      scorecard: null,
+    });
+    prisma.kycCase.findFirst.mockResolvedValue({ id: 'kyc-1', status: KycCaseStatus.APPROVED });
+    inventory.reserve.mockResolvedValue({ id: 'imei-1' });
+
+    await expect(service.submit(tenantCtx, 'app-1')).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.application.update).not.toHaveBeenCalled();
+    expect(inventory.release).toHaveBeenCalledWith(tenantCtx, 'imei-1', {
+      reason: 'application:app-1:compensation',
+    });
   });
 });

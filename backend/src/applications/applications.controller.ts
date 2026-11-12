@@ -30,4 +30,13 @@ export class ApplicationsController {
     const application = await this.applications.getById(user, id);
     return { data: application };
   }
+
+  @Post(':id/submit')
+  async submit(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const application = await this.applications.submit(user, id);
+    return { data: application };
+  }
 }

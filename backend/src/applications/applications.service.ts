@@ -5,7 +5,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ApplicationStatus, InterestMethod, Prisma, ScorecardBand } from '@prisma/client';
+import {
+  ApplicationStatus,
+  InterestMethod,
+  KycCaseStatus,
+  Prisma,
+  ScorecardBand,
+} from '@prisma/client';
+import { computeScorecard } from '../common/scorecard/scorecard';
+import { InventoryService } from '../inventory/inventory.service';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
@@ -39,7 +47,10 @@ export type ApplicationResponse = {
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inventory: InventoryService,
+  ) {}
   private static readonly OPEN_IMEI_CONFLICT_MESSAGE =
     'Another open application already exists for this IMEI unit.';
 
@@ -164,6 +175,90 @@ export class ApplicationsService {
     }
 
     return this.toResponse(application);
+  }
+
+  async submit(ctx: TenantContext, applicationId: string): Promise<ApplicationResponse> {
+    const tenantId = this.requireTenantId(ctx);
+    const application = await this.prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        tenantId,
+      },
+      include: { scorecard: true },
+    });
+    if (!application) {
+      throw new NotFoundException('Application not found.');
+    }
+    if (application.status !== ApplicationStatus.DRAFT) {
+      throw new ConflictException('Application can only be submitted from DRAFT.');
+    }
+
+    const approvedKyc = await this.prisma.kycCase.findFirst({
+      where: {
+        tenantId,
+        customerId: application.customerId,
+        status: KycCaseStatus.APPROVED,
+      },
+      select: { id: true },
+    });
+    if (!approvedKyc) {
+      throw new ConflictException('Customer must have an approved KYC case before submit.');
+    }
+
+    await this.inventory.reserve(ctx, application.imeiUnitId, {
+      reason: `application:${application.id}`,
+    });
+
+    let scorecard: ReturnType<typeof computeScorecard>;
+    try {
+      scorecard = computeScorecard({
+        principal: application.principal.toFixed(2),
+        downPayment: application.downPayment.toFixed(2),
+        termMonths: application.termMonths,
+      });
+    } catch (error: unknown) {
+      try {
+        await this.inventory.release(ctx, application.imeiUnitId, {
+          reason: `application:${application.id}:compensation`,
+        });
+      } catch (_releaseError: unknown) {
+        // Best-effort compensation; preserve compute error details.
+      }
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Unable to compute scorecard.',
+      );
+    }
+
+    try {
+      const updated = await this.prisma.application.update({
+        where: { id: application.id },
+        data: {
+          status: ApplicationStatus.SUBMITTED,
+          submittedAt: new Date(),
+          scorecard: {
+            create: {
+              tenantId,
+              score: scorecard.score,
+              band: scorecard.band,
+              reasonsJson: scorecard.reasons,
+              version: scorecard.version,
+            },
+          },
+        },
+        include: { scorecard: true },
+      });
+
+      return this.toResponse(updated);
+    } catch (error: unknown) {
+      try {
+        await this.inventory.release(ctx, application.imeiUnitId, {
+          reason: `application:${application.id}:compensation`,
+        });
+      } catch (_releaseError: unknown) {
+        // Best-effort compensation; preserve the original DB failure.
+      }
+      throw error;
+    }
   }
 
   private toResponse(
