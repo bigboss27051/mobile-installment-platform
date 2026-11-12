@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, resolve, sep } from 'node:path';
 import { ObjectStoragePort } from './object-storage.port';
 
 @Injectable()
 export class LocalObjectStorageAdapter implements ObjectStoragePort {
-  private readonly rootDir = resolve(process.cwd(), '../storage');
+  private readonly rootDir: string;
+
+  constructor(rootDir: string) {
+    this.rootDir = isAbsolute(rootDir) ? rootDir : resolve(process.cwd(), rootDir);
+  }
 
   async putObject(key: string, body: Buffer, mimeType: string): Promise<void> {
     const objectPath = this.resolveObjectPath(key);
