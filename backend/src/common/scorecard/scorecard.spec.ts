@@ -37,6 +37,22 @@ describe('computeScorecard (r1c-v1)', () => {
         }),
       ).toThrow(/down payment.*principal/i);
     });
+
+    it.each([
+      ['principal', 'not-a-number', '5000', /principal/i],
+      ['principal', '', '0', /principal/i],
+      ['principal', 'Infinity', '0', /principal/i],
+      ['down payment', '10000', 'not-a-number', /down payment/i],
+      ['down payment', '10000', '', /down payment/i],
+      ['down payment', '10000', 'NaN', /down payment/i],
+    ] as const)(
+      'rejects invalid or non-finite %s strings',
+      (_label, principal, downPayment, pattern) => {
+        expect(() =>
+          computeScorecard({ principal, downPayment, termMonths: 6 }),
+        ).toThrow(pattern);
+      },
+    );
   });
 
   describe('down-payment ratio', () => {
@@ -56,6 +72,16 @@ describe('computeScorecard (r1c-v1)', () => {
       });
       expectReasonCodes(above, ['DP_STRONG', 'TERM_LONG']);
       expect(above.score).toBe(80);
+    });
+
+    it('DP_STRONG when down payment equals principal (100% DP)', () => {
+      const output = computeScorecard({
+        principal: '10000',
+        downPayment: '10000',
+        termMonths: 24,
+      });
+      expectReasonCodes(output, ['DP_STRONG', 'TERM_LONG']);
+      expect(output.score).toBe(80);
     });
 
     it('DP_OK when ratio is 20%..30%', () => {
