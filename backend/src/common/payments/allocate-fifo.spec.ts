@@ -18,6 +18,24 @@ describe('allocateFifo', () => {
     expect(() => allocateFifo(items, '-1.00')).toThrow();
   });
 
+  it('rejects sub-cent payment and schedule amounts', () => {
+    const items = [item({ id: 'a', seq: 1, totalDue: '500.00' })];
+    expect(() => allocateFifo(items, '0.001')).toThrow();
+    expect(() => allocateFifo(items, '1.234')).toThrow();
+    expect(() =>
+      allocateFifo(
+        [item({ id: 'a', seq: 1, totalDue: '500.001', amountPaid: '0.00' })],
+        '100.00',
+      ),
+    ).toThrow();
+    expect(() =>
+      allocateFifo(
+        [item({ id: 'a', seq: 1, totalDue: '500.00', amountPaid: '0.001' })],
+        '100.00',
+      ),
+    ).toThrow();
+  });
+
   it('pays exact one installment as PAID', () => {
     const items = [
       item({ id: 'inst-1', seq: 1, totalDue: '1500.00', amountPaid: '0.00' }),

@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 
-import { d, roundHalfUp2 } from '../schedule/money';
+import { d, parseThbMoneyString, roundHalfUp2 } from '../schedule/money';
 
 export type ScheduleOutstanding = {
   id: string;
@@ -37,9 +37,14 @@ export function allocateFifo(
   items: ScheduleOutstanding[],
   paymentAmount: string,
 ): AllocationApply[] {
-  const remaining = d(paymentAmount);
+  const remaining = parseThbMoneyString(paymentAmount, 'payment amount');
   if (remaining.lte(0)) {
     throw new Error('payment amount must be positive');
+  }
+
+  for (const item of items) {
+    parseThbMoneyString(item.totalDue, 'totalDue');
+    parseThbMoneyString(item.amountPaid, 'amountPaid');
   }
 
   const ordered = [...items].filter(isEligible).sort((a, b) => a.seq - b.seq);
