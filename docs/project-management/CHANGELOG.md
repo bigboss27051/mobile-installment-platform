@@ -21,20 +21,25 @@
 - R1d contract schema rails: draft contract entities, status lifecycle, and open-application uniqueness guard
 - R1d schedule rails: pure-function `r1d-v1` flat/reducing installment schedule generation
 - R1d contract APIs: create/list/get DRAFT from APPROVED applications, plus activate/cancel transitions
+- R1e payment schema: intents, transactions, allocations, ledger entries; schedule `amountPaid` + PARTIAL/PAID
+- R1e FIFO allocate helper and sandbox `PaymentGatewayPort` with HMAC-SHA256 webhook verify
+- R1e payments APIs: staff idempotent intent create/get; sandbox webhook allocate + installment ledger
 - REST: `/api/v1/products`, `/api/v1/inventory/*`, `/api/v1/customers`, `/api/v1/kyc/*` with JWT tenant scope
 - REST: `/api/v1/installment-plans`, `/api/v1/applications` with JWT tenant scope
 - REST: `/api/v1/contracts` with JWT tenant scope
+- REST: `/api/v1/contracts/:id/payment-intents`, `/api/v1/payment-intents/:id`, `/api/v1/webhooks/payments/sandbox`
 - E2E: cross-tenant inventory denial and stock flow (receive → transfer → reserve → release)
 - E2E: cross-tenant customer/KYC denial and KYC submit/review flow
 - E2E: cross-tenant application denial and submit/decision IMEI state transitions
 - E2E: cross-tenant contract denial plus activate/cancel IMEI state invariants
+- E2E: payment intent idempotency, signed webhook FIFO allocate/replay, and cross-tenant intent denial
 
 ### Changed
 
 - README updated to point at discovery docs
-- `CURRENT-PHASE` and project status: R1d Contract + Schedule complete; **R1e Payment verify + allocate** is next
-- R1d exit criteria recorded as met; backend-only slice with no e-sign, payment posting, or UI completion claim
+- `CURRENT-PHASE` and project status: R1e Payment verify + allocate complete; **R1f Merchant Web + Customer Android critical paths** is next
+- R1e exit criteria recorded as met; backend-only sandbox payments — no live Omise, refunds, UI, or device unlock claimed
 
 ### Decisions
 
-- See `DECISION-LOG.md` D-001..D-029 (R1a slicing/inventory D-011..D-018; R1b customer/KYC D-019..D-023; R1c app/scorecard D-024..D-027; R1d contract/schedule D-028..D-029)
+- See `DECISION-LOG.md` D-001..D-035 (R1a D-011..D-018; R1b D-019..D-023; R1c D-024..D-027; R1d D-028..D-029; R1e D-032..D-035)

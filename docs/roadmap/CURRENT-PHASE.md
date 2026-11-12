@@ -1,19 +1,15 @@
-# Current Phase: R1e — Payment Verify + Allocate
+# Current Phase: R1f — Merchant Web + Customer Android Critical Paths
 
-**Previous:** R1d Contract + Schedule — **COMPLETE** on `develop`
+**Previous:** R1e Payment Verify + Allocate — **COMPLETE** on `develop`
 
 ## Scope
 
-Backend payment intents, sandbox PromptPay gateway port (HMAC webhooks), FIFO multi-installment allocation, and simple installment ledger postings. Staff-created intents on ACTIVE contracts. Future production target: Omise/Opn (BLOCKED without credentials).
-
-## Spec
-
-`docs/superpowers/specs/2026-11-12-r1e-payment-allocate-design.md`
+Merchant Web and Customer Android critical paths for the Thailand pilot: staff/customer payment UX on top of R1e sandbox intents/webhooks, contract/payment visibility, and the minimum journeys needed to exercise apply → approve → contract → pay end-to-end from clients. Live Omise/Opn remains BLOCKED without credentials.
 
 ## Status
 
-Spec approved. Implementation plan ready: `docs/superpowers/plans/2026-11-12-r1e-payment-allocate.md` — awaiting execution.
+R1e backend payments slice complete (schema, FIFO allocate, sandbox HMAC gateway, staff idempotent intents, webhook allocate + ledger, e2e isolation). Next: R1f client critical paths — brainstorm → design spec → plan before implementation.
 
-## Out of Scope
+## Out of Scope (still)
 
-R1f UI apps, live Omise, refunds, customer auth, notifications, device recovery, Stripe-as-PromptPay-primary
+Live Omise, refunds as a product feature, full MDM/device recovery claims, Stripe-as-PromptPay-primary, scaffolding all remaining apps in one change
