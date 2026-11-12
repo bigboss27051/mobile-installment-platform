@@ -110,6 +110,32 @@ enum ContractStatus {
 
 enum ScheduleItemStatus {
   PENDING
+  PARTIAL
+  PAID
+}
+
+enum PaymentIntentStatus {
+  CREATED
+  AWAITING_PROVIDER
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentTransactionStatus {
+  SUCCEEDED
+  FAILED
+}
+
+enum LedgerDirection {
+  DEBIT
+  CREDIT
+}
+
+enum LedgerDomain {
+  INSTALLMENT
+  SAAS
 }
 
 model Tenant {
@@ -136,6 +162,10 @@ model Tenant {
   contracts        Contract[]
   contractVersions ContractVersion[]
   paymentScheduleItems PaymentScheduleItem[]
+  paymentIntents      PaymentIntent[]
+  paymentTransactions PaymentTransaction[]
+  allocations         Allocation[]
+  ledgerEntries       LedgerEntry[]
 
   @@map("tenants")
 }
@@ -171,6 +201,7 @@ model User {
   kycDocumentsUploaded KycDocument[]
   kycReviewActions     KycReviewAction[]
   approvalActions      ApprovalAction[]
+  createdPaymentIntents PaymentIntent[]
 
   @@index([tenantId])
   @@map("users")
@@ -463,6 +494,7 @@ model Contract {
   imeiUnit       ImeiUnit       @relation(fields: [imeiUnitId], references: [id])
   versions       ContractVersion[]
   scheduleItems  PaymentScheduleItem[]
+  paymentIntents PaymentIntent[]
 
   @@index([tenantId, status])
   @@index([tenantId, applicationId])
@@ -497,12 +529,89 @@ model PaymentScheduleItem {
   interestDue       Decimal            @map("interest_due") @db.Decimal(18, 2)
   feesDue           Decimal            @map("fees_due") @db.Decimal(18, 2)
   totalDue          Decimal            @map("total_due") @db.Decimal(18, 2)
+  amountPaid        Decimal            @default(0) @map("amount_paid") @db.Decimal(18, 2)
   status            ScheduleItemStatus @default(PENDING)
   tenant            Tenant             @relation(fields: [tenantId], references: [id])
   contract          Contract           @relation(fields: [contractId], references: [id])
   contractVersion   ContractVersion    @relation(fields: [contractVersionId], references: [id])
+  allocations       Allocation[]
 
   @@unique([contractVersionId, seq])
   @@index([tenantId, contractId])
   @@map("payment_schedule_items")
+}
+
+model PaymentIntent {
+  id              String              @id @default(uuid()) @db.Uuid
+  tenantId        String              @map("tenant_id") @db.Uuid
+  contractId      String              @map("contract_id") @db.Uuid
+  amount          Decimal             @db.Decimal(18, 2)
+  currency        String              @default("THB") @db.Char(3)
+  idempotencyKey  String              @map("idempotency_key")
+  status          PaymentIntentStatus @default(CREATED)
+  provider        String
+  providerRef     String?             @map("provider_ref")
+  qrPayloadJson   Json?               @map("qr_payload_json")
+  createdByUserId String              @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  tenant          Tenant              @relation(fields: [tenantId], references: [id])
+  contract        Contract            @relation(fields: [contractId], references: [id])
+  createdBy       User                @relation(fields: [createdByUserId], references: [id])
+  transaction     PaymentTransaction?
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, contractId])
+  @@map("payment_intents")
+}
+
+model PaymentTransaction {
+  id              String                   @id @default(uuid()) @db.Uuid
+  tenantId        String                   @map("tenant_id") @db.Uuid
+  paymentIntentId String                   @unique @map("payment_intent_id") @db.Uuid
+  providerEventId String                   @unique @map("provider_event_id")
+  amount          Decimal                  @db.Decimal(18, 2)
+  status          PaymentTransactionStatus
+  rawEventJson    Json                     @map("raw_event_json")
+  verifiedAt      DateTime                 @map("verified_at")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  tenant          Tenant                   @relation(fields: [tenantId], references: [id])
+  paymentIntent   PaymentIntent            @relation(fields: [paymentIntentId], references: [id])
+  allocations     Allocation[]
+  ledgerEntries   LedgerEntry[]
+
+  @@index([tenantId])
+  @@map("payment_transactions")
+}
+
+model Allocation {
+  id                   String             @id @default(uuid()) @db.Uuid
+  tenantId             String             @map("tenant_id") @db.Uuid
+  paymentTransactionId String             @map("payment_transaction_id") @db.Uuid
+  scheduleItemId       String             @map("schedule_item_id") @db.Uuid
+  amount               Decimal            @db.Decimal(18, 2)
+  createdAt            DateTime           @default(now()) @map("created_at")
+  tenant               Tenant             @relation(fields: [tenantId], references: [id])
+  paymentTransaction   PaymentTransaction @relation(fields: [paymentTransactionId], references: [id])
+  scheduleItem         PaymentScheduleItem @relation(fields: [scheduleItemId], references: [id])
+
+  @@unique([paymentTransactionId, scheduleItemId])
+  @@index([tenantId, scheduleItemId])
+  @@map("allocations")
+}
+
+model LedgerEntry {
+  id                   String             @id @default(uuid()) @db.Uuid
+  tenantId             String             @map("tenant_id") @db.Uuid
+  paymentTransactionId String             @map("payment_transaction_id") @db.Uuid
+  domain               LedgerDomain
+  direction            LedgerDirection
+  accountCode          String             @map("account_code")
+  amount               Decimal            @db.Decimal(18, 2)
+  createdAt            DateTime           @default(now()) @map("created_at")
+  tenant               Tenant             @relation(fields: [tenantId], references: [id])
+  paymentTransaction   PaymentTransaction @relation(fields: [paymentTransactionId], references: [id])
+
+  @@index([tenantId, paymentTransactionId])
+  @@map("ledger_entries")
 }
