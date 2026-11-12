@@ -5,7 +5,9 @@ import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { OcrModule } from './common/ocr/ocr.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { StorageModule } from './common/storage/storage.module';
 import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
@@ -21,6 +23,8 @@ import { TenantsModule } from './tenants/tenants.module';
     AuthModule,
     CatalogModule,
     InventoryModule,
+    StorageModule,
+    OcrModule,
   ],
 })
 export class AppModule {}

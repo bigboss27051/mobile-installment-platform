@@ -7,3 +7,4 @@ coverage
 .DS_Store
 backend/prisma/*.db
 .turbo
+/storage/
