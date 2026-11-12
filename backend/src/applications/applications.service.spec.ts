@@ -7,11 +7,13 @@ import {
 import {
   ApplicationDecision,
   ApplicationStatus,
+  ImeiStatus,
   InterestMethod,
   KycCaseStatus,
   PlatformRole,
   Prisma,
   ScorecardBand,
+  StockMovementType,
 } from '@prisma/client';
 import { ApplicationsService } from './applications.service';
 
@@ -26,11 +28,13 @@ describe('ApplicationsService', () => {
     customer: { findFirst: jest.fn() },
     kycCase: { findFirst: jest.fn() },
     installmentPlan: { findFirst: jest.fn() },
-    imeiUnit: { findFirst: jest.fn() },
+    imeiUnit: { findFirst: jest.fn(), updateMany: jest.fn() },
+    stockMovement: { create: jest.fn() },
     application: {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       findMany: jest.fn(),
     },
     approvalAction: {
@@ -53,7 +57,7 @@ describe('ApplicationsService', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) => cb(prisma));
   });
 
@@ -473,7 +477,27 @@ describe('ApplicationsService', () => {
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
       scorecard: null,
     });
-    prisma.application.update.mockResolvedValue({
+    prisma.application.updateMany.mockResolvedValue({ count: 1 });
+    prisma.application.findFirst
+      .mockResolvedValueOnce({
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        planId: 'plan-1',
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('3000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        status: ApplicationStatus.SUBMITTED,
+        submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+        decidedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        scorecard: null,
+      })
+      .mockResolvedValueOnce({
       id: 'app-1',
       tenantId: 'tenant-a',
       customerId: 'customer-1',
@@ -504,14 +528,17 @@ describe('ApplicationsService', () => {
       }),
     );
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(prisma.application.update).toHaveBeenCalledWith(
+    expect(prisma.application.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'app-1' },
+        where: {
+          id: 'app-1',
+          tenantId: 'tenant-a',
+          status: ApplicationStatus.SUBMITTED,
+        },
         data: expect.objectContaining({
           status: ApplicationStatus.APPROVED,
           decidedAt: expect.any(Date),
         }),
-        include: { scorecard: true },
       }),
     );
     expect(prisma.approvalAction.create).toHaveBeenCalledWith({
@@ -545,7 +572,34 @@ describe('ApplicationsService', () => {
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
       scorecard: null,
     });
-    prisma.application.update.mockResolvedValue({
+    prisma.application.updateMany.mockResolvedValue({ count: 1 });
+    prisma.imeiUnit.findFirst.mockResolvedValue({
+      id: 'imei-1',
+      branchId: 'branch-1',
+      status: ImeiStatus.RESERVED,
+    });
+    prisma.imeiUnit.updateMany.mockResolvedValue({ count: 1 });
+    prisma.stockMovement.create.mockResolvedValue({ id: 'movement-1' });
+    prisma.application.findFirst
+      .mockResolvedValueOnce({
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        planId: 'plan-1',
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('3000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        status: ApplicationStatus.SUBMITTED,
+        submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+        decidedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        scorecard: null,
+      })
+      .mockResolvedValueOnce({
       id: 'app-1',
       tenantId: 'tenant-a',
       customerId: 'customer-1',
@@ -564,7 +618,6 @@ describe('ApplicationsService', () => {
       scorecard: null,
     });
     prisma.approvalAction.create.mockResolvedValue({ id: 'approval-1' });
-    inventory.release.mockResolvedValue({ id: 'imei-1' });
 
     await expect(
       service.decision(tenantCtx, 'app-1', {
@@ -586,8 +639,152 @@ describe('ApplicationsService', () => {
         reason: 'KYC mismatch',
       },
     });
-    expect(inventory.release).toHaveBeenCalledWith(tenantCtx, 'imei-1', {
-      reason: 'application:app-1:rejected',
+    expect(inventory.release).not.toHaveBeenCalled();
+    expect(prisma.imeiUnit.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'imei-1',
+        tenantId: 'tenant-a',
+        status: ImeiStatus.RESERVED,
+      },
+      data: {
+        status: ImeiStatus.AVAILABLE,
+      },
+    });
+    expect(prisma.stockMovement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: 'tenant-a',
+        imeiUnitId: 'imei-1',
+        type: StockMovementType.RELEASE,
+        reason: 'application:app-1:rejected',
+      }),
+    });
+  });
+
+  it('throws Conflict on second decision when transition update is stale', async () => {
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('3000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.SUBMITTED,
+      submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      scorecard: null,
+    });
+    prisma.application.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.decision(tenantCtx, 'app-1', {
+        decision: ApplicationDecision.APPROVE,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.approvalAction.create).not.toHaveBeenCalled();
+  });
+
+  it('throws Conflict when cancel transition is stale after pre-read', async () => {
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('3000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.SUBMITTED,
+      submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      scorecard: null,
+    });
+    prisma.application.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.cancel(tenantCtx, 'app-1')).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.imeiUnit.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('cancels SUBMITTED application and releases reserved inventory in same transaction', async () => {
+    prisma.application.findFirst
+      .mockResolvedValueOnce({
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        planId: 'plan-1',
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('3000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        status: ApplicationStatus.SUBMITTED,
+        submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+        decidedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        scorecard: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        planId: 'plan-1',
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('3000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        status: ApplicationStatus.CANCELLED,
+        submittedAt: new Date('2026-01-01T00:00:00.000Z'),
+        decidedAt: new Date('2026-01-05T00:00:00.000Z'),
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-05T00:00:00.000Z'),
+        scorecard: null,
+      });
+    prisma.application.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    prisma.imeiUnit.findFirst.mockResolvedValue({
+      id: 'imei-1',
+      branchId: 'branch-1',
+      status: ImeiStatus.RESERVED,
+    });
+    prisma.imeiUnit.updateMany.mockResolvedValue({ count: 1 });
+    prisma.stockMovement.create.mockResolvedValue({ id: 'movement-1' });
+
+    await expect(service.cancel(tenantCtx, 'app-1')).resolves.toEqual(
+      expect.objectContaining({
+        status: ApplicationStatus.CANCELLED,
+      }),
+    );
+    expect(inventory.release).not.toHaveBeenCalled();
+    expect(prisma.imeiUnit.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'imei-1',
+        tenantId: 'tenant-a',
+        status: ImeiStatus.RESERVED,
+      },
+      data: {
+        status: ImeiStatus.AVAILABLE,
+      },
+    });
+    expect(prisma.stockMovement.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: 'tenant-a',
+        imeiUnitId: 'imei-1',
+        type: StockMovementType.RELEASE,
+      }),
     });
   });
 
@@ -625,116 +822,65 @@ describe('ApplicationsService', () => {
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
       scorecard: null,
     });
+    prisma.application.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(
       service.decision(tenantCtx, 'app-1', {
         decision: ApplicationDecision.APPROVE,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
 
   it('cancels DRAFT application without releasing inventory', async () => {
-    prisma.application.findFirst.mockResolvedValue({
-      id: 'app-1',
-      tenantId: 'tenant-a',
-      customerId: 'customer-1',
-      imeiUnitId: 'imei-1',
-      planId: 'plan-1',
-      principal: new Prisma.Decimal('12000.00'),
-      downPayment: new Prisma.Decimal('3000.00'),
-      termMonths: 6,
-      interestMethod: InterestMethod.FLAT,
-      annualRate: new Prisma.Decimal('12.00'),
-      status: ApplicationStatus.DRAFT,
-      submittedAt: null,
-      decidedAt: null,
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-      scorecard: null,
-    });
-    prisma.application.update.mockResolvedValue({
-      id: 'app-1',
-      tenantId: 'tenant-a',
-      customerId: 'customer-1',
-      imeiUnitId: 'imei-1',
-      planId: 'plan-1',
-      principal: new Prisma.Decimal('12000.00'),
-      downPayment: new Prisma.Decimal('3000.00'),
-      termMonths: 6,
-      interestMethod: InterestMethod.FLAT,
-      annualRate: new Prisma.Decimal('12.00'),
-      status: ApplicationStatus.CANCELLED,
-      submittedAt: null,
-      decidedAt: new Date('2026-01-05T00:00:00.000Z'),
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-05T00:00:00.000Z'),
-      scorecard: null,
-    });
+    prisma.application.findFirst
+      .mockResolvedValueOnce({
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        planId: 'plan-1',
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('3000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        status: ApplicationStatus.DRAFT,
+        submittedAt: null,
+        decidedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        scorecard: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        planId: 'plan-1',
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('3000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        status: ApplicationStatus.CANCELLED,
+        submittedAt: null,
+        decidedAt: new Date('2026-01-05T00:00:00.000Z'),
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-05T00:00:00.000Z'),
+        scorecard: null,
+      });
+    prisma.application.updateMany
+      .mockResolvedValueOnce({ count: 0 })
+      .mockResolvedValueOnce({ count: 1 });
 
     await expect(service.cancel(tenantCtx, 'app-1')).resolves.toEqual(
       expect.objectContaining({
         status: ApplicationStatus.CANCELLED,
       }),
     );
-    expect(prisma.application.update).toHaveBeenCalledWith({
-      where: { id: 'app-1' },
-      data: {
-        status: ApplicationStatus.CANCELLED,
-        decidedAt: expect.any(Date),
-      },
-      include: { scorecard: true },
-    });
+    expect(prisma.application.updateMany).toHaveBeenCalledTimes(2);
     expect(inventory.release).not.toHaveBeenCalled();
-  });
-
-  it('cancels SUBMITTED application and releases reserved inventory', async () => {
-    prisma.application.findFirst.mockResolvedValue({
-      id: 'app-1',
-      tenantId: 'tenant-a',
-      customerId: 'customer-1',
-      imeiUnitId: 'imei-1',
-      planId: 'plan-1',
-      principal: new Prisma.Decimal('12000.00'),
-      downPayment: new Prisma.Decimal('3000.00'),
-      termMonths: 6,
-      interestMethod: InterestMethod.FLAT,
-      annualRate: new Prisma.Decimal('12.00'),
-      status: ApplicationStatus.SUBMITTED,
-      submittedAt: new Date('2026-01-01T00:00:00.000Z'),
-      decidedAt: null,
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-      scorecard: null,
-    });
-    prisma.application.update.mockResolvedValue({
-      id: 'app-1',
-      tenantId: 'tenant-a',
-      customerId: 'customer-1',
-      imeiUnitId: 'imei-1',
-      planId: 'plan-1',
-      principal: new Prisma.Decimal('12000.00'),
-      downPayment: new Prisma.Decimal('3000.00'),
-      termMonths: 6,
-      interestMethod: InterestMethod.FLAT,
-      annualRate: new Prisma.Decimal('12.00'),
-      status: ApplicationStatus.CANCELLED,
-      submittedAt: new Date('2026-01-01T00:00:00.000Z'),
-      decidedAt: new Date('2026-01-05T00:00:00.000Z'),
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-05T00:00:00.000Z'),
-      scorecard: null,
-    });
-    inventory.release.mockResolvedValue({ id: 'imei-1' });
-
-    await expect(service.cancel(tenantCtx, 'app-1')).resolves.toEqual(
-      expect.objectContaining({
-        status: ApplicationStatus.CANCELLED,
-      }),
-    );
-    expect(inventory.release).toHaveBeenCalledWith(tenantCtx, 'imei-1', {
-      reason: 'application:app-1:cancelled',
-    });
   });
 
   it('rejects cancel when status is neither DRAFT nor SUBMITTED', async () => {
@@ -756,8 +902,9 @@ describe('ApplicationsService', () => {
       updatedAt: new Date('2026-01-05T00:00:00.000Z'),
       scorecard: null,
     });
+    prisma.application.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(service.cancel(tenantCtx, 'app-1')).rejects.toBeInstanceOf(ConflictException);
-    expect(prisma.application.update).not.toHaveBeenCalled();
+    expect(prisma.application.updateMany).toHaveBeenCalled();
   });
 });

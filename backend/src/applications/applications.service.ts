@@ -8,11 +8,13 @@ import {
 import {
   ApplicationDecision,
   ApplicationStatus,
+  ImeiStatus,
   InterestMethod,
   KycCaseStatus,
   PlatformRole,
   Prisma,
   ScorecardBand,
+  StockMovementType,
 } from '@prisma/client';
 import { computeScorecard } from '../common/scorecard/scorecard';
 import { InventoryService } from '../inventory/inventory.service';
@@ -271,19 +273,6 @@ export class ApplicationsService {
   ): Promise<ApplicationResponse> {
     const tenantId = this.requireTenantId(ctx);
     this.requireDecisionRole(ctx);
-    const application = await this.prisma.application.findFirst({
-      where: {
-        id: applicationId,
-        tenantId,
-      },
-      include: { scorecard: true },
-    });
-    if (!application) {
-      throw new NotFoundException('Application not found.');
-    }
-    if (application.status !== ApplicationStatus.SUBMITTED) {
-      throw new ConflictException('Application can only be decided from SUBMITTED.');
-    }
 
     const nextStatus =
       input.decision === ApplicationDecision.APPROVE
@@ -291,14 +280,34 @@ export class ApplicationsService {
         : ApplicationStatus.REJECTED;
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const updatedApplication = await tx.application.update({
-        where: { id: application.id },
+      const application = await tx.application.findFirst({
+        where: {
+          id: applicationId,
+          tenantId,
+        },
+        select: {
+          id: true,
+          imeiUnitId: true,
+        },
+      });
+      if (!application) {
+        throw new NotFoundException('Application not found.');
+      }
+
+      const transition = await tx.application.updateMany({
+        where: {
+          id: application.id,
+          tenantId,
+          status: ApplicationStatus.SUBMITTED,
+        },
         data: {
           status: nextStatus,
           decidedAt: new Date(),
         },
-        include: { scorecard: true },
       });
+      if (transition.count === 0) {
+        throw new ConflictException('Application can only be decided from SUBMITTED.');
+      }
 
       await tx.approvalAction.create({
         data: {
@@ -310,53 +319,157 @@ export class ApplicationsService {
         },
       });
 
+      if (nextStatus === ApplicationStatus.REJECTED) {
+        await this.releaseReservedImeiInTx(tx, {
+          tenantId,
+          imeiUnitId: application.imeiUnitId,
+          actorUserId: ctx.userId,
+          reason: `application:${application.id}:rejected`,
+        });
+      }
+
+      const updatedApplication = await tx.application.findFirst({
+        where: {
+          id: application.id,
+          tenantId,
+        },
+        include: { scorecard: true },
+      });
+      if (!updatedApplication) {
+        throw new NotFoundException('Application not found.');
+      }
+
       return updatedApplication;
     });
-
-    if (nextStatus === ApplicationStatus.REJECTED) {
-      await this.inventory.release(ctx, application.imeiUnitId, {
-        reason: `application:${application.id}:rejected`,
-      });
-    }
 
     return this.toResponse(updated);
   }
 
   async cancel(ctx: TenantContext, applicationId: string): Promise<ApplicationResponse> {
     const tenantId = this.requireTenantId(ctx);
-    const application = await this.prisma.application.findFirst({
-      where: {
-        id: applicationId,
-        tenantId,
-      },
-      include: { scorecard: true },
-    });
-    if (!application) {
-      throw new NotFoundException('Application not found.');
-    }
-    if (
-      application.status !== ApplicationStatus.DRAFT &&
-      application.status !== ApplicationStatus.SUBMITTED
-    ) {
-      throw new ConflictException('Application can only be cancelled from DRAFT or SUBMITTED.');
-    }
-
-    const updated = await this.prisma.application.update({
-      where: { id: application.id },
-      data: {
-        status: ApplicationStatus.CANCELLED,
-        decidedAt: new Date(),
-      },
-      include: { scorecard: true },
-    });
-
-    if (application.status === ApplicationStatus.SUBMITTED) {
-      await this.inventory.release(ctx, application.imeiUnitId, {
-        reason: `application:${application.id}:cancelled`,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const application = await tx.application.findFirst({
+        where: {
+          id: applicationId,
+          tenantId,
+        },
+        select: {
+          id: true,
+          imeiUnitId: true,
+        },
       });
-    }
+      if (!application) {
+        throw new NotFoundException('Application not found.');
+      }
+
+      const submittedTransition = await tx.application.updateMany({
+        where: {
+          id: application.id,
+          tenantId,
+          status: ApplicationStatus.SUBMITTED,
+        },
+        data: {
+          status: ApplicationStatus.CANCELLED,
+          decidedAt: new Date(),
+        },
+      });
+
+      let cancelledFromSubmitted = submittedTransition.count > 0;
+      if (!cancelledFromSubmitted) {
+        const draftTransition = await tx.application.updateMany({
+          where: {
+            id: application.id,
+            tenantId,
+            status: ApplicationStatus.DRAFT,
+          },
+          data: {
+            status: ApplicationStatus.CANCELLED,
+            decidedAt: new Date(),
+          },
+        });
+
+        if (draftTransition.count === 0) {
+          throw new ConflictException(
+            'Application can only be cancelled from DRAFT or SUBMITTED.',
+          );
+        }
+      }
+
+      if (cancelledFromSubmitted) {
+        await this.releaseReservedImeiInTx(tx, {
+          tenantId,
+          imeiUnitId: application.imeiUnitId,
+          actorUserId: ctx.userId,
+          reason: `application:${application.id}:cancelled`,
+        });
+      }
+
+      const updatedApplication = await tx.application.findFirst({
+        where: {
+          id: application.id,
+          tenantId,
+        },
+        include: { scorecard: true },
+      });
+      if (!updatedApplication) {
+        throw new NotFoundException('Application not found.');
+      }
+
+      return updatedApplication;
+    });
 
     return this.toResponse(updated);
+  }
+
+  private async releaseReservedImeiInTx(
+    tx: Prisma.TransactionClient,
+    input: {
+      tenantId: string;
+      imeiUnitId: string;
+      actorUserId: string;
+      reason: string;
+    },
+  ): Promise<void> {
+    const imeiUnit = await tx.imeiUnit.findFirst({
+      where: {
+        id: input.imeiUnitId,
+        tenantId: input.tenantId,
+        status: ImeiStatus.RESERVED,
+      },
+      select: {
+        id: true,
+        branchId: true,
+      },
+    });
+    if (!imeiUnit) {
+      throw new ConflictException('IMEI unit must be RESERVED to release.');
+    }
+
+    const release = await tx.imeiUnit.updateMany({
+      where: {
+        id: imeiUnit.id,
+        tenantId: input.tenantId,
+        status: ImeiStatus.RESERVED,
+      },
+      data: {
+        status: ImeiStatus.AVAILABLE,
+      },
+    });
+    if (release.count === 0) {
+      throw new ConflictException('IMEI unit changed by another process. Refresh and retry.');
+    }
+
+    await tx.stockMovement.create({
+      data: {
+        tenantId: input.tenantId,
+        imeiUnitId: imeiUnit.id,
+        type: StockMovementType.RELEASE,
+        fromBranchId: imeiUnit.branchId,
+        toBranchId: imeiUnit.branchId,
+        actorUserId: input.actorUserId,
+        reason: input.reason,
+      },
+    });
   }
 
   private toResponse(
