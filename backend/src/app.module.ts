@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
+import { CustomersModule } from './customers/customers.module';
 import { HealthModule } from './health/health.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { OcrModule } from './common/ocr/ocr.module';
@@ -21,6 +22,7 @@ import { TenantsModule } from './tenants/tenants.module';
     PrismaModule,
     TenantsModule,
     AuthModule,
+    CustomersModule,
     CatalogModule,
     InventoryModule,
     StorageModule,
