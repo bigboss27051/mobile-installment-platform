@@ -59,12 +59,14 @@ export class PaymentsService {
     const tenantId = this.requireTenantId(ctx);
     this.requireMutateRole(ctx);
     const normalizedIdempotencyKey = this.requireIdempotencyKey(idempotencyKey);
+    const amount = this.parseIntentAmount(amountInput);
 
     const existing = await this.findByIdempotencyKey(
       tenantId,
       normalizedIdempotencyKey,
     );
     if (existing) {
+      this.assertIdempotencyPayloadMatches(existing, contractId, amount);
       return this.toResponse(existing);
     }
 
@@ -87,7 +89,6 @@ export class PaymentsService {
       );
     }
 
-    const amount = this.parseIntentAmount(amountInput);
     const outstanding = await this.computeOutstanding(tenantId, contract.id);
     if (amount.lte(0) || amount.gt(outstanding)) {
       throw new UnprocessableEntityException(
@@ -96,15 +97,9 @@ export class PaymentsService {
     }
 
     const intentId = randomUUID();
-    const providerIntent = await this.gateway.createPromptPayIntent({
-      tenantId,
-      intentId,
-      amount: amount.toFixed(2),
-      currency: 'THB',
-    });
-
+    let intent: PaymentIntentRecord;
     try {
-      const intent = await this.prisma.paymentIntent.create({
+      intent = await this.prisma.paymentIntent.create({
         data: {
           id: intentId,
           tenantId,
@@ -112,14 +107,13 @@ export class PaymentsService {
           amount,
           currency: 'THB',
           idempotencyKey: normalizedIdempotencyKey,
-          status: PaymentIntentStatus.AWAITING_PROVIDER,
-          provider: providerIntent.provider,
-          providerRef: providerIntent.providerRef,
-          qrPayloadJson: providerIntent.qrPayload as Prisma.InputJsonValue,
+          status: PaymentIntentStatus.CREATED,
+          provider: 'sandbox',
+          providerRef: null,
+          qrPayloadJson: Prisma.JsonNull,
           createdByUserId: ctx.userId,
         },
       });
-      return this.toResponse(intent);
     } catch (error: unknown) {
       if (this.isUniqueConstraintViolation(error)) {
         const idempotentIntent = await this.findByIdempotencyKey(
@@ -127,9 +121,37 @@ export class PaymentsService {
           normalizedIdempotencyKey,
         );
         if (idempotentIntent) {
+          this.assertIdempotencyPayloadMatches(
+            idempotentIntent,
+            contractId,
+            amount,
+          );
           return this.toResponse(idempotentIntent);
         }
       }
+      throw error;
+    }
+
+    try {
+      const providerIntent = await this.gateway.createPromptPayIntent({
+        tenantId,
+        intentId: intent.id,
+        amount: amount.toFixed(2),
+        currency: 'THB',
+      });
+
+      const updatedIntent = await this.prisma.paymentIntent.update({
+        where: { id: intent.id },
+        data: {
+          status: PaymentIntentStatus.AWAITING_PROVIDER,
+          provider: providerIntent.provider,
+          providerRef: providerIntent.providerRef,
+          qrPayloadJson: providerIntent.qrPayload as Prisma.InputJsonValue,
+        },
+      });
+      return this.toResponse(updatedIntent);
+    } catch (error: unknown) {
+      await this.markIntentFailed(intent.id);
       throw error;
     }
   }
@@ -197,6 +219,30 @@ export class PaymentsService {
       }
       throw error;
     }
+  }
+
+  private assertIdempotencyPayloadMatches(
+    intent: PaymentIntentRecord,
+    contractId: string,
+    amount: Prisma.Decimal,
+  ): void {
+    if (
+      intent.contractId !== contractId ||
+      intent.amount.toFixed(2) !== amount.toFixed(2)
+    ) {
+      throw new ConflictException(
+        'Idempotency-Key has already been used with a different payment intent payload.',
+      );
+    }
+  }
+
+  private async markIntentFailed(intentId: string): Promise<void> {
+    await this.prisma.paymentIntent.update({
+      where: { id: intentId },
+      data: {
+        status: PaymentIntentStatus.FAILED,
+      },
+    });
   }
 
   private requireTenantId(ctx: TenantContext): string {

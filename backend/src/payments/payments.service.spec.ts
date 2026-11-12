@@ -20,6 +20,7 @@ describe('PaymentsService', () => {
     paymentIntent: {
       findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -97,6 +98,14 @@ describe('PaymentsService', () => {
         qrPayloadJson: data.qrPayloadJson,
       }),
     );
+    prisma.paymentIntent.update.mockImplementation(({ data }) =>
+      Promise.resolve({
+        ...intentRecord,
+        ...data,
+        qrPayloadJson: data.qrPayloadJson,
+        updatedAt: createdAt,
+      }),
+    );
   });
 
   it('documents service-level handling for blank idempotency keys', async () => {
@@ -130,7 +139,44 @@ describe('PaymentsService', () => {
     expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
   });
 
-  it('creates AWAITING_PROVIDER intent and calls gateway', async () => {
+  it('rejects idempotency reuse with different payload using 409', async () => {
+    prisma.paymentIntent.findFirst.mockResolvedValue(intentRecord);
+
+    await expect(
+      service.createIntent(tenantCtx, 'contract-2', '1000.00', 'idem-1'),
+    ).rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.createIntent(tenantCtx, 'contract-1', '1000.01', 'idem-1'),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(gateway.createPromptPayIntent).not.toHaveBeenCalled();
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+  });
+
+  it('returns winner intent when unique insert loses an idempotency race', async () => {
+    prisma.paymentIntent.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(intentRecord);
+    prisma.paymentIntent.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('duplicate', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    );
+
+    await expect(
+      service.createIntent(tenantCtx, 'contract-1', '1000.00', 'idem-1'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: intentRecord.id,
+        amount: '1000.00',
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+      }),
+    );
+    expect(gateway.createPromptPayIntent).not.toHaveBeenCalled();
+    expect(prisma.paymentIntent.update).not.toHaveBeenCalled();
+  });
+
+  it('creates intent before calling gateway, then updates provider fields', async () => {
     await expect(
       service.createIntent(tenantCtx, 'contract-1', '1000.00', 'idem-1'),
     ).resolves.toEqual(
@@ -143,12 +189,6 @@ describe('PaymentsService', () => {
       }),
     );
 
-    expect(gateway.createPromptPayIntent).toHaveBeenCalledWith({
-      tenantId: 'tenant-a',
-      intentId: expect.any(String),
-      amount: '1000.00',
-      currency: 'THB',
-    });
     expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         tenantId: 'tenant-a',
@@ -156,12 +196,52 @@ describe('PaymentsService', () => {
         amount: expect.any(Prisma.Decimal),
         currency: 'THB',
         idempotencyKey: 'idem-1',
+        status: PaymentIntentStatus.CREATED,
+        provider: 'sandbox',
+        providerRef: null,
+        qrPayloadJson: Prisma.JsonNull,
+        createdByUserId: 'user-1',
+      }),
+    });
+    expect(gateway.createPromptPayIntent).toHaveBeenCalledWith({
+      tenantId: 'tenant-a',
+      intentId: expect.any(String),
+      amount: '1000.00',
+      currency: 'THB',
+    });
+    expect(prisma.paymentIntent.update).toHaveBeenCalledWith({
+      where: { id: expect.any(String) },
+      data: expect.objectContaining({
         status: PaymentIntentStatus.AWAITING_PROVIDER,
         provider: 'sandbox',
         providerRef: 'sandbox_ref',
         qrPayloadJson: { type: 'promptpay' },
-        createdByUserId: 'user-1',
       }),
+    });
+    expect(
+      prisma.paymentIntent.create.mock.invocationCallOrder[0],
+    ).toBeLessThan(gateway.createPromptPayIntent.mock.invocationCallOrder[0]);
+    expect(
+      gateway.createPromptPayIntent.mock.invocationCallOrder[0],
+    ).toBeLessThan(prisma.paymentIntent.update.mock.invocationCallOrder[0]);
+  });
+
+  it('marks the created intent FAILED when gateway creation fails', async () => {
+    gateway.createPromptPayIntent.mockRejectedValue(new Error('gateway down'));
+
+    await expect(
+      service.createIntent(tenantCtx, 'contract-1', '1000.00', 'idem-1'),
+    ).rejects.toThrow('gateway down');
+    expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        status: PaymentIntentStatus.CREATED,
+      }),
+    });
+    expect(prisma.paymentIntent.update).toHaveBeenCalledWith({
+      where: { id: expect.any(String) },
+      data: {
+        status: PaymentIntentStatus.FAILED,
+      },
     });
   });
 
@@ -184,5 +264,19 @@ describe('PaymentsService', () => {
       service.createIntent(tenantCtx, 'contract-1', '100.00', 'idem-1'),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(gateway.createPromptPayIntent).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 when getting an intent outside the tenant', async () => {
+    prisma.paymentIntent.findFirst.mockResolvedValue(null);
+
+    await expect(service.getById(tenantCtx, 'intent-1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(prisma.paymentIntent.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'intent-1',
+        tenantId: 'tenant-a',
+      },
+    });
   });
 });
