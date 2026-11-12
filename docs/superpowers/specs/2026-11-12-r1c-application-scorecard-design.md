@@ -43,8 +43,8 @@ erDiagram
 
 ### InstallmentPlan (seeded, read-only in R1c)
 
-- `id`, `tenantId`, `code`, `name`, `interestMethod` (`FLAT` | `REDUCING`), `annualRate` DECIMAL, `termMonths` int (or term options JSON if multiple), `feesJson` optional, `active` bool, timestamps  
-- Seeded on tenant `register-owner` (1–2 default plans)  
+- `id`, `tenantId`, `code`, `name`, `interestMethod` (`FLAT` | `REDUCING`), `annualRate` DECIMAL, `termMonths` int (single term per seeded plan in R1c), `feesJson` optional, `active` bool, timestamps  
+- Seeded on tenant `register-owner` (exactly two defaults: e.g. FLAT-6 and REDUCING-12)  
 - API: list active plans for tenant only — no create/update/delete in R1c  
 
 ### Application
