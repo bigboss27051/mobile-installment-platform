@@ -19,4 +19,9 @@
 | D-015 | 2026-11-12 | Statuses AVAILABLE/RESERVED/SOLD/TRANSFERRED_OUT | Enables reservation before contracts | Accepted |
 | D-016 | 2026-11-12 | R1a backend API only | UI deferred to R1f | Accepted |
 | D-017 | 2026-11-12 | Full inventory Nest domain in R1a | Avoid schema-only dead end | Accepted |
-| D-018 | 2026-11-12 | R1a auth scope accepts authenticated tenant members without full RBAC matrix | Keeps R1a slice focused; full RBAC matrix deferred to Phase 3 continuation per plan | Accepted |
+| D-018 | 2026-11-12 | R1a authenticated tenant members without full RBAC | Defer matrix to Phase 3 continuation | Accepted |
+| D-019 | 2026-11-12 | National ID encrypted + hash lookup | PDPA-minded; no plain text at rest | Accepted |
+| D-020 | 2026-11-12 | OCR Port + Sandbox/Mock until credentials | Avoid inventing vendor credentials | Accepted |
+| D-021 | 2026-11-12 | Customer phone unique per tenant | Practical duplicate prevention for retail | Accepted |
+| D-022 | 2026-11-12 | R1b backend Customer+KYC+OCR port+manual review | UI deferred; unlocks R1c | Accepted |
+| D-023 | 2026-11-12 | Object storage behind port; local/mock OK in R1b | S3 when available | Accepted |
