@@ -65,6 +65,9 @@ describe('Customer + KYC isolation (e2e)', () => {
     }
 
     if (createdTenantIds.length > 0) {
+      await prisma.installmentPlan.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
       await prisma.branch.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
