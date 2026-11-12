@@ -300,6 +300,26 @@ describe('Contracts endpoints (e2e)', () => {
 
     const contractId = created.body.data.id as string;
 
+    await request(app.getHttpServer())
+      .post(`/api/v1/applications/${activationApplicationId}/contracts`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(409);
+
+    const listed = await request(app.getHttpServer())
+      .get('/api/v1/contracts')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(Array.isArray(listed.body.data)).toBe(true);
+    expect(listed.body.data.some((row: { id: string }) => row.id === contractId)).toBe(true);
+
+    const fetched = await request(app.getHttpServer())
+      .get(`/api/v1/contracts/${contractId}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(fetched.body.data.id).toBe(contractId);
+    expect(fetched.body.data.version.version).toBe(1);
+    expect(Array.isArray(fetched.body.data.scheduleItems)).toBe(true);
+
     const activated = await request(app.getHttpServer())
       .post(`/api/v1/contracts/${contractId}/activate`)
       .set('Authorization', `Bearer ${tokenA}`)
