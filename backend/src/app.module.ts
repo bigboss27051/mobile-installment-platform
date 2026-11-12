@@ -4,6 +4,7 @@ import { ApplicationsModule } from './applications/applications.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
+import { ContractsModule } from './contracts/contracts.module';
 import { CustomersModule } from './customers/customers.module';
 import { HealthModule } from './health/health.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -26,6 +27,7 @@ import { TenantsModule } from './tenants/tenants.module';
     TenantsModule,
     PlansModule,
     ApplicationsModule,
+    ContractsModule,
     AuthModule,
     CustomersModule,
     KycModule,
