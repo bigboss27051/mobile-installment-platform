@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PlatformRole, UserStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -70,36 +71,47 @@ export class AuthService {
 
   async refresh(refreshToken: string) {
     const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
-    const stored = await this.prisma.refreshToken.findFirst({
-      where: {
-        tokenHash,
-        revokedAt: null,
-        expiresAt: { gt: new Date() },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            tenantId: true,
-            role: true,
-            email: true,
-            fullName: true,
-            status: true,
+    return this.prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const stored = await tx.refreshToken.findFirst({
+        where: {
+          tokenHash,
+          revokedAt: null,
+          expiresAt: { gt: now },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              tenantId: true,
+              role: true,
+              email: true,
+              fullName: true,
+              status: true,
+            },
           },
         },
-      },
+      });
+
+      if (!stored || stored.user.status !== UserStatus.ACTIVE) {
+        throw new UnauthorizedException('Invalid refresh token.');
+      }
+
+      const revokeResult = await tx.refreshToken.updateMany({
+        where: {
+          tokenHash,
+          revokedAt: null,
+          expiresAt: { gt: now },
+        },
+        data: { revokedAt: now },
+      });
+
+      if (revokeResult.count !== 1) {
+        throw new UnauthorizedException('Invalid refresh token.');
+      }
+
+      return this.issueTokens(stored.user, tx);
     });
-
-    if (!stored || stored.user.status !== UserStatus.ACTIVE) {
-      throw new UnauthorizedException('Invalid refresh token.');
-    }
-
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { revokedAt: new Date() },
-    });
-
-    return this.issueTokens(stored.user);
   }
 
   private async issueTokens(user: {
@@ -108,7 +120,7 @@ export class AuthService {
     role: PlatformRole;
     email: string;
     fullName: string;
-  }) {
+  }, tx?: Prisma.TransactionClient) {
     const payload = {
       sub: user.id,
       tenantId: user.tenantId,
@@ -125,7 +137,8 @@ export class AuthService {
     const refreshTtl = this.config.get<string>('JWT_REFRESH_TTL', '7d');
     const expiresAt = new Date(Date.now() + parseTtlMs(refreshTtl));
 
-    await this.prisma.refreshToken.create({
+    const refreshTokenRepo = tx?.refreshToken ?? this.prisma.refreshToken;
+    await refreshTokenRepo.create({
       data: {
         userId: user.id,
         tokenHash,
