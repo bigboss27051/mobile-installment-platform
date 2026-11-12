@@ -12,6 +12,7 @@ import {
   PlatformRole,
   Prisma,
   ScheduleItemStatus,
+  StockMovementType,
 } from '@prisma/client';
 import { generateSchedule } from '../common/schedule/schedule';
 import { TenantContext } from '../common/tenant/tenant-context';
@@ -257,6 +258,139 @@ export class ContractsService {
     });
 
     return this.toDetailResponse(contract, version, scheduleItems);
+  }
+
+  async activate(ctx: TenantContext, contractId: string): Promise<ContractListResponse> {
+    const tenantId = this.requireTenantId(ctx);
+    this.requireMutateRole(ctx);
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const contract = await tx.contract.findFirst({
+        where: {
+          id: contractId,
+          tenantId,
+        },
+      });
+      if (!contract) {
+        throw new NotFoundException('Contract not found.');
+      }
+
+      const transition = await tx.contract.updateMany({
+        where: {
+          id: contract.id,
+          tenantId,
+          status: ContractStatus.DRAFT,
+        },
+        data: {
+          status: ContractStatus.ACTIVE,
+          activatedAt: new Date(),
+        },
+      });
+      if (transition.count === 0) {
+        throw new ConflictException('Contract can only be activated from DRAFT.');
+      }
+
+      const imeiUnit = await tx.imeiUnit.findFirst({
+        where: {
+          id: contract.imeiUnitId,
+          tenantId,
+          status: ImeiStatus.RESERVED,
+        },
+        select: {
+          id: true,
+          branchId: true,
+        },
+      });
+      if (!imeiUnit) {
+        throw new ConflictException('IMEI unit must remain RESERVED before contract activation.');
+      }
+
+      const sold = await tx.imeiUnit.updateMany({
+        where: {
+          id: imeiUnit.id,
+          tenantId,
+          status: ImeiStatus.RESERVED,
+        },
+        data: {
+          status: ImeiStatus.SOLD,
+        },
+      });
+      if (sold.count === 0) {
+        throw new ConflictException('IMEI unit changed by another process. Refresh and retry.');
+      }
+
+      await tx.stockMovement.create({
+        data: {
+          tenantId,
+          imeiUnitId: imeiUnit.id,
+          type: StockMovementType.SELL,
+          fromBranchId: imeiUnit.branchId,
+          toBranchId: null,
+          actorUserId: ctx.userId,
+          reason: `contract:${contract.id}:activated`,
+        },
+      });
+
+      const updatedContract = await tx.contract.findFirst({
+        where: {
+          id: contract.id,
+          tenantId,
+        },
+      });
+      if (!updatedContract) {
+        throw new NotFoundException('Contract not found.');
+      }
+
+      return updatedContract;
+    });
+
+    return this.toListResponse(updated);
+  }
+
+  async cancel(ctx: TenantContext, contractId: string): Promise<ContractListResponse> {
+    const tenantId = this.requireTenantId(ctx);
+    this.requireMutateRole(ctx);
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const contract = await tx.contract.findFirst({
+        where: {
+          id: contractId,
+          tenantId,
+        },
+      });
+      if (!contract) {
+        throw new NotFoundException('Contract not found.');
+      }
+
+      const transition = await tx.contract.updateMany({
+        where: {
+          id: contract.id,
+          tenantId,
+          status: ContractStatus.DRAFT,
+        },
+        data: {
+          status: ContractStatus.CANCELLED,
+          cancelledAt: new Date(),
+        },
+      });
+      if (transition.count === 0) {
+        throw new ConflictException('Contract can only be cancelled from DRAFT.');
+      }
+
+      const updatedContract = await tx.contract.findFirst({
+        where: {
+          id: contract.id,
+          tenantId,
+        },
+      });
+      if (!updatedContract) {
+        throw new NotFoundException('Contract not found.');
+      }
+
+      return updatedContract;
+    });
+
+    return this.toListResponse(updated);
   }
 
   private requireTenantId(ctx: TenantContext): string {

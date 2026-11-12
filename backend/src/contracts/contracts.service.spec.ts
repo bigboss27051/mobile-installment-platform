@@ -7,6 +7,7 @@ import {
   PlatformRole,
   Prisma,
   ScheduleItemStatus,
+  StockMovementType,
 } from '@prisma/client';
 import { ContractsService } from './contracts.service';
 
@@ -14,11 +15,13 @@ describe('ContractsService', () => {
   const prisma = {
     $transaction: jest.fn(),
     application: { findFirst: jest.fn() },
-    imeiUnit: { findFirst: jest.fn() },
+    imeiUnit: { findFirst: jest.fn(), updateMany: jest.fn() },
+    stockMovement: { create: jest.fn() },
     contract: {
       create: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
+      updateMany: jest.fn(),
     },
     contractVersion: {
       create: jest.fn(),
@@ -280,5 +283,234 @@ describe('ContractsService', () => {
     prisma.contract.findFirst.mockResolvedValue(null);
 
     await expect(service.getById(tenantCtx, 'missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('activates DRAFT contract and marks IMEI SOLD in one transaction', async () => {
+    prisma.contract.findFirst
+      .mockResolvedValueOnce({
+        id: 'contract-1',
+        tenantId: 'tenant-a',
+        applicationId: 'app-1',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        status: ContractStatus.DRAFT,
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('2000.00'),
+        financedAmount: new Prisma.Decimal('10000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        currency: 'THB',
+        activatedAt: null,
+        cancelledAt: null,
+        createdAt: new Date('2026-01-10T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-10T00:00:00.000Z'),
+      })
+      .mockResolvedValueOnce({
+        id: 'contract-1',
+        tenantId: 'tenant-a',
+        applicationId: 'app-1',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        status: ContractStatus.ACTIVE,
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('2000.00'),
+        financedAmount: new Prisma.Decimal('10000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        currency: 'THB',
+        activatedAt: new Date('2026-01-15T00:00:00.000Z'),
+        cancelledAt: null,
+        createdAt: new Date('2026-01-10T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-15T00:00:00.000Z'),
+      });
+    prisma.imeiUnit.findFirst.mockResolvedValue({
+      id: 'imei-1',
+      tenantId: 'tenant-a',
+      branchId: 'branch-1',
+      status: ImeiStatus.RESERVED,
+    });
+    prisma.contract.updateMany.mockResolvedValue({ count: 1 });
+    prisma.imeiUnit.updateMany.mockResolvedValue({ count: 1 });
+    prisma.stockMovement.create.mockResolvedValue({ id: 'movement-1' });
+
+    await expect(service.activate(tenantCtx, 'contract-1')).resolves.toEqual(
+      expect.objectContaining({
+        id: 'contract-1',
+        status: ContractStatus.ACTIVE,
+      }),
+    );
+    expect(prisma.contract.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'contract-1',
+        tenantId: 'tenant-a',
+        status: ContractStatus.DRAFT,
+      },
+      data: {
+        status: ContractStatus.ACTIVE,
+        activatedAt: expect.any(Date),
+      },
+    });
+    expect(prisma.imeiUnit.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'imei-1',
+        tenantId: 'tenant-a',
+        status: ImeiStatus.RESERVED,
+      },
+      data: {
+        status: ImeiStatus.SOLD,
+      },
+    });
+    expect(prisma.stockMovement.create).toHaveBeenCalledWith({
+      data: {
+        tenantId: 'tenant-a',
+        imeiUnitId: 'imei-1',
+        type: StockMovementType.SELL,
+        fromBranchId: 'branch-1',
+        toBranchId: null,
+        actorUserId: 'user-1',
+        reason: 'contract:contract-1:activated',
+      },
+    });
+  });
+
+  it('throws Conflict when activate transition is stale after pre-read', async () => {
+    prisma.contract.findFirst.mockResolvedValue({
+      id: 'contract-1',
+      tenantId: 'tenant-a',
+      applicationId: 'app-1',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      status: ContractStatus.DRAFT,
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('2000.00'),
+      financedAmount: new Prisma.Decimal('10000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      currency: 'THB',
+      activatedAt: null,
+      cancelledAt: null,
+      createdAt: new Date('2026-01-10T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-10T00:00:00.000Z'),
+    });
+    prisma.contract.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.activate(tenantCtx, 'contract-1')).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.imeiUnit.updateMany).not.toHaveBeenCalled();
+    expect(prisma.stockMovement.create).not.toHaveBeenCalled();
+  });
+
+  it('throws Conflict when IMEI status changed before activate SELL movement', async () => {
+    prisma.contract.findFirst.mockResolvedValue({
+      id: 'contract-1',
+      tenantId: 'tenant-a',
+      applicationId: 'app-1',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      status: ContractStatus.DRAFT,
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('2000.00'),
+      financedAmount: new Prisma.Decimal('10000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      currency: 'THB',
+      activatedAt: null,
+      cancelledAt: null,
+      createdAt: new Date('2026-01-10T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-10T00:00:00.000Z'),
+    });
+    prisma.imeiUnit.findFirst.mockResolvedValue({
+      id: 'imei-1',
+      tenantId: 'tenant-a',
+      branchId: 'branch-1',
+      status: ImeiStatus.RESERVED,
+    });
+    prisma.contract.updateMany.mockResolvedValue({ count: 1 });
+    prisma.imeiUnit.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.activate(tenantCtx, 'contract-1')).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.stockMovement.create).not.toHaveBeenCalled();
+  });
+
+  it('cancels DRAFT contract without changing IMEI', async () => {
+    prisma.contract.findFirst
+      .mockResolvedValueOnce({
+        id: 'contract-1',
+        tenantId: 'tenant-a',
+        applicationId: 'app-1',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        status: ContractStatus.DRAFT,
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('2000.00'),
+        financedAmount: new Prisma.Decimal('10000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        currency: 'THB',
+        activatedAt: null,
+        cancelledAt: null,
+        createdAt: new Date('2026-01-10T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-10T00:00:00.000Z'),
+      })
+      .mockResolvedValueOnce({
+        id: 'contract-1',
+        tenantId: 'tenant-a',
+        applicationId: 'app-1',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        status: ContractStatus.CANCELLED,
+        principal: new Prisma.Decimal('12000.00'),
+        downPayment: new Prisma.Decimal('2000.00'),
+        financedAmount: new Prisma.Decimal('10000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        currency: 'THB',
+        activatedAt: null,
+        cancelledAt: new Date('2026-01-15T00:00:00.000Z'),
+        createdAt: new Date('2026-01-10T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-15T00:00:00.000Z'),
+      });
+    prisma.contract.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(service.cancel(tenantCtx, 'contract-1')).resolves.toEqual(
+      expect.objectContaining({
+        id: 'contract-1',
+        status: ContractStatus.CANCELLED,
+      }),
+    );
+    expect(prisma.imeiUnit.updateMany).not.toHaveBeenCalled();
+    expect(prisma.stockMovement.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects cancel when contract is already ACTIVE', async () => {
+    prisma.contract.findFirst.mockResolvedValue({
+      id: 'contract-1',
+      tenantId: 'tenant-a',
+      applicationId: 'app-1',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      status: ContractStatus.ACTIVE,
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('2000.00'),
+      financedAmount: new Prisma.Decimal('10000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      currency: 'THB',
+      activatedAt: new Date('2026-01-15T00:00:00.000Z'),
+      cancelledAt: null,
+      createdAt: new Date('2026-01-10T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-15T00:00:00.000Z'),
+    });
+    prisma.contract.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.cancel(tenantCtx, 'contract-1')).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.imeiUnit.updateMany).not.toHaveBeenCalled();
+    expect(prisma.stockMovement.create).not.toHaveBeenCalled();
   });
 });

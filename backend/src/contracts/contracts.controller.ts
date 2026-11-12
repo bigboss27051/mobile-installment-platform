@@ -29,4 +29,16 @@ export class ContractsController {
     const contract = await this.contracts.getById(user, id);
     return { data: contract };
   }
+
+  @Post('contracts/:id/activate')
+  async activate(@Param('id', new ParseUUIDPipe()) id: string, @CurrentUser() user: TenantContext) {
+    const contract = await this.contracts.activate(user, id);
+    return { data: contract };
+  }
+
+  @Post('contracts/:id/cancel')
+  async cancel(@Param('id', new ParseUUIDPipe()) id: string, @CurrentUser() user: TenantContext) {
+    const contract = await this.contracts.cancel(user, id);
+    return { data: contract };
+  }
 }
