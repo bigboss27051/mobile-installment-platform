@@ -45,6 +45,38 @@ enum StockMovementType {
   ADJUST
 }
 
+enum CustomerStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum KycCaseStatus {
+  DRAFT
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  NEEDS_RESUBMIT
+}
+
+enum KycDocumentType {
+  ID_FRONT
+  ID_BACK
+  SELFIE
+  OTHER
+}
+
+enum ConsentType {
+  PDPA_PROCESSING
+  MARKETING
+}
+
+enum KycReviewDecision {
+  APPROVE
+  REJECT
+  REQUEST_RESUBMIT
+}
+
 model Tenant {
   id        String       @id @default(uuid()) @db.Uuid
   name      String
@@ -57,6 +89,11 @@ model Tenant {
   variants  ProductVariant[]
   imeiUnits ImeiUnit[]
   stockMovements StockMovement[]
+  customers       Customer[]
+  kycCases        KycCase[]
+  kycDocuments    KycDocument[]
+  consents        Consent[]
+  kycReviewActions KycReviewAction[]
 
   @@map("tenants")
 }
@@ -89,9 +126,99 @@ model User {
   tenant        Tenant?        @relation(fields: [tenantId], references: [id])
   refreshTokens RefreshToken[]
   stockMovements StockMovement[]
+  kycDocumentsUploaded KycDocument[]
+  kycReviewActions     KycReviewAction[]
 
   @@index([tenantId])
   @@map("users")
+}
+
+model Customer {
+  id                  String         @id @default(uuid()) @db.Uuid
+  tenantId            String         @map("tenant_id") @db.Uuid
+  fullName            String         @map("full_name")
+  phone               String
+  nationalIdEncrypted String         @map("national_id_encrypted")
+  nationalIdHash      String         @map("national_id_hash")
+  nationalIdLast4     String         @map("national_id_last4")
+  status              CustomerStatus @default(ACTIVE)
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+  tenant              Tenant         @relation(fields: [tenantId], references: [id])
+  kycCases            KycCase[]
+  consents            Consent[]
+
+  @@unique([tenantId, phone])
+  @@index([tenantId, nationalIdHash])
+  @@map("customers")
+}
+
+model KycCase {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  customerId     String        @map("customer_id") @db.Uuid
+  status         KycCaseStatus @default(DRAFT)
+  ocrProvider    String?       @map("ocr_provider")
+  ocrSummaryJson Json?         @map("ocr_summary_json")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  documents      KycDocument[]
+  reviewActions  KycReviewAction[]
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, status])
+  @@map("kyc_cases")
+}
+
+model KycDocument {
+  id               String          @id @default(uuid()) @db.Uuid
+  tenantId         String          @map("tenant_id") @db.Uuid
+  kycCaseId        String          @map("kyc_case_id") @db.Uuid
+  type             KycDocumentType
+  storageKey       String          @map("storage_key")
+  mimeType         String          @map("mime_type")
+  checksum         String?
+  uploadedByUserId String          @map("uploaded_by_user_id") @db.Uuid
+  createdAt        DateTime        @default(now()) @map("created_at")
+  tenant           Tenant          @relation(fields: [tenantId], references: [id])
+  kycCase          KycCase         @relation(fields: [kycCaseId], references: [id])
+  uploadedBy       User            @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([tenantId, kycCaseId])
+  @@map("kyc_documents")
+}
+
+model Consent {
+  id         String      @id @default(uuid()) @db.Uuid
+  tenantId   String      @map("tenant_id") @db.Uuid
+  customerId String      @map("customer_id") @db.Uuid
+  type       ConsentType
+  version    String
+  grantedAt  DateTime    @map("granted_at")
+  revokedAt  DateTime?   @map("revoked_at")
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  customer   Customer    @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@map("consents")
+}
+
+model KycReviewAction {
+  id         String            @id @default(uuid()) @db.Uuid
+  tenantId   String            @map("tenant_id") @db.Uuid
+  kycCaseId  String            @map("kyc_case_id") @db.Uuid
+  actorUserId String           @map("actor_user_id") @db.Uuid
+  decision   KycReviewDecision
+  reason     String?
+  createdAt  DateTime          @default(now()) @map("created_at")
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  kycCase    KycCase           @relation(fields: [kycCaseId], references: [id])
+  actor      User              @relation(fields: [actorUserId], references: [id])
+
+  @@index([tenantId, kycCaseId])
+  @@map("kyc_review_actions")
 }
 
 model RefreshToken {
