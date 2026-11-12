@@ -29,3 +29,7 @@
 | D-025 | 2026-11-12 | Hardcoded scorecard pure function r1c-v1 | Testable advisory scoring; bureau later | Accepted |
 | D-026 | 2026-11-12 | Submit reserves IMEI; reject/cancel releases | BR-3.4 stock truth; SOLD deferred to R1d | Accepted |
 | D-027 | 2026-11-12 | Application decisions OWNER/STAFF only | Align R1b; CREDIT_OFFICER with full RBAC later | Accepted |
+| D-028 | 2026-11-12 | R1d backend Contract+Schedule only | UI/e-sign/payments deferred | Accepted |
+| D-029 | 2026-11-12 | Contract DRAFT then ACTIVATE (SOLD) | Review schedule before committing stock | Accepted |
+| D-030 | 2026-11-12 | Schedule r1d-v1 flat+reducing half-up THB | Matches BR-6 + golden tests | Accepted |
+| D-031 | 2026-11-12 | Activate status+IMEI SOLD atomic | Avoid post-commit inventory drift | Accepted |
