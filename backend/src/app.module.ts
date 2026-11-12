@@ -4,6 +4,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { HealthModule } from './health/health.module';
+import { InventoryModule } from './inventory/inventory.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TenantsModule } from './tenants/tenants.module';
 
@@ -19,6 +20,7 @@ import { TenantsModule } from './tenants/tenants.module';
     TenantsModule,
     AuthModule,
     CatalogModule,
+    InventoryModule,
   ],
 })
 export class AppModule {}
