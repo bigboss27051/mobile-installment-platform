@@ -14,6 +14,11 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
+  app.enableCors({
+    origin: process.env.MERCHANT_WEB_ORIGIN ?? 'http://localhost:5173',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key'],
+  });
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   await app.listen(port);
 }

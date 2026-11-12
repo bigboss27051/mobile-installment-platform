@@ -141,6 +141,7 @@ enum LedgerDomain {
 model Tenant {
   id        String       @id @default(uuid()) @db.Uuid
   name      String
+  slug      String       @unique
   status    TenantStatus @default(PENDING)
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
@@ -166,6 +167,7 @@ model Tenant {
   paymentTransactions PaymentTransaction[]
   allocations         Allocation[]
   ledgerEntries       LedgerEntry[]
+  customerOtpChallenges CustomerOtpChallenge[]
 
   @@map("tenants")
 }
@@ -223,10 +225,28 @@ model Customer {
   consents            Consent[]
   applications        Application[]
   contracts           Contract[]
+  createdPaymentIntents PaymentIntent[]
+  otpChallenges         CustomerOtpChallenge[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, nationalIdHash])
   @@map("customers")
+}
+
+model CustomerOtpChallenge {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  customerId  String    @map("customer_id") @db.Uuid
+  phone       String
+  codeHash    String    @map("code_hash")
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  customer    Customer  @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, phone, createdAt])
+  @@map("customer_otp_challenges")
 }
 
 model KycCase {
@@ -551,14 +571,16 @@ model PaymentIntent {
   status          PaymentIntentStatus @default(CREATED)
   provider        String
   providerRef     String?             @map("provider_ref")
-  qrPayloadJson   Json?               @map("qr_payload_json")
-  createdByUserId String              @map("created_by_user_id") @db.Uuid
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  tenant          Tenant              @relation(fields: [tenantId], references: [id])
-  contract        Contract            @relation(fields: [contractId], references: [id])
-  createdBy       User                @relation(fields: [createdByUserId], references: [id])
-  transaction     PaymentTransaction?
+  qrPayloadJson        Json?               @map("qr_payload_json")
+  createdByUserId      String?             @map("created_by_user_id") @db.Uuid
+  createdByCustomerId  String?             @map("created_by_customer_id") @db.Uuid
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+  tenant               Tenant              @relation(fields: [tenantId], references: [id])
+  contract             Contract            @relation(fields: [contractId], references: [id])
+  createdBy            User?               @relation(fields: [createdByUserId], references: [id])
+  createdByCustomer    Customer?           @relation(fields: [createdByCustomerId], references: [id])
+  transaction          PaymentTransaction?
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId, contractId])

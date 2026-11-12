@@ -41,6 +41,8 @@ jobs:
       OCR_PROVIDER: sandbox
       PAYMENT_WEBHOOK_SECRET: ci-payment-webhook-secret-32chars-min
       PAYMENT_PROVIDER: sandbox
+      CUSTOMER_OTP_SANDBOX_CODE: "123456"
+      MERCHANT_WEB_ORIGIN: http://localhost:5173
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
@@ -56,3 +58,30 @@ jobs:
       - run: pnpm --filter @mip/backend typecheck
       - run: pnpm --filter @mip/backend test
       - run: pnpm --filter @mip/backend test:e2e
+
+  merchant-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm --filter @mip/merchant-web typecheck
+      - run: pnpm --filter @mip/merchant-web test
+
+  customer-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+        working-directory: apps/customer-mobile
+      - run: flutter test
+        working-directory: apps/customer-mobile

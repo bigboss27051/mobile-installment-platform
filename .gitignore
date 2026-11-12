@@ -9,3 +9,8 @@ backend/prisma/*.db
 .turbo
 /storage/
 backend/storage/
+apps/merchant-web/dist
+apps/customer-mobile/.dart_tool
+apps/customer-mobile/build
+apps/customer-mobile/.flutter-plugins
+apps/customer-mobile/.flutter-plugins-dependencies

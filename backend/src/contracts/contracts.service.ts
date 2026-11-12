@@ -38,6 +38,7 @@ export type PaymentScheduleItemResponse = {
   interestDue: string;
   feesDue: string;
   totalDue: string;
+  amountPaid: string;
   status: ScheduleItemStatus;
 };
 
@@ -450,6 +451,7 @@ export class ContractsService {
         interestDue: item.interestDue.toFixed(2),
         feesDue: item.feesDue.toFixed(2),
         totalDue: item.totalDue.toFixed(2),
+        amountPaid: item.amountPaid.toFixed(2),
         status: item.status,
       })),
     };

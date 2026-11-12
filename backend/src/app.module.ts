@@ -11,6 +11,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { KycModule } from './kyc/kyc.module';
 import { OcrModule } from './common/ocr/ocr.module';
 import { PaymentsModule } from './payments/payments.module';
+import { PortalModule } from './portal/portal.module';
 import { PlansModule } from './plans/plans.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './common/storage/storage.module';
@@ -35,6 +36,7 @@ import { TenantsModule } from './tenants/tenants.module';
     CatalogModule,
     InventoryModule,
     PaymentsModule,
+    PortalModule,
     StorageModule,
     OcrModule,
   ],

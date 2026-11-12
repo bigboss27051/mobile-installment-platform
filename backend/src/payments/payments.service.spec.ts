@@ -74,6 +74,7 @@ describe('PaymentsService', () => {
     providerRef: 'sandbox_11111111-1111-4111-8111-111111111111',
     qrPayloadJson: { type: 'promptpay' },
     createdByUserId: 'user-1',
+    createdByCustomerId: null,
     createdAt,
     updatedAt: createdAt,
   };
@@ -384,6 +385,7 @@ describe('PaymentsService', () => {
         providerRef: null,
         qrPayloadJson: Prisma.JsonNull,
         createdByUserId: 'user-1',
+        createdByCustomerId: null,
       }),
     });
     expect(gateway.createPromptPayIntent).toHaveBeenCalledWith({
@@ -407,6 +409,22 @@ describe('PaymentsService', () => {
     expect(
       gateway.createPromptPayIntent.mock.invocationCallOrder[0],
     ).toBeLessThan(prisma.paymentIntent.update.mock.invocationCallOrder[0]);
+  });
+
+  it('does not create a customer intent for another customer contract', async () => {
+    prisma.contract.findFirst.mockResolvedValue(null);
+    const customerCtx = {
+      tenantId: 'tenant-a',
+      userId: '',
+      role: null,
+      customerId: 'cust-2',
+      audience: 'customer' as const,
+    };
+
+    await expect(
+      service.createIntent(customerCtx, 'contract-1', '100.00', 'idem-c'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
   });
 
   it('marks the created intent FAILED when gateway creation fails', async () => {

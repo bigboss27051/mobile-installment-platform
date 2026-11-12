@@ -63,7 +63,8 @@ export type PaymentIntentResponse = {
   provider: string;
   providerRef: string | null;
   qrPayload: unknown;
-  createdByUserId: string;
+  createdByUserId: string | null;
+  createdByCustomerId: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -93,7 +94,7 @@ export class PaymentsService {
     idempotencyKey: string | undefined,
   ): Promise<PaymentIntentResponse> {
     const tenantId = this.requireTenantId(ctx);
-    this.requireMutateRole(ctx);
+    this.assertCanCreateIntent(ctx);
     const normalizedIdempotencyKey = this.requireIdempotencyKey(idempotencyKey);
     const amount = this.parseIntentAmount(amountInput);
 
@@ -110,6 +111,7 @@ export class PaymentsService {
       where: {
         id: contractId,
         tenantId,
+        ...(this.isCustomer(ctx) ? { customerId: ctx.customerId ?? undefined } : {}),
       },
       select: {
         id: true,
@@ -147,7 +149,8 @@ export class PaymentsService {
           provider: 'sandbox',
           providerRef: null,
           qrPayloadJson: Prisma.JsonNull,
-          createdByUserId: ctx.userId,
+          createdByUserId: this.isCustomer(ctx) ? null : ctx.userId,
+          createdByCustomerId: this.isCustomer(ctx) ? ctx.customerId : null,
         },
       });
     } catch (error: unknown) {
@@ -201,6 +204,9 @@ export class PaymentsService {
       where: {
         id: intentId,
         tenantId,
+        ...(this.isCustomer(ctx)
+          ? { contract: { customerId: ctx.customerId ?? undefined } }
+          : {}),
       },
     });
     if (!intent) {
@@ -609,6 +615,20 @@ export class PaymentsService {
     return ctx.tenantId;
   }
 
+  private isCustomer(ctx: TenantContext): boolean {
+    return ctx.audience === 'customer';
+  }
+
+  private assertCanCreateIntent(ctx: TenantContext): void {
+    if (this.isCustomer(ctx)) {
+      if (!ctx.customerId) {
+        throw new ForbiddenException('Customer context required.');
+      }
+      return;
+    }
+    this.requireMutateRole(ctx);
+  }
+
   private requireMutateRole(ctx: TenantContext): void {
     if (
       ctx.role !== PlatformRole.MERCHANT_OWNER &&
@@ -641,6 +661,7 @@ export class PaymentsService {
       providerRef: intent.providerRef,
       qrPayload: intent.qrPayloadJson,
       createdByUserId: intent.createdByUserId,
+      createdByCustomerId: intent.createdByCustomerId,
       createdAt: intent.createdAt,
       updatedAt: intent.updatedAt,
     };

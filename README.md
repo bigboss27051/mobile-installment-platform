@@ -6,7 +6,7 @@ Multi-tenant installment management platform for mobile phone retailers in **Tha
 
 ## Current status
 
-**R0 foundation scaffold** on `develop`: NestJS backend, Docker Compose (Postgres/Redis), Prisma tenant schema, auth (register/login/refresh), tenant isolation tests, and GitHub Actions CI.
+**R1 installment core** on `develop`: NestJS backend (R0–R1e) plus R1f Merchant Web and Customer Android critical paths. Live payments/MDM remain BLOCKED.
 
 Start here:
 
@@ -14,6 +14,9 @@ Start here:
 2. [docs/project-management/PROJECT-STATUS.md](docs/project-management/PROJECT-STATUS.md)
 3. [docs/product/PRD.md](docs/product/PRD.md)
 4. [docs/project-management/DECISION-LOG.md](docs/project-management/DECISION-LOG.md)
+
+Merchant Web (Vite): `pnpm --filter @mip/merchant-web dev` (proxies `/api` to port 3000).  
+Customer Android: `apps/customer-mobile` (`flutter run`; sandbox OTP `123456`).
 
 ## Planned monorepo layout
 

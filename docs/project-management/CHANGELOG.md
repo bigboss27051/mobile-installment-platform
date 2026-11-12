@@ -34,12 +34,18 @@
 - E2E: cross-tenant contract denial plus activate/cancel IMEI state invariants
 - E2E: payment intent idempotency, signed webhook FIFO allocate/replay, and cross-tenant intent denial
 
+- R1f customer OTP sandbox auth (`/auth/customer/otp/*`) and public tenant slug lookup
+- R1f customer portal APIs: `/me/contracts`, `/me/contracts/:id/payment-intents`
+- Merchant Web (`apps/merchant-web`) critical paths against real APIs
+- Customer Android (`apps/customer-mobile`) OTP login, contracts, PromptPay QR
+- CI jobs for merchant-web Vitest and Flutter unit tests
+
 ### Changed
 
 - README updated to point at discovery docs
-- `CURRENT-PHASE` and project status: R1e Payment verify + allocate complete; **R1f Merchant Web + Customer Android critical paths** is next
+- `CURRENT-PHASE` and project status: **R1f complete**; next = R2 Device
 - R1e exit criteria recorded as met; backend-only sandbox payments — no live Omise, refunds, UI, or device unlock claimed
 
 ### Decisions
 
-- See `DECISION-LOG.md` D-001..D-035 (R1a D-011..D-018; R1b D-019..D-023; R1c D-024..D-027; R1d D-028..D-029; R1e D-032..D-035)
+- See `DECISION-LOG.md` D-001..D-040 (R1f D-036..D-040)

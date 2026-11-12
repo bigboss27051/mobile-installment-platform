@@ -37,3 +37,8 @@
 | D-033 | 2026-11-12 | FIFO allocate by schedule seq with partial last item | Retail collection; multi-installment intents | Accepted |
 | D-034 | 2026-11-12 | PaymentGatewayPort + Sandbox; Omise target later | PromptPay-fit; Stripe not primary | Accepted |
 | D-035 | 2026-11-12 | Staff create payment intents in R1e | No customer auth yet; R1f adds customer path | Accepted |
+| D-036 | 2026-11-12 | R1f critical paths only (Merchant Web + Customer Android) | Avoid scaffolding every remaining app | Accepted |
+| D-037 | 2026-11-12 | Customer OTP JWT (`typ=customer`) not a User row | Reuse Customer records; isolate from staff RBAC | Accepted |
+| D-038 | 2026-11-12 | Public tenant slug lookup | Customers never send tenantId | Accepted |
+| D-039 | 2026-11-12 | Customers create sandbox intents for own ACTIVE contracts | Completes pay path from Android | Accepted |
+| D-040 | 2026-11-12 | Sandbox OTP env code; SMS BLOCKED | No SMS vendor in pilot | Accepted |

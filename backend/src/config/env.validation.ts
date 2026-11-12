@@ -16,4 +16,6 @@ export const envValidationSchema = Joi.object({
   JWT_REFRESH_SECRET: Joi.string().min(16).default('unused-refresh-secret'),
   JWT_ACCESS_TTL: Joi.string().default('15m'),
   JWT_REFRESH_TTL: Joi.string().default('7d'),
+  CUSTOMER_OTP_SANDBOX_CODE: Joi.string().default('123456'),
+  MERCHANT_WEB_ORIGIN: Joi.string().default('http://localhost:5173'),
 });

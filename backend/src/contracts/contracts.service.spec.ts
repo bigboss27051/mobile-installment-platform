@@ -139,6 +139,7 @@ describe('ContractsService', () => {
         interestDue: new Prisma.Decimal('100.00'),
         feesDue: new Prisma.Decimal('0.00'),
         totalDue: new Prisma.Decimal('1766.67'),
+        amountPaid: new Prisma.Decimal('0.00'),
         status: ScheduleItemStatus.PENDING,
       },
     ]);
@@ -265,6 +266,7 @@ describe('ContractsService', () => {
         interestDue: new Prisma.Decimal('100.00'),
         feesDue: new Prisma.Decimal('0.00'),
         totalDue: new Prisma.Decimal('1766.67'),
+        amountPaid: new Prisma.Decimal('0.00'),
         status: ScheduleItemStatus.PENDING,
       },
     ]);

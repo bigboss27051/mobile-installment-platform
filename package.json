@@ -7,6 +7,8 @@
     "test:backend": "pnpm --filter @mip/backend test",
     "test:backend:e2e": "pnpm --filter @mip/backend test:e2e",
     "lint:backend": "pnpm --filter @mip/backend lint",
-    "typecheck:backend": "pnpm --filter @mip/backend typecheck"
+    "typecheck:backend": "pnpm --filter @mip/backend typecheck",
+    "dev:merchant-web": "pnpm --filter @mip/merchant-web dev",
+    "test:merchant-web": "pnpm --filter @mip/merchant-web test"
   }
 }

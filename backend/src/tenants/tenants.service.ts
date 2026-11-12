@@ -1,8 +1,10 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InterestMethod, PlatformRole, Prisma, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
+import { allocateTenantSlug } from './tenant-slug';
 
 export interface CreateTenantWithOwnerInput {
   tenantName: string;
@@ -26,6 +28,7 @@ export class TenantsService {
       const tenant = await tx.tenant.create({
         data: {
           name: input.tenantName,
+          slug: allocateTenantSlug(input.tenantName, randomUUID()),
           status: TenantStatus.ACTIVE,
         },
       });
@@ -89,7 +92,12 @@ export class TenantsService {
 
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        branches: { select: { id: true, code: true, name: true } },
+      },
     });
 
     if (!tenant) {
@@ -97,5 +105,18 @@ export class TenantsService {
     }
 
     return tenant;
+  }
+
+  async getPublicBySlug(
+    slug: string,
+  ): Promise<{ id: string; name: string; slug: string }> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug: slug.trim() },
+      select: { id: true, name: true, slug: true, status: true },
+    });
+    if (!tenant || tenant.status !== TenantStatus.ACTIVE) {
+      throw new NotFoundException('Tenant not found.');
+    }
+    return { id: tenant.id, name: tenant.name, slug: tenant.slug };
   }
 }

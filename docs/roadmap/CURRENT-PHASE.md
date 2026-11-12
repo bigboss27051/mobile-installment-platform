@@ -1,15 +1,15 @@
-# Current Phase: R1f — Merchant Web + Customer Android Critical Paths
+# Current Phase: R1 complete on `develop` — next is R2 Device
 
-**Previous:** R1e Payment Verify + Allocate — **COMPLETE** on `develop`
+**Previous:** R1f Merchant Web + Customer Android critical paths — **COMPLETE** on `develop`
 
-## Scope
+## Scope (done)
 
-Merchant Web and Customer Android critical paths for the Thailand pilot: staff/customer payment UX on top of R1e sandbox intents/webhooks, contract/payment visibility, and the minimum journeys needed to exercise apply → approve → contract → pay end-to-end from clients. Live Omise/Opn remains BLOCKED without credentials.
+Merchant Web (React) and Customer Android (Flutter) critical paths on real `/api/v1` APIs: staff apply → approve → contract → sandbox PromptPay intent; customer OTP sandbox login, contract/schedule visibility, customer-scoped sandbox intents. Live Omise/Opn remains BLOCKED without credentials.
 
 ## Status
 
-R1e backend payments slice complete (schema, FIFO allocate, sandbox HMAC gateway, staff idempotent intents, webhook allocate + ledger, e2e isolation). Next: R1f client critical paths — brainstorm → design spec → plan before implementation.
+R1 installment core (R1a–R1f) delivered. Next gated slice: **R2 Device** (Android Device Owner / MDM) — blocked on hardware/proof for production claims; brainstorm → spec → plan before implementation.
 
 ## Out of Scope (still)
 
-Live Omise, refunds as a product feature, full MDM/device recovery claims, Stripe-as-PromptPay-primary, scaffolding all remaining apps in one change
+Live Omise, refunds as a product feature, full MDM/device recovery claims, Stripe-as-PromptPay-primary, Super Admin / Merchant Mobile / DPC scaffolding in one change

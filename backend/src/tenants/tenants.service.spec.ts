@@ -63,6 +63,7 @@ describe('TenantsService isolation', () => {
     expect(tx.tenant.create).toHaveBeenCalledWith({
       data: {
         name: 'Tenant A',
+        slug: expect.stringMatching(/^tenant-a-[a-z0-9]{8}$/),
         status: TenantStatus.ACTIVE,
       },
     });
@@ -122,6 +123,8 @@ describe('TenantsService isolation', () => {
     prisma.tenant.findUnique.mockResolvedValue({
       id: 'tenant-a',
       name: 'Tenant A',
+      slug: 'tenant-a-abcd1234',
+      branches: [{ id: 'branch-a', code: 'HQ', name: 'HQ' }],
     });
 
     await expect(
@@ -133,6 +136,8 @@ describe('TenantsService isolation', () => {
     ).resolves.toEqual({
       id: 'tenant-a',
       name: 'Tenant A',
+      slug: 'tenant-a-abcd1234',
+      branches: [{ id: 'branch-a', code: 'HQ', name: 'HQ' }],
     });
   });
 
