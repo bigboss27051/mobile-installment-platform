@@ -360,12 +360,81 @@ describe('PaymentsService', () => {
         status: PaymentIntentStatus.CREATED,
       }),
     });
-    expect(prisma.paymentIntent.update).toHaveBeenCalledWith({
-      where: { id: expect.any(String) },
+    expect(prisma.paymentIntent.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: expect.any(String),
+        tenantId: 'tenant-a',
+        status: {
+          in: [PaymentIntentStatus.CREATED, PaymentIntentStatus.FAILED],
+        },
+      },
       data: {
         status: PaymentIntentStatus.FAILED,
       },
     });
+  });
+
+  it('does not clobber AWAITING_PROVIDER when resume gateway fails after peer wins', async () => {
+    const createdIntent = {
+      ...intentRecord,
+      status: PaymentIntentStatus.CREATED,
+      providerRef: null,
+      qrPayloadJson: Prisma.JsonNull,
+    };
+    const peerWonIntent = {
+      ...createdIntent,
+      status: PaymentIntentStatus.AWAITING_PROVIDER,
+      provider: 'sandbox',
+      providerRef: 'sandbox_11111111-1111-4111-8111-111111111111',
+      qrPayloadJson: { type: 'promptpay' },
+    };
+    prisma.paymentIntent.findFirst
+      .mockResolvedValueOnce(createdIntent)
+      .mockResolvedValueOnce(peerWonIntent);
+    gateway.createPromptPayIntent.mockRejectedValue(new Error('gateway down'));
+    prisma.paymentIntent.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.createIntent(tenantCtx, 'contract-1', '1000.00', 'idem-1'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: createdIntent.id,
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+        providerRef: peerWonIntent.providerRef,
+      }),
+    );
+
+    expect(prisma.paymentIntent.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: createdIntent.id,
+        tenantId: 'tenant-a',
+        status: {
+          in: [PaymentIntentStatus.CREATED, PaymentIntentStatus.FAILED],
+        },
+      },
+      data: {
+        status: PaymentIntentStatus.FAILED,
+      },
+    });
+    expect(prisma.paymentIntent.update).not.toHaveBeenCalled();
+  });
+
+  it('rethrows when resume gateway fails and intent remains FAILED', async () => {
+    const failedIntent = {
+      ...intentRecord,
+      status: PaymentIntentStatus.FAILED,
+      providerRef: null,
+      qrPayloadJson: Prisma.JsonNull,
+    };
+    prisma.paymentIntent.findFirst
+      .mockResolvedValueOnce(failedIntent)
+      .mockResolvedValueOnce(failedIntent);
+    gateway.createPromptPayIntent.mockRejectedValue(new Error('gateway down'));
+    prisma.paymentIntent.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      service.createIntent(tenantCtx, 'contract-1', '1000.00', 'idem-1'),
+    ).rejects.toThrow('gateway down');
   });
 
   it('rejects non-ACTIVE contracts with 409', async () => {

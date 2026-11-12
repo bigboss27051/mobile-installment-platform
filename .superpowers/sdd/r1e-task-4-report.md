@@ -1,6 +1,6 @@
 # R1e Task 4 — Payment intent create + get
 
-**Status:** DONE — fixed remaining Important idempotency finding
+**Status:** DONE — concurrency-safe `markIntentFailed` + resume peer-win handling
 
 ## Implemented
 
@@ -15,8 +15,9 @@
   - Amount parsed via `parseThbMoneyString`; invalid/zero/overpay returns `422`
   - Creates the `PaymentIntent` row with `CREATED` status before calling `gateway.createPromptPayIntent`, then updates provider fields and status to `AWAITING_PROVIDER`
   - Handles idempotency race by catching Prisma `P2002`, re-fetching, checking payload match, and returning the existing winner without calling the gateway
-  - Marks the created intent `FAILED` if gateway creation throws after the row is inserted
+  - Marks the created intent `FAILED` via guarded `updateMany` on `CREATED|FAILED` only if gateway creation throws after the row is inserted
   - Resumes existing idempotent intents stuck in `CREATED` or `FAILED` by calling the gateway with the original intent id, then applying provider fields with a guarded `updateMany` on `CREATED|FAILED`
+  - On resume gateway failure, re-fetches intent; if a concurrent peer already set `AWAITING_PROVIDER` with `providerRef`, returns that success instead of clobbering to `FAILED`
   - Existing `AWAITING_PROVIDER`, `SUCCEEDED`, `CANCELLED`, and `EXPIRED` intents remain idempotent returns without another gateway call
 - `GET /payment-intents/:id`
   - JWT guarded, tenant-scoped, `{ data }` response
@@ -28,7 +29,7 @@
 npm test -- payments.service.spec.ts
 ```
 
-Result: **13 passed** (blank idempotency key documented as service-level guard, overpay, idempotent reuse, `CREATED` resume, `FAILED` retry, `AWAITING_PROVIDER` no-op reuse, mismatched reuse `409`, P2002 race fallback, create-then-gateway-then-update happy path, gateway failure marks `FAILED`, non-ACTIVE conflict, missing/cross-tenant contract 404, cross-tenant get 404)
+Result: **15 passed** (prior 13 cases plus resume gateway failure with peer `AWAITING_PROVIDER` win, and resume failure rethrow when still `FAILED`)
 
 ```bash
 npm run typecheck
@@ -40,7 +41,7 @@ Result: **PASS**
 npm test
 ```
 
-Result: **21 test suites passed, 179 tests passed**
+Result: **21 test suites passed, 181 tests passed**
 
 IDE lint diagnostics for touched files: **none**
 
@@ -65,9 +66,8 @@ IDE lint diagnostics for touched files: **none**
 
 ## Issues / concerns
 
-- The prior provider-before-insert race has been fixed. Replayed `CREATED`/`FAILED` intents now call the gateway and use a guarded status update; if another request already moved the row out of those statuses, the service re-fetches and returns the current state.
-- The report file was written after the implementation commit so it can include the SHA below.
+- Concurrent resume: unconditional `markIntentFailed` could overwrite a peer’s `AWAITING_PROVIDER`; fixed with status-guarded `updateMany` and peer-win return path after resume gateway errors.
 
 ## Commit SHA
 
-See completion summary — `fix: resume payment intent create after CREATED or FAILED`
+`fix: prevent failed intent update from clobbering AWAITING_PROVIDER` (latest on `develop`)

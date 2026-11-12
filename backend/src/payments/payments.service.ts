@@ -151,7 +151,7 @@ export class PaymentsService {
       });
       return this.toResponse(updatedIntent);
     } catch (error: unknown) {
-      await this.markIntentFailed(intent.id);
+      await this.markIntentFailed(tenantId, intent.id);
       throw error;
     }
   }
@@ -251,7 +251,14 @@ export class PaymentsService {
         currency: 'THB',
       });
     } catch (error: unknown) {
-      await this.markIntentFailed(intent.id);
+      await this.markIntentFailed(tenantId, intent.id);
+      const currentIntent = await this.findById(tenantId, intent.id);
+      if (
+        currentIntent?.status === PaymentIntentStatus.AWAITING_PROVIDER &&
+        currentIntent.providerRef
+      ) {
+        return this.toResponse(currentIntent);
+      }
       throw error;
     }
 
@@ -308,9 +315,18 @@ export class PaymentsService {
     }
   }
 
-  private async markIntentFailed(intentId: string): Promise<void> {
-    await this.prisma.paymentIntent.update({
-      where: { id: intentId },
+  private async markIntentFailed(
+    tenantId: string,
+    intentId: string,
+  ): Promise<void> {
+    await this.prisma.paymentIntent.updateMany({
+      where: {
+        id: intentId,
+        tenantId,
+        status: {
+          in: [PaymentIntentStatus.CREATED, PaymentIntentStatus.FAILED],
+        },
+      },
       data: {
         status: PaymentIntentStatus.FAILED,
       },
