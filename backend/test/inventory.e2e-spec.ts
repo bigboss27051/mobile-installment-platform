@@ -115,6 +115,11 @@ describe('Inventory (e2e)', () => {
     const tokenB = regB.body.data.accessToken as string;
     const tenantAId = regA.body.data.user.tenantId as string;
     const branchAId = await resolveBranchIdForTenant(tenantAId);
+    const branchB2 = await prisma.branch.create({
+      data: { tenantId: tenantAId, code: 'B2', name: 'Branch 2' },
+      select: { id: true },
+    });
+    const branchB2Id = branchB2.id;
 
     const product = await request(app.getHttpServer())
       .post('/api/v1/products')
@@ -160,11 +165,12 @@ describe('Inventory (e2e)', () => {
       .post(`/api/v1/inventory/imeis/${imeiUnitId}/transfer`)
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
-        toBranchId: branchAId,
+        toBranchId: branchB2Id,
         reason: 'Cycle-count transfer',
       })
       .expect(201);
-    expect(transfer.body.data.branchId).toBe(branchAId);
+    expect(transfer.body.data.branchId).toBe(branchB2Id);
+    expect(transfer.body.data.branchId).not.toBe(branchAId);
     expect(transfer.body.data.status).toBe('AVAILABLE');
 
     const reserve = await request(app.getHttpServer())
