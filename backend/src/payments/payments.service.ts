@@ -309,7 +309,7 @@ export class PaymentsService {
               paymentTransactionId: transaction.id,
               domain: LedgerDomain.INSTALLMENT,
               direction: LedgerDirection.DEBIT,
-              accountCode: 'INSTALLMENT_CASH',
+              accountCode: 'CASH_CLEARING',
               amount,
             },
             {

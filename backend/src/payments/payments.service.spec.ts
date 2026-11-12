@@ -645,7 +645,7 @@ describe('PaymentsService', () => {
           paymentTransactionId: 'txn-1',
           domain: LedgerDomain.INSTALLMENT,
           direction: LedgerDirection.DEBIT,
-          accountCode: 'INSTALLMENT_CASH',
+          accountCode: 'CASH_CLEARING',
           amount: new Prisma.Decimal('1000.00'),
         },
         {
