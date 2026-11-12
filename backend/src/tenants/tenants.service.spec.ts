@@ -82,11 +82,6 @@ describe('TenantsService isolation', () => {
   });
 
   it('denies reading another tenant for merchant owner', async () => {
-    prisma.tenant.findUnique.mockResolvedValue({
-      id: 'tenant-b',
-      name: 'Tenant B',
-    });
-
     await expect(
       service.getTenantByIdForContext('tenant-b', {
         tenantId: 'tenant-a',
@@ -94,6 +89,8 @@ describe('TenantsService isolation', () => {
         role: PlatformRole.MERCHANT_OWNER,
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(prisma.tenant.findUnique).not.toHaveBeenCalled();
   });
 
   it('allows reading own tenant', async () => {
@@ -111,6 +108,24 @@ describe('TenantsService isolation', () => {
     ).resolves.toEqual({
       id: 'tenant-a',
       name: 'Tenant A',
+    });
+  });
+
+  it('allows super admin to read another tenant', async () => {
+    prisma.tenant.findUnique.mockResolvedValue({
+      id: 'tenant-b',
+      name: 'Tenant B',
+    });
+
+    await expect(
+      service.getTenantByIdForContext('tenant-b', {
+        tenantId: null,
+        userId: 'admin-1',
+        role: PlatformRole.SUPER_ADMIN,
+      }),
+    ).resolves.toEqual({
+      id: 'tenant-b',
+      name: 'Tenant B',
     });
   });
 });
