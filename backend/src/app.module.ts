@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { HealthModule } from './health/health.module';
@@ -17,6 +18,7 @@ import { TenantsModule } from './tenants/tenants.module';
     PrismaModule,
     TenantsModule,
     AuthModule,
+    CatalogModule,
   ],
 })
 export class AppModule {}
