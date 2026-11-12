@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ApplicationStatus, InterestMethod, PlatformRole, Prisma } from '@prisma/client';
 import { ApplicationsService } from './applications.service';
 
@@ -131,5 +131,118 @@ describe('ApplicationsService', () => {
         downPayment: '2000.00',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('maps unique violation on create to open-IMEI ConflictException', async () => {
+    prisma.customer.findFirst.mockResolvedValue({ id: 'customer-1' });
+    prisma.installmentPlan.findFirst.mockResolvedValue({
+      id: 'plan-1',
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+    });
+    prisma.imeiUnit.findFirst.mockResolvedValue({ id: 'imei-1' });
+    prisma.application.findFirst.mockResolvedValue(null);
+    prisma.application.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('duplicate open imei', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    );
+
+    await expect(
+      service.create(tenantCtx, {
+        customerId: '11111111-1111-4111-8111-111111111111',
+        imeiUnitId: '22222222-2222-4222-8222-222222222222',
+        planId: '33333333-3333-4333-8333-333333333333',
+        principal: '12000.00',
+        downPayment: '2000.00',
+      }),
+    ).rejects.toEqual(
+      expect.objectContaining({
+        message: 'Another open application already exists for this IMEI unit.',
+      }),
+    );
+  });
+
+  it('lists tenant-scoped applications', async () => {
+    prisma.application.findMany.mockResolvedValue([
+      {
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        customerId: 'customer-1',
+        imeiUnitId: 'imei-1',
+        planId: 'plan-1',
+        principal: new Prisma.Decimal('10000.00'),
+        downPayment: new Prisma.Decimal('1000.00'),
+        termMonths: 6,
+        interestMethod: InterestMethod.FLAT,
+        annualRate: new Prisma.Decimal('12.00'),
+        status: ApplicationStatus.DRAFT,
+        submittedAt: null,
+        decidedAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        scorecard: null,
+      },
+    ]);
+
+    await expect(service.list(tenantCtx)).resolves.toEqual([
+      expect.objectContaining({
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        principal: '10000.00',
+        downPayment: '1000.00',
+      }),
+    ]);
+    expect(prisma.application.findMany).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-a' },
+      orderBy: { createdAt: 'desc' },
+      include: { scorecard: true },
+    });
+  });
+
+  it('gets application by id scoped to tenant', async () => {
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      imeiUnitId: 'imei-1',
+      planId: 'plan-1',
+      principal: new Prisma.Decimal('10000.00'),
+      downPayment: new Prisma.Decimal('1000.00'),
+      termMonths: 6,
+      interestMethod: InterestMethod.FLAT,
+      annualRate: new Prisma.Decimal('12.00'),
+      status: ApplicationStatus.DRAFT,
+      submittedAt: null,
+      decidedAt: null,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      scorecard: null,
+    });
+
+    await expect(service.getById(tenantCtx, 'app-1')).resolves.toEqual(
+      expect.objectContaining({
+        id: 'app-1',
+        tenantId: 'tenant-a',
+        annualRate: '12.00',
+      }),
+    );
+    expect(prisma.application.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'app-1',
+        tenantId: 'tenant-a',
+      },
+      include: { scorecard: true },
+    });
+  });
+
+  it('throws NotFound when getById missing or from another tenant', async () => {
+    prisma.application.findFirst.mockResolvedValue(null);
+
+    await expect(service.getById(tenantCtx, 'missing')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

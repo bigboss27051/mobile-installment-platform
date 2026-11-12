@@ -40,6 +40,8 @@ export type ApplicationResponse = {
 @Injectable()
 export class ApplicationsService {
   constructor(private readonly prisma: PrismaService) {}
+  private static readonly OPEN_IMEI_CONFLICT_MESSAGE =
+    'Another open application already exists for this IMEI unit.';
 
   async create(ctx: TenantContext, input: CreateApplicationDto): Promise<ApplicationResponse> {
     const tenantId = this.requireTenantId(ctx);
@@ -106,24 +108,32 @@ export class ApplicationsService {
       select: { id: true },
     });
     if (existingOpen) {
-      throw new ConflictException('Another open application already exists for this IMEI unit.');
+      throw new ConflictException(ApplicationsService.OPEN_IMEI_CONFLICT_MESSAGE);
     }
 
-    const application = await this.prisma.application.create({
-      data: {
-        tenantId,
-        customerId: input.customerId,
-        imeiUnitId: input.imeiUnitId,
-        planId: plan.id,
-        principal,
-        downPayment,
-        termMonths: plan.termMonths,
-        interestMethod: plan.interestMethod,
-        annualRate: plan.annualRate,
-        status: ApplicationStatus.DRAFT,
-      },
-      include: { scorecard: true },
-    });
+    let application: Prisma.ApplicationGetPayload<{ include: { scorecard: true } }>;
+    try {
+      application = await this.prisma.application.create({
+        data: {
+          tenantId,
+          customerId: input.customerId,
+          imeiUnitId: input.imeiUnitId,
+          planId: plan.id,
+          principal,
+          downPayment,
+          termMonths: plan.termMonths,
+          interestMethod: plan.interestMethod,
+          annualRate: plan.annualRate,
+          status: ApplicationStatus.DRAFT,
+        },
+        include: { scorecard: true },
+      });
+    } catch (error: unknown) {
+      if (this.isUniqueConstraintViolation(error)) {
+        throw new ConflictException(ApplicationsService.OPEN_IMEI_CONFLICT_MESSAGE);
+      }
+      throw error;
+    }
 
     return this.toResponse(application);
   }
@@ -200,5 +210,9 @@ export class ApplicationsService {
       throw new ForbiddenException('Tenant context required.');
     }
     return ctx.tenantId;
+  }
+
+  private isUniqueConstraintViolation(error: unknown): boolean {
+    return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
   }
 }
