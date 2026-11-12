@@ -9,13 +9,15 @@ import {
   Prisma,
   StockMovementType,
 } from '@prisma/client';
+import { ReserveImeiDto } from './dto/reserve-imei.dto';
+import { TransferImeiDto } from './dto/transfer-imei.dto';
 import { InventoryService } from './inventory.service';
 
-describe('InventoryService.receive', () => {
+describe('InventoryService', () => {
   const tx = {
     branch: { findFirst: jest.fn() },
     productVariant: { findFirst: jest.fn() },
-    imeiUnit: { create: jest.fn() },
+    imeiUnit: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
     stockMovement: { create: jest.fn() },
   };
 
@@ -121,5 +123,160 @@ describe('InventoryService.receive', () => {
         imei: '356938035643809',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects reserve when not AVAILABLE', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.RESERVED,
+    });
+
+    await expect(
+      service.reserve(ctx, 'u1', {
+        reason: 'hold for order #1001',
+      } satisfies ReserveImeiDto),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('reserves AVAILABLE unit', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.AVAILABLE,
+    });
+    tx.imeiUnit.update.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.RESERVED,
+    });
+    tx.stockMovement.create.mockResolvedValue({ id: 'm2' });
+
+    await expect(
+      service.reserve(ctx, 'u1', {
+        reason: 'reserve for walk-in',
+      } satisfies ReserveImeiDto),
+    ).resolves.toMatchObject({ id: 'u1', status: ImeiStatus.RESERVED });
+
+    expect(tx.imeiUnit.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'u1' },
+        data: { status: ImeiStatus.RESERVED },
+      }),
+    );
+    expect(tx.stockMovement.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: StockMovementType.RESERVE,
+          fromBranchId: 'b1',
+          toBranchId: 'b1',
+          actorUserId: 'user-1',
+        }),
+      }),
+    );
+  });
+
+  it('transfers AVAILABLE unit to another branch', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.AVAILABLE,
+    });
+    tx.branch.findFirst.mockResolvedValue({ id: 'b2', tenantId: 'tenant-a' });
+    tx.imeiUnit.update.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b2',
+      status: ImeiStatus.AVAILABLE,
+    });
+    tx.stockMovement.create.mockResolvedValue({ id: 'm3' });
+
+    await expect(
+      service.transfer(ctx, 'u1', {
+        toBranchId: 'b2',
+        reason: 'redistribute stock',
+      } satisfies TransferImeiDto),
+    ).resolves.toMatchObject({ id: 'u1', branchId: 'b2' });
+
+    expect(tx.imeiUnit.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'u1' },
+        data: { branchId: 'b2' },
+      }),
+    );
+    expect(tx.stockMovement.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: StockMovementType.TRANSFER,
+          fromBranchId: 'b1',
+          toBranchId: 'b2',
+          actorUserId: 'user-1',
+        }),
+      }),
+    );
+  });
+
+  it('releases RESERVED unit back to AVAILABLE', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.RESERVED,
+    });
+    tx.imeiUnit.update.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.AVAILABLE,
+    });
+    tx.stockMovement.create.mockResolvedValue({ id: 'm4' });
+
+    await expect(
+      service.release(ctx, 'u1', { reason: 'customer no-show' }),
+    ).resolves.toMatchObject({ id: 'u1', status: ImeiStatus.AVAILABLE });
+
+    expect(tx.stockMovement.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: StockMovementType.RELEASE,
+          fromBranchId: 'b1',
+          toBranchId: 'b1',
+        }),
+      }),
+    );
+  });
+
+  it('marks RESERVED unit as SOLD', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.RESERVED,
+    });
+    tx.imeiUnit.update.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.SOLD,
+    });
+    tx.stockMovement.create.mockResolvedValue({ id: 'm5' });
+
+    await expect(
+      service.markSold(ctx, 'u1', { reason: 'invoice paid' }),
+    ).resolves.toMatchObject({ id: 'u1', status: ImeiStatus.SOLD });
+
+    expect(tx.stockMovement.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: StockMovementType.SELL,
+          fromBranchId: 'b1',
+          toBranchId: null,
+        }),
+      }),
+    );
   });
 });
