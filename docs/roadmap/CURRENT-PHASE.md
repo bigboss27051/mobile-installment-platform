@@ -15,6 +15,7 @@ Backend customer domain and KYC capture/validation. No Merchant Web or Flutter i
 - Spec: `docs/superpowers/specs/2026-11-12-r1a-inventory-imei-design.md`
 - Plan: `docs/superpowers/plans/2026-11-12-r1a-inventory-imei.md`
 - Exit: Prisma inventory models; catalog + inventory REST; tenant-scoped IMEI flows; e2e isolation; no Merchant Web in slice
+- Exception: authenticated tenant members are accepted without a full RBAC matrix in R1a; full matrix remains deferred to Phase 3 continuation (see D-018)
 
 ## Out of Scope (until later R1 slices)
 

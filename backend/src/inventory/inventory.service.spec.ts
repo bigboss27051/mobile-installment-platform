@@ -213,6 +213,26 @@ describe('InventoryService', () => {
     );
   });
 
+  it('maps transition race P2025 to ConflictException', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.AVAILABLE,
+    });
+    tx.imeiUnit.update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('record not found', {
+        code: 'P2025',
+        clientVersion: '6.0.0',
+      }),
+    );
+
+    await expect(service.reserve(ctx, 'u1', { reason: 'reserve for order' })).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(tx.stockMovement.create).not.toHaveBeenCalled();
+  });
+
   it('transfers AVAILABLE unit to another branch', async () => {
     tx.imeiUnit.findFirst.mockResolvedValue({
       id: 'u1',

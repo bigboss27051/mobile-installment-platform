@@ -119,10 +119,15 @@ export class InventoryService {
         throw new NotFoundException('Destination branch not found.');
       }
 
-      const updated = await tx.imeiUnit.update({
-        where: { id: imeiUnit.id, status: ImeiStatus.AVAILABLE },
-        data: { branchId: input.toBranchId },
-      });
+      let updated: ImeiUnit;
+      try {
+        updated = await tx.imeiUnit.update({
+          where: { id: imeiUnit.id, status: ImeiStatus.AVAILABLE },
+          data: { branchId: input.toBranchId },
+        });
+      } catch (error: unknown) {
+        this.rethrowTransitionRace(error);
+      }
 
       await tx.stockMovement.create({
         data: {
@@ -154,10 +159,15 @@ export class InventoryService {
         throw new ConflictException('IMEI unit must be AVAILABLE to reserve.');
       }
 
-      const updated = await tx.imeiUnit.update({
-        where: { id: imeiUnit.id, status: ImeiStatus.AVAILABLE },
-        data: { status: ImeiStatus.RESERVED },
-      });
+      let updated: ImeiUnit;
+      try {
+        updated = await tx.imeiUnit.update({
+          where: { id: imeiUnit.id, status: ImeiStatus.AVAILABLE },
+          data: { status: ImeiStatus.RESERVED },
+        });
+      } catch (error: unknown) {
+        this.rethrowTransitionRace(error);
+      }
 
       await tx.stockMovement.create({
         data: {
@@ -189,10 +199,15 @@ export class InventoryService {
         throw new ConflictException('IMEI unit must be RESERVED to release.');
       }
 
-      const updated = await tx.imeiUnit.update({
-        where: { id: imeiUnit.id, status: ImeiStatus.RESERVED },
-        data: { status: ImeiStatus.AVAILABLE },
-      });
+      let updated: ImeiUnit;
+      try {
+        updated = await tx.imeiUnit.update({
+          where: { id: imeiUnit.id, status: ImeiStatus.RESERVED },
+          data: { status: ImeiStatus.AVAILABLE },
+        });
+      } catch (error: unknown) {
+        this.rethrowTransitionRace(error);
+      }
 
       await tx.stockMovement.create({
         data: {
@@ -224,10 +239,15 @@ export class InventoryService {
         throw new ConflictException('IMEI unit must be RESERVED to mark sold.');
       }
 
-      const updated = await tx.imeiUnit.update({
-        where: { id: imeiUnit.id, status: ImeiStatus.RESERVED },
-        data: { status: ImeiStatus.SOLD },
-      });
+      let updated: ImeiUnit;
+      try {
+        updated = await tx.imeiUnit.update({
+          where: { id: imeiUnit.id, status: ImeiStatus.RESERVED },
+          data: { status: ImeiStatus.SOLD },
+        });
+      } catch (error: unknown) {
+        this.rethrowTransitionRace(error);
+      }
 
       await tx.stockMovement.create({
         data: {
@@ -325,5 +345,14 @@ export class InventoryService {
       throw new ForbiddenException('Tenant context required.');
     }
     return ctx.tenantId;
+  }
+
+  private rethrowTransitionRace(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      throw new ConflictException(
+        'IMEI unit changed by another process. Refresh and retry with current status.',
+      );
+    }
+    throw error;
   }
 }

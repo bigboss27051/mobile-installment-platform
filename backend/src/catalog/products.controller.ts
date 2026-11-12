@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ProductVariant } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
@@ -28,14 +36,17 @@ export class ProductsController {
   }
 
   @Get(':id')
-  async getProduct(@Param('id') id: string, @CurrentUser() user: TenantContext) {
+  async getProduct(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: TenantContext,
+  ) {
     const product = await this.products.getProductById(user, id);
     return { data: product };
   }
 
   @Post(':id/variants')
   async createVariant(
-    @Param('id') productId: string,
+    @Param('id', new ParseUUIDPipe()) productId: string,
     @Body() input: CreateVariantDto,
     @CurrentUser() user: TenantContext,
   ) {
@@ -45,7 +56,7 @@ export class ProductsController {
 
   @Get(':id/variants')
   async listVariants(
-    @Param('id') productId: string,
+    @Param('id', new ParseUUIDPipe()) productId: string,
     @CurrentUser() user: TenantContext,
   ) {
     const variants = await this.products.listVariants(user, productId);

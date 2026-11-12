@@ -12,7 +12,7 @@
 - R1a inventory design spec and implementation plan (`docs/superpowers/specs/`, `docs/superpowers/plans/`)
 - Backend catalog module: product and variant create with `Decimal` price (THB)
 - Backend inventory module: IMEI receive, transfer, reserve, release; movement audit
-- REST: `/api/v1/catalog/*`, `/api/v1/inventory/*` with JWT tenant scope
+- REST: `/api/v1/products`, `/api/v1/inventory/*` with JWT tenant scope
 - E2E: cross-tenant inventory denial and stock flow (receive → transfer → reserve → release)
 
 ### Changed

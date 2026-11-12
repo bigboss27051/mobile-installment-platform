@@ -3,24 +3,21 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ImeiStatus, ProductVariant } from '@prisma/client';
+import { ProductVariant } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
+import { ListImeiUnitsQueryDto } from './dto/list-imei-units-query.dto';
+import { ListMovementsQueryDto } from './dto/list-movements-query.dto';
 import { ReceiveImeiDto } from './dto/receive-imei.dto';
 import { ReserveImeiDto } from './dto/reserve-imei.dto';
 import { TransferImeiDto } from './dto/transfer-imei.dto';
 import { InventoryService } from './inventory.service';
-
-interface ListImeiQuery {
-  imei?: string;
-  branchId?: string;
-  status?: ImeiStatus;
-}
 
 @Controller('inventory')
 @UseGuards(JwtAuthGuard)
@@ -34,7 +31,10 @@ export class InventoryController {
   }
 
   @Get('imeis')
-  async listImeiUnits(@Query() query: ListImeiQuery, @CurrentUser() user: TenantContext) {
+  async listImeiUnits(
+    @Query() query: ListImeiUnitsQueryDto,
+    @CurrentUser() user: TenantContext,
+  ) {
     const imeiUnits = await this.inventory.listImeiUnits(user, {
       imei: query.imei,
       branchId: query.branchId,
@@ -44,14 +44,17 @@ export class InventoryController {
   }
 
   @Get('imeis/:id')
-  async getImeiUnit(@Param('id') id: string, @CurrentUser() user: TenantContext) {
+  async getImeiUnit(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: TenantContext,
+  ) {
     const imeiUnit = await this.inventory.getImeiUnitById(user, id);
     return { data: this.serializeImeiUnit(imeiUnit) };
   }
 
   @Post('imeis/:id/transfer')
   async transfer(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() input: TransferImeiDto,
     @CurrentUser() user: TenantContext,
   ) {
@@ -61,7 +64,7 @@ export class InventoryController {
 
   @Post('imeis/:id/reserve')
   async reserve(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() input: ReserveImeiDto,
     @CurrentUser() user: TenantContext,
   ) {
@@ -71,7 +74,7 @@ export class InventoryController {
 
   @Post('imeis/:id/release')
   async release(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() input: ReserveImeiDto,
     @CurrentUser() user: TenantContext,
   ) {
@@ -81,10 +84,10 @@ export class InventoryController {
 
   @Get('movements')
   async listMovements(
-    @Query('imeiUnitId') imeiUnitId: string | undefined,
+    @Query() query: ListMovementsQueryDto,
     @CurrentUser() user: TenantContext,
   ) {
-    const movements = await this.inventory.listMovements(user, imeiUnitId);
+    const movements = await this.inventory.listMovements(user, query.imeiUnitId);
     return { data: movements };
   }
 

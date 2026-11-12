@@ -195,4 +195,43 @@ describe('Inventory (e2e)', () => {
     expect(fetched.body.data.variant.id).toBe(variantId);
     expect(fetched.body.data.variant.price).toBe('28990.00');
   });
+
+  it('returns 400 for invalid inventory query and route UUIDs', async () => {
+    const now = Date.now();
+
+    const reg = await request(app.getHttpServer())
+      .post('/api/v1/auth/register-owner')
+      .send({
+        tenantName: `Inventory Validation Tenant ${now}`,
+        branchCode: 'HQ',
+        branchName: 'HQ',
+        ownerEmail: `inv-validation-${now}@test.local`,
+        ownerPassword: 'Password1!',
+        ownerFullName: 'Inventory Validation Owner',
+      })
+      .expect(201);
+    trackRegistration(reg.body);
+
+    const token = reg.body.data.accessToken as string;
+
+    await request(app.getHttpServer())
+      .get('/api/v1/inventory/imeis?status=NOT_A_STATUS')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/inventory/imeis?branchId=not-a-uuid')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/inventory/movements?imeiUnitId=bad-uuid')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get('/api/v1/products/not-a-uuid')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+  });
 });

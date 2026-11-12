@@ -19,3 +19,4 @@
 | D-015 | 2026-11-12 | Statuses AVAILABLE/RESERVED/SOLD/TRANSFERRED_OUT | Enables reservation before contracts | Accepted |
 | D-016 | 2026-11-12 | R1a backend API only | UI deferred to R1f | Accepted |
 | D-017 | 2026-11-12 | Full inventory Nest domain in R1a | Avoid schema-only dead end | Accepted |
+| D-018 | 2026-11-12 | R1a auth scope accepts authenticated tenant members without full RBAC matrix | Keeps R1a slice focused; full RBAC matrix deferred to Phase 3 continuation per plan | Accepted |
