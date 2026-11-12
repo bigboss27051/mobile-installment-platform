@@ -101,6 +101,17 @@ enum ApplicationDecision {
   REJECT
 }
 
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  CANCELLED
+  CLOSED
+}
+
+enum ScheduleItemStatus {
+  PENDING
+}
+
 model Tenant {
   id        String       @id @default(uuid()) @db.Uuid
   name      String
@@ -122,6 +133,9 @@ model Tenant {
   applications     Application[]
   scorecardResults ScorecardResult[]
   approvalActions  ApprovalAction[]
+  contracts        Contract[]
+  contractVersions ContractVersion[]
+  paymentScheduleItems PaymentScheduleItem[]
 
   @@map("tenants")
 }
@@ -177,6 +191,7 @@ model Customer {
   kycCases            KycCase[]
   consents            Consent[]
   applications        Application[]
+  contracts           Contract[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, nationalIdHash])
@@ -315,6 +330,7 @@ model ImeiUnit {
   variant   ProductVariant @relation(fields: [variantId], references: [id])
   movements StockMovement[]
   applications Application[]
+  contracts    Contract[]
 
   @@unique([tenantId, imei])
   @@index([tenantId, branchId])
@@ -383,6 +399,7 @@ model Application {
   plan            InstallmentPlan   @relation(fields: [planId], references: [id])
   scorecard       ScorecardResult?
   approvalActions ApprovalAction[]
+  contracts       Contract[]
 
   @@index([tenantId, status])
   @@index([tenantId, customerId])
@@ -420,4 +437,72 @@ model ApprovalAction {
 
   @@index([tenantId, applicationId])
   @@map("approval_actions")
+}
+
+model Contract {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  applicationId  String         @map("application_id") @db.Uuid
+  customerId     String         @map("customer_id") @db.Uuid
+  imeiUnitId     String         @map("imei_unit_id") @db.Uuid
+  status         ContractStatus @default(DRAFT)
+  principal      Decimal        @db.Decimal(18, 2)
+  downPayment    Decimal        @map("down_payment") @db.Decimal(18, 2)
+  financedAmount Decimal        @map("financed_amount") @db.Decimal(18, 2)
+  termMonths     Int            @map("term_months")
+  interestMethod InterestMethod @map("interest_method")
+  annualRate     Decimal        @map("annual_rate") @db.Decimal(18, 2)
+  currency       String         @default("THB") @db.Char(3)
+  activatedAt    DateTime?      @map("activated_at")
+  cancelledAt    DateTime?      @map("cancelled_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+  application    Application    @relation(fields: [applicationId], references: [id])
+  customer       Customer       @relation(fields: [customerId], references: [id])
+  imeiUnit       ImeiUnit       @relation(fields: [imeiUnitId], references: [id])
+  versions       ContractVersion[]
+  scheduleItems  PaymentScheduleItem[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, applicationId])
+  @@map("contracts")
+}
+
+model ContractVersion {
+  id            String     @id @default(uuid()) @db.Uuid
+  tenantId      String     @map("tenant_id") @db.Uuid
+  contractId    String     @map("contract_id") @db.Uuid
+  version       Int
+  termsJson     Json       @map("terms_json")
+  scheduleHash  String     @map("schedule_hash")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  tenant        Tenant     @relation(fields: [tenantId], references: [id])
+  contract      Contract   @relation(fields: [contractId], references: [id])
+  scheduleItems PaymentScheduleItem[]
+
+  @@unique([contractId, version])
+  @@index([tenantId])
+  @@map("contract_versions")
+}
+
+model PaymentScheduleItem {
+  id                String             @id @default(uuid()) @db.Uuid
+  tenantId          String             @map("tenant_id") @db.Uuid
+  contractId        String             @map("contract_id") @db.Uuid
+  contractVersionId String             @map("contract_version_id") @db.Uuid
+  seq               Int
+  dueDate           DateTime           @map("due_date") @db.Date
+  principalDue      Decimal            @map("principal_due") @db.Decimal(18, 2)
+  interestDue       Decimal            @map("interest_due") @db.Decimal(18, 2)
+  feesDue           Decimal            @map("fees_due") @db.Decimal(18, 2)
+  totalDue          Decimal            @map("total_due") @db.Decimal(18, 2)
+  status            ScheduleItemStatus @default(PENDING)
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  contract          Contract           @relation(fields: [contractId], references: [id])
+  contractVersion   ContractVersion    @relation(fields: [contractVersionId], references: [id])
+
+  @@unique([contractVersionId, seq])
+  @@index([tenantId, contractId])
+  @@map("payment_schedule_items")
 }
