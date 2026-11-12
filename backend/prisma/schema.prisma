@@ -24,6 +24,27 @@ enum PlatformRole {
   MERCHANT_STAFF
 }
 
+enum CatalogStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ImeiStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  TRANSFERRED_OUT
+}
+
+enum StockMovementType {
+  RECEIVE
+  TRANSFER
+  RESERVE
+  RELEASE
+  SELL
+  ADJUST
+}
+
 model Tenant {
   id        String       @id @default(uuid()) @db.Uuid
   name      String
@@ -32,6 +53,10 @@ model Tenant {
   updatedAt DateTime     @updatedAt @map("updated_at")
   branches  Branch[]
   users     User[]
+  products  Product[]
+  variants  ProductVariant[]
+  imeiUnits ImeiUnit[]
+  stockMovements StockMovement[]
 
   @@map("tenants")
 }
@@ -44,6 +69,7 @@ model Branch {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  imeiUnits ImeiUnit[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -62,6 +88,7 @@ model User {
   updatedAt     DateTime       @updatedAt @map("updated_at")
   tenant        Tenant?        @relation(fields: [tenantId], references: [id])
   refreshTokens RefreshToken[]
+  stockMovements StockMovement[]
 
   @@index([tenantId])
   @@map("users")
@@ -78,4 +105,80 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model Product {
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  name      String
+  brand     String
+  status    CatalogStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  tenant    Tenant        @relation(fields: [tenantId], references: [id])
+  variants  ProductVariant[]
+
+  @@index([tenantId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  productId String        @map("product_id") @db.Uuid
+  sku       String
+  color     String
+  storage   String
+  price     Decimal       @db.Decimal(18, 2)
+  currency  String        @default("THB") @db.Char(3)
+  status    CatalogStatus @default(ACTIVE)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  tenant    Tenant        @relation(fields: [tenantId], references: [id])
+  product   Product       @relation(fields: [productId], references: [id])
+  imeiUnits ImeiUnit[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId])
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ImeiUnit {
+  id        String         @id @default(uuid()) @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  branchId  String         @map("branch_id") @db.Uuid
+  variantId String         @map("variant_id") @db.Uuid
+  imei      String
+  status    ImeiStatus     @default(AVAILABLE)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  tenant    Tenant         @relation(fields: [tenantId], references: [id])
+  branch    Branch         @relation(fields: [branchId], references: [id])
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  movements StockMovement[]
+
+  @@unique([tenantId, imei])
+  @@index([tenantId, branchId])
+  @@index([tenantId, status])
+  @@map("imei_units")
+}
+
+model StockMovement {
+  id           String            @id @default(uuid()) @db.Uuid
+  tenantId     String            @map("tenant_id") @db.Uuid
+  imeiUnitId   String            @map("imei_unit_id") @db.Uuid
+  type         StockMovementType
+  fromBranchId String?           @map("from_branch_id") @db.Uuid
+  toBranchId   String?           @map("to_branch_id") @db.Uuid
+  actorUserId  String            @map("actor_user_id") @db.Uuid
+  reason       String?
+  createdAt    DateTime          @default(now()) @map("created_at")
+  tenant       Tenant            @relation(fields: [tenantId], references: [id])
+  imeiUnit     ImeiUnit          @relation(fields: [imeiUnitId], references: [id])
+  actor        User              @relation(fields: [actorUserId], references: [id])
+
+  @@index([tenantId, imeiUnitId])
+  @@index([tenantId, createdAt])
+  @@map("stock_movements")
 }
