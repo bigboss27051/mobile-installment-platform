@@ -3,10 +3,11 @@ import { PaymentsGatewayModule } from '../common/payments/payments-gateway.modul
 import { PrismaModule } from '../prisma/prisma.module';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
+import { WebhooksController } from './webhooks.controller';
 
 @Module({
   imports: [PaymentsGatewayModule, PrismaModule],
-  controllers: [PaymentsController],
+  controllers: [PaymentsController, WebhooksController],
   providers: [PaymentsService],
   exports: [PaymentsService],
 })

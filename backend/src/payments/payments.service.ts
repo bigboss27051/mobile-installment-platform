@@ -5,11 +5,16 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   ContractStatus,
+  LedgerDirection,
+  LedgerDomain,
   PaymentIntentStatus,
+  PaymentTransaction,
+  PaymentTransactionStatus,
   PlatformRole,
   Prisma,
   ScheduleItemStatus,
@@ -19,6 +24,7 @@ import {
   PAYMENT_GATEWAY,
   PaymentGatewayPort,
 } from '../common/payments/payment-gateway.port';
+import { allocateFifo } from '../common/payments/allocate-fifo';
 import { parseThbMoneyString } from '../common/schedule/money';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
@@ -41,6 +47,17 @@ export type PaymentIntentResponse = {
   createdByUserId: string;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type SandboxWebhookSummary = {
+  data: {
+    providerEventId: string;
+    transactionId: string | null;
+    amount: string;
+    status: PaymentTransactionStatus | PaymentIntentStatus;
+    allocations?: { scheduleItemId: string; amount: string }[];
+    replay: boolean;
+  };
 };
 
 @Injectable()
@@ -173,6 +190,171 @@ export class PaymentsService {
     return this.toResponse(intent);
   }
 
+  async handleSandboxWebhook(
+    rawBody: Buffer,
+    headers: Record<string, string | string[] | undefined>,
+  ): Promise<SandboxWebhookSummary> {
+    const normalizedHeaders = this.normalizeHeaders(headers);
+    if (!this.gateway.verifyWebhookSignature(normalizedHeaders, rawBody)) {
+      throw new UnauthorizedException('Invalid sandbox webhook signature.');
+    }
+
+    const event = this.gateway.parseWebhookEvent(rawBody);
+    const amount = this.parseWebhookAmount(event.amount);
+
+    if (event.status === 'FAILED') {
+      await this.markIntentFailedByProviderRef(event.providerRef);
+      return {
+        data: {
+          providerEventId: event.providerEventId,
+          transactionId: null,
+          amount: amount.toFixed(2),
+          status: PaymentIntentStatus.FAILED,
+          replay: false,
+        },
+      };
+    }
+
+    const existing = await this.findTransactionByProviderEventId(
+      event.providerEventId,
+    );
+    if (existing) {
+      return this.toTransactionSummary(existing, true);
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const intent = await tx.paymentIntent.findFirst({
+          where: {
+            provider: 'sandbox',
+            providerRef: event.providerRef,
+          },
+        });
+        if (!intent) {
+          throw new NotFoundException('Payment intent not found for webhook.');
+        }
+        if (intent.status !== PaymentIntentStatus.AWAITING_PROVIDER) {
+          throw new ConflictException(
+            'Payment intent is not awaiting provider confirmation.',
+          );
+        }
+        if (intent.amount.toFixed(2) !== amount.toFixed(2)) {
+          throw new UnprocessableEntityException(
+            'Webhook amount does not match payment intent amount.',
+          );
+        }
+
+        const transaction = await tx.paymentTransaction.create({
+          data: {
+            tenantId: intent.tenantId,
+            paymentIntentId: intent.id,
+            providerEventId: event.providerEventId,
+            amount,
+            status: PaymentTransactionStatus.SUCCEEDED,
+            rawEventJson: event as unknown as Prisma.InputJsonValue,
+            verifiedAt: new Date(),
+          },
+        });
+
+        const scheduleItems = await tx.paymentScheduleItem.findMany({
+          where: {
+            tenantId: intent.tenantId,
+            contractId: intent.contractId,
+          },
+          orderBy: { seq: 'asc' },
+          select: {
+            id: true,
+            seq: true,
+            totalDue: true,
+            amountPaid: true,
+            status: true,
+          },
+        });
+        const allocations = allocateFifo(
+          scheduleItems.map((item) => ({
+            id: item.id,
+            seq: item.seq,
+            totalDue: item.totalDue.toFixed(2),
+            amountPaid: item.amountPaid.toFixed(2),
+            status: item.status,
+          })),
+          amount.toFixed(2),
+        );
+
+        for (const allocation of allocations) {
+          await tx.paymentScheduleItem.update({
+            where: { id: allocation.scheduleItemId },
+            data: {
+              amountPaid: new Prisma.Decimal(allocation.nextAmountPaid),
+              status: allocation.nextStatus,
+            },
+          });
+        }
+
+        if (allocations.length > 0) {
+          await tx.allocation.createMany({
+            data: allocations.map((allocation) => ({
+              tenantId: intent.tenantId,
+              paymentTransactionId: transaction.id,
+              scheduleItemId: allocation.scheduleItemId,
+              amount: new Prisma.Decimal(allocation.amount),
+            })),
+          });
+        }
+
+        await tx.ledgerEntry.createMany({
+          data: [
+            {
+              tenantId: intent.tenantId,
+              paymentTransactionId: transaction.id,
+              domain: LedgerDomain.INSTALLMENT,
+              direction: LedgerDirection.DEBIT,
+              accountCode: 'INSTALLMENT_CASH',
+              amount,
+            },
+            {
+              tenantId: intent.tenantId,
+              paymentTransactionId: transaction.id,
+              domain: LedgerDomain.INSTALLMENT,
+              direction: LedgerDirection.CREDIT,
+              accountCode: 'INSTALLMENT_RECEIVABLE',
+              amount,
+            },
+          ],
+        });
+
+        await tx.paymentIntent.update({
+          where: { id: intent.id },
+          data: { status: PaymentIntentStatus.SUCCEEDED },
+        });
+
+        return {
+          data: {
+            providerEventId: transaction.providerEventId,
+            transactionId: transaction.id,
+            amount: transaction.amount.toFixed(2),
+            status: transaction.status,
+            allocations: allocations.map((allocation) => ({
+              scheduleItemId: allocation.scheduleItemId,
+              amount: allocation.amount,
+            })),
+            replay: false,
+          },
+        };
+      });
+    } catch (error: unknown) {
+      if (this.isUniqueConstraintViolation(error)) {
+        const replay = await this.findTransactionByProviderEventId(
+          event.providerEventId,
+        );
+        if (replay) {
+          return this.toTransactionSummary(replay, true);
+        }
+      }
+      throw error;
+    }
+  }
+
   private async computeOutstanding(
     tenantId: string,
     contractId: string,
@@ -219,6 +401,14 @@ export class PaymentsService {
         id: intentId,
         tenantId,
       },
+    });
+  }
+
+  private async findTransactionByProviderEventId(
+    providerEventId: string,
+  ): Promise<PaymentTransaction | null> {
+    return this.prisma.paymentTransaction.findFirst({
+      where: { providerEventId },
     });
   }
 
@@ -300,6 +490,17 @@ export class PaymentsService {
     }
   }
 
+  private parseWebhookAmount(amount: string): Prisma.Decimal {
+    try {
+      return parseThbMoneyString(amount, 'webhook amount');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new UnprocessableEntityException(error.message);
+      }
+      throw error;
+    }
+  }
+
   private assertIdempotencyPayloadMatches(
     intent: PaymentIntentRecord,
     contractId: string,
@@ -326,6 +527,33 @@ export class PaymentsService {
         status: {
           in: [PaymentIntentStatus.CREATED, PaymentIntentStatus.FAILED],
         },
+      },
+      data: {
+        status: PaymentIntentStatus.FAILED,
+      },
+    });
+  }
+
+  private async markIntentFailedByProviderRef(providerRef: string): Promise<void> {
+    const intent = await this.prisma.paymentIntent.findFirst({
+      where: {
+        provider: 'sandbox',
+        providerRef,
+      },
+      select: {
+        id: true,
+        tenantId: true,
+      },
+    });
+    if (!intent) {
+      return;
+    }
+
+    await this.prisma.paymentIntent.updateMany({
+      where: {
+        id: intent.id,
+        tenantId: intent.tenantId,
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
       },
       data: {
         status: PaymentIntentStatus.FAILED,
@@ -375,6 +603,37 @@ export class PaymentsService {
       createdAt: intent.createdAt,
       updatedAt: intent.updatedAt,
     };
+  }
+
+  private toTransactionSummary(
+    transaction: PaymentTransaction,
+    replay: boolean,
+  ): SandboxWebhookSummary {
+    return {
+      data: {
+        providerEventId: transaction.providerEventId,
+        transactionId: transaction.id,
+        amount: transaction.amount.toFixed(2),
+        status: transaction.status,
+        replay,
+      },
+    };
+  }
+
+  private normalizeHeaders(
+    headers: Record<string, string | string[] | undefined>,
+  ): Record<string, string> {
+    return Object.fromEntries(
+      Object.entries(headers).flatMap(([key, value]) => {
+        if (typeof value === 'string') {
+          return [[key, value]];
+        }
+        if (Array.isArray(value) && value.length > 0) {
+          return [[key, value[0]]];
+        }
+        return [];
+      }),
+    );
   }
 
   private isUniqueConstraintViolation(error: unknown): boolean {
