@@ -36,6 +36,7 @@ describe('PaymentsService', () => {
     ledgerEntry: {
       createMany: jest.fn(),
     },
+    $queryRaw: jest.fn(),
     $transaction: jest.fn(),
   };
 
@@ -79,8 +80,8 @@ describe('PaymentsService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => unknown) =>
-      cb(prisma),
+    prisma.$transaction.mockImplementation(
+      async (cb: (tx: typeof prisma) => unknown) => cb(prisma),
     );
     prisma.paymentIntent.findFirst.mockResolvedValue(null);
     prisma.paymentTransaction.findFirst.mockResolvedValue(null);
@@ -135,6 +136,31 @@ describe('PaymentsService', () => {
     );
     prisma.allocation.createMany.mockResolvedValue({ count: 1 });
     prisma.ledgerEntry.createMany.mockResolvedValue({ count: 2 });
+    prisma.$queryRaw.mockImplementation((strings: TemplateStringsArray) => {
+      const sql = strings.join('');
+      if (sql.includes('FROM payment_intents')) {
+        return Promise.resolve([intentRecord]);
+      }
+      if (sql.includes('FROM payment_schedule_items')) {
+        return Promise.resolve([
+          {
+            id: 'item-1',
+            seq: 1,
+            totalDue: new Prisma.Decimal('1200.00'),
+            amountPaid: new Prisma.Decimal('200.00'),
+            status: ScheduleItemStatus.PARTIAL,
+          },
+          {
+            id: 'item-2',
+            seq: 2,
+            totalDue: new Prisma.Decimal('500.00'),
+            amountPaid: new Prisma.Decimal('0.00'),
+            status: ScheduleItemStatus.PENDING,
+          },
+        ]);
+      }
+      return Promise.resolve([]);
+    });
     gateway.verifyWebhookSignature.mockReturnValue(true);
     gateway.parseWebhookEvent.mockReturnValue({
       providerEventId: 'evt-1',
@@ -556,23 +582,25 @@ describe('PaymentsService', () => {
   });
 
   it('allocates a successful sandbox webhook FIFO and writes installment ledger entries', async () => {
-    prisma.paymentIntent.findFirst.mockResolvedValue(intentRecord);
-    prisma.paymentScheduleItem.findMany.mockResolvedValue([
-      {
-        id: 'item-1',
-        seq: 1,
-        totalDue: new Prisma.Decimal('600.00'),
-        amountPaid: new Prisma.Decimal('100.00'),
-        status: ScheduleItemStatus.PARTIAL,
-      },
-      {
-        id: 'item-2',
-        seq: 2,
-        totalDue: new Prisma.Decimal('900.00'),
-        amountPaid: new Prisma.Decimal('0.00'),
-        status: ScheduleItemStatus.PENDING,
-      },
-    ]);
+    prisma.paymentIntent.findFirst.mockResolvedValueOnce(intentRecord);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([intentRecord])
+      .mockResolvedValueOnce([
+        {
+          id: 'item-1',
+          seq: 1,
+          totalDue: new Prisma.Decimal('600.00'),
+          amountPaid: new Prisma.Decimal('100.00'),
+          status: ScheduleItemStatus.PARTIAL,
+        },
+        {
+          id: 'item-2',
+          seq: 2,
+          totalDue: new Prisma.Decimal('900.00'),
+          amountPaid: new Prisma.Decimal('0.00'),
+          status: ScheduleItemStatus.PENDING,
+        },
+      ]);
 
     await expect(
       service.handleSandboxWebhook(Buffer.from('{"providerEventId":"evt-1"}'), {
@@ -664,8 +692,139 @@ describe('PaymentsService', () => {
     });
   });
 
+  it('locks intent and schedule rows before allocating successful sandbox webhooks', async () => {
+    prisma.paymentIntent.findFirst.mockResolvedValueOnce(intentRecord);
+    prisma.$queryRaw
+      .mockResolvedValueOnce([intentRecord])
+      .mockResolvedValueOnce([
+        {
+          id: 'item-1',
+          seq: 1,
+          totalDue: new Prisma.Decimal('1000.00'),
+          amountPaid: new Prisma.Decimal('0.00'),
+          status: ScheduleItemStatus.PENDING,
+        },
+      ]);
+
+    await service.handleSandboxWebhook(
+      Buffer.from('{"providerEventId":"evt-1"}'),
+      {
+        'x-mip-signature': 'good',
+      },
+    );
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(String(prisma.$queryRaw.mock.calls[0][0])).toContain(
+      'FROM payment_intents',
+    );
+    expect(String(prisma.$queryRaw.mock.calls[0][0])).toContain('FOR UPDATE');
+    expect(String(prisma.$queryRaw.mock.calls[1][0])).toContain(
+      'FROM payment_schedule_items',
+    );
+    expect(String(prisma.$queryRaw.mock.calls[1][0])).toContain('FOR UPDATE');
+    expect(prisma.$queryRaw.mock.invocationCallOrder[1]).toBeLessThan(
+      prisma.paymentTransaction.create.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('persists FAILED sandbox webhooks and returns the stored replay summary', async () => {
+    gateway.parseWebhookEvent.mockReturnValue({
+      providerEventId: 'evt-failed',
+      providerRef: intentRecord.providerRef,
+      amount: '1000.00',
+      status: 'FAILED',
+    });
+    prisma.paymentTransaction.create.mockResolvedValueOnce({
+      id: 'txn-failed',
+      tenantId: 'tenant-a',
+      paymentIntentId: intentRecord.id,
+      providerEventId: 'evt-failed',
+      amount: new Prisma.Decimal('1000.00'),
+      status: PaymentTransactionStatus.FAILED,
+      rawEventJson: { providerEventId: 'evt-failed' },
+      verifiedAt: createdAt,
+      createdAt,
+    });
+    prisma.paymentTransaction.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'txn-failed',
+        tenantId: 'tenant-a',
+        paymentIntentId: intentRecord.id,
+        providerEventId: 'evt-failed',
+        amount: new Prisma.Decimal('1000.00'),
+        status: PaymentTransactionStatus.FAILED,
+        rawEventJson: { providerEventId: 'evt-failed' },
+        verifiedAt: createdAt,
+        createdAt,
+      });
+    prisma.$queryRaw.mockResolvedValue([intentRecord]);
+
+    await expect(
+      service.handleSandboxWebhook(
+        Buffer.from('{"providerEventId":"evt-failed"}'),
+        {
+          'x-mip-signature': 'good',
+        },
+      ),
+    ).resolves.toEqual({
+      data: {
+        providerEventId: 'evt-failed',
+        transactionId: 'txn-failed',
+        amount: '1000.00',
+        status: PaymentTransactionStatus.FAILED,
+        replay: false,
+      },
+    });
+
+    expect(prisma.paymentTransaction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: 'tenant-a',
+        paymentIntentId: intentRecord.id,
+        providerEventId: 'evt-failed',
+        amount: new Prisma.Decimal('1000.00'),
+        status: PaymentTransactionStatus.FAILED,
+        rawEventJson: {
+          providerEventId: 'evt-failed',
+          providerRef: intentRecord.providerRef,
+          amount: '1000.00',
+          status: 'FAILED',
+        },
+        verifiedAt: expect.any(Date),
+      }),
+    });
+    expect(prisma.paymentIntent.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: intentRecord.id,
+        tenantId: 'tenant-a',
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+      },
+      data: { status: PaymentIntentStatus.FAILED },
+    });
+    expect(prisma.allocation.createMany).not.toHaveBeenCalled();
+    expect(prisma.ledgerEntry.createMany).not.toHaveBeenCalled();
+
+    await expect(
+      service.handleSandboxWebhook(
+        Buffer.from('{"providerEventId":"evt-failed"}'),
+        {
+          'x-mip-signature': 'good',
+        },
+      ),
+    ).resolves.toEqual({
+      data: {
+        providerEventId: 'evt-failed',
+        transactionId: 'txn-failed',
+        amount: '1000.00',
+        status: PaymentTransactionStatus.FAILED,
+        replay: true,
+      },
+    });
+  });
+
   it('rejects sandbox webhooks when amount mismatches or intent status is wrong', async () => {
-    prisma.paymentIntent.findFirst.mockResolvedValue(intentRecord);
+    prisma.$queryRaw.mockResolvedValueOnce([intentRecord]);
     gateway.parseWebhookEvent.mockReturnValueOnce({
       providerEventId: 'evt-amount-mismatch',
       providerRef: intentRecord.providerRef,
@@ -674,13 +833,17 @@ describe('PaymentsService', () => {
     });
 
     await expect(
-      service.handleSandboxWebhook(Buffer.from('{}'), { 'x-mip-signature': 'good' }),
+      service.handleSandboxWebhook(Buffer.from('{}'), {
+        'x-mip-signature': 'good',
+      }),
     ).rejects.toBeInstanceOf(UnprocessableEntityException);
 
-    prisma.paymentIntent.findFirst.mockResolvedValue({
-      ...intentRecord,
-      status: PaymentIntentStatus.SUCCEEDED,
-    });
+    prisma.$queryRaw.mockResolvedValueOnce([
+      {
+        ...intentRecord,
+        status: PaymentIntentStatus.SUCCEEDED,
+      },
+    ]);
     gateway.parseWebhookEvent.mockReturnValueOnce({
       providerEventId: 'evt-wrong-status',
       providerRef: intentRecord.providerRef,
@@ -689,7 +852,9 @@ describe('PaymentsService', () => {
     });
 
     await expect(
-      service.handleSandboxWebhook(Buffer.from('{}'), { 'x-mip-signature': 'good' }),
+      service.handleSandboxWebhook(Buffer.from('{}'), {
+        'x-mip-signature': 'good',
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
 
     expect(prisma.paymentTransaction.create).not.toHaveBeenCalled();

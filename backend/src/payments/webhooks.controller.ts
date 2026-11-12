@@ -1,4 +1,10 @@
-import { Controller, Headers, Post, Req } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Headers,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentsService } from './payments.service';
 
@@ -13,9 +19,9 @@ export class WebhooksController {
     @Req() req: RawBodyRequest,
     @Headers() headers: Record<string, string | string[] | undefined>,
   ) {
-    const rawBody = Buffer.isBuffer(req.rawBody)
-      ? req.rawBody
-      : Buffer.from(JSON.stringify(req.body ?? {}));
-    return this.payments.handleSandboxWebhook(rawBody, headers);
+    if (!Buffer.isBuffer(req.rawBody)) {
+      throw new BadRequestException('Raw webhook body is required.');
+    }
+    return this.payments.handleSandboxWebhook(req.rawBody, headers);
   }
 }

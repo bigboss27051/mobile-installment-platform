@@ -33,6 +33,25 @@ type PaymentIntentRecord = Prisma.PaymentIntentGetPayload<
   Record<string, never>
 >;
 
+type WebhookIntentLock = Pick<
+  PaymentIntentRecord,
+  | 'id'
+  | 'tenantId'
+  | 'contractId'
+  | 'amount'
+  | 'status'
+  | 'provider'
+  | 'providerRef'
+>;
+
+type ScheduleItemAllocationRow = {
+  id: string;
+  seq: number;
+  totalDue: Prisma.Decimal;
+  amountPaid: Prisma.Decimal;
+  status: ScheduleItemStatus;
+};
+
 export type PaymentIntentResponse = {
   id: string;
   tenantId: string;
@@ -202,19 +221,6 @@ export class PaymentsService {
     const event = this.gateway.parseWebhookEvent(rawBody);
     const amount = this.parseWebhookAmount(event.amount);
 
-    if (event.status === 'FAILED') {
-      await this.markIntentFailedByProviderRef(event.providerRef);
-      return {
-        data: {
-          providerEventId: event.providerEventId,
-          transactionId: null,
-          amount: amount.toFixed(2),
-          status: PaymentIntentStatus.FAILED,
-          replay: false,
-        },
-      };
-    }
-
     const existing = await this.findTransactionByProviderEventId(
       event.providerEventId,
     );
@@ -224,14 +230,18 @@ export class PaymentsService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const intent = await tx.paymentIntent.findFirst({
-          where: {
-            provider: 'sandbox',
-            providerRef: event.providerRef,
-          },
-        });
+        const intent = await this.lockIntentByProviderRef(
+          tx,
+          event.providerRef,
+        );
         if (!intent) {
           throw new NotFoundException('Payment intent not found for webhook.');
+        }
+        const replay = await tx.paymentTransaction.findFirst({
+          where: { providerEventId: event.providerEventId },
+        });
+        if (replay) {
+          return this.toTransactionSummary(replay, true);
         }
         if (intent.status !== PaymentIntentStatus.AWAITING_PROVIDER) {
           throw new ConflictException(
@@ -244,6 +254,47 @@ export class PaymentsService {
           );
         }
 
+        if (event.status === 'FAILED') {
+          const transaction = await tx.paymentTransaction.create({
+            data: {
+              tenantId: intent.tenantId,
+              paymentIntentId: intent.id,
+              providerEventId: event.providerEventId,
+              amount,
+              status: PaymentTransactionStatus.FAILED,
+              rawEventJson: event as unknown as Prisma.InputJsonValue,
+              verifiedAt: new Date(),
+            },
+          });
+
+          await tx.paymentIntent.updateMany({
+            where: {
+              id: intent.id,
+              tenantId: intent.tenantId,
+              status: PaymentIntentStatus.AWAITING_PROVIDER,
+            },
+            data: { status: PaymentIntentStatus.FAILED },
+          });
+
+          return this.toTransactionSummary(transaction, false);
+        }
+
+        const scheduleItems = await this.lockScheduleItemsForAllocation(
+          tx,
+          intent.tenantId,
+          intent.contractId,
+        );
+        const allocations = allocateFifo(
+          scheduleItems.map((item) => ({
+            id: item.id,
+            seq: item.seq,
+            totalDue: item.totalDue.toFixed(2),
+            amountPaid: item.amountPaid.toFixed(2),
+            status: item.status,
+          })),
+          amount.toFixed(2),
+        );
+
         const transaction = await tx.paymentTransaction.create({
           data: {
             tenantId: intent.tenantId,
@@ -255,31 +306,6 @@ export class PaymentsService {
             verifiedAt: new Date(),
           },
         });
-
-        const scheduleItems = await tx.paymentScheduleItem.findMany({
-          where: {
-            tenantId: intent.tenantId,
-            contractId: intent.contractId,
-          },
-          orderBy: { seq: 'asc' },
-          select: {
-            id: true,
-            seq: true,
-            totalDue: true,
-            amountPaid: true,
-            status: true,
-          },
-        });
-        const allocations = allocateFifo(
-          scheduleItems.map((item) => ({
-            id: item.id,
-            seq: item.seq,
-            totalDue: item.totalDue.toFixed(2),
-            amountPaid: item.amountPaid.toFixed(2),
-            status: item.status,
-          })),
-          amount.toFixed(2),
-        );
 
         for (const allocation of allocations) {
           await tx.paymentScheduleItem.update({
@@ -412,6 +438,48 @@ export class PaymentsService {
     });
   }
 
+  private async lockIntentByProviderRef(
+    tx: Prisma.TransactionClient,
+    providerRef: string,
+  ): Promise<WebhookIntentLock | null> {
+    const rows = await tx.$queryRaw<WebhookIntentLock[]>`
+      SELECT
+        id,
+        tenant_id AS "tenantId",
+        contract_id AS "contractId",
+        amount,
+        status,
+        provider,
+        provider_ref AS "providerRef"
+      FROM payment_intents
+      WHERE provider = 'sandbox'
+        AND provider_ref = ${providerRef}
+      ORDER BY id
+      FOR UPDATE
+    `;
+    return rows[0] ?? null;
+  }
+
+  private async lockScheduleItemsForAllocation(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    contractId: string,
+  ): Promise<ScheduleItemAllocationRow[]> {
+    return tx.$queryRaw<ScheduleItemAllocationRow[]>`
+      SELECT
+        id,
+        seq,
+        total_due AS "totalDue",
+        amount_paid AS "amountPaid",
+        status
+      FROM payment_schedule_items
+      WHERE tenant_id = ${tenantId}::uuid
+        AND contract_id = ${contractId}::uuid
+      ORDER BY seq
+      FOR UPDATE
+    `;
+  }
+
   private async resolveExistingIntent(
     tenantId: string,
     intent: PaymentIntentRecord,
@@ -527,33 +595,6 @@ export class PaymentsService {
         status: {
           in: [PaymentIntentStatus.CREATED, PaymentIntentStatus.FAILED],
         },
-      },
-      data: {
-        status: PaymentIntentStatus.FAILED,
-      },
-    });
-  }
-
-  private async markIntentFailedByProviderRef(providerRef: string): Promise<void> {
-    const intent = await this.prisma.paymentIntent.findFirst({
-      where: {
-        provider: 'sandbox',
-        providerRef,
-      },
-      select: {
-        id: true,
-        tenantId: true,
-      },
-    });
-    if (!intent) {
-      return;
-    }
-
-    await this.prisma.paymentIntent.updateMany({
-      where: {
-        id: intent.id,
-        tenantId: intent.tenantId,
-        status: PaymentIntentStatus.AWAITING_PROVIDER,
       },
       data: {
         status: PaymentIntentStatus.FAILED,
