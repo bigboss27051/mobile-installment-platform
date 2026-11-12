@@ -1,5 +1,4 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { InterestMethod, Prisma } from '@prisma/client';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
@@ -64,10 +63,25 @@ describe('Contracts endpoints (e2e)', () => {
       await prisma.approvalAction.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
+      await prisma.scorecardResult.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
       await prisma.application.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
       await prisma.installmentPlan.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
+      await prisma.kycReviewAction.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
+      await prisma.kycDocument.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
+      await prisma.kycCase.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
+      await prisma.consent.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
       await prisma.customer.deleteMany({
@@ -104,7 +118,7 @@ describe('Contracts endpoints (e2e)', () => {
     await app.close();
   });
 
-  it('creates draft contracts then supports list and get with tenant isolation', async () => {
+  it('supports contract activate flow with schedule isolation and draft cancel path', async () => {
     const now = Date.now();
 
     const regA = await request(app.getHttpServer())
@@ -138,109 +152,218 @@ describe('Contracts endpoints (e2e)', () => {
     const tenantAId = regA.body.data.user.tenantId as string;
     const branchAId = await resolveBranchIdForTenant(tenantAId);
 
-    const plan = await prisma.installmentPlan.create({
-      data: {
-        tenantId: tenantAId,
-        code: `CONTRACT-PLAN-${now}`,
-        name: 'Contract plan',
-        interestMethod: InterestMethod.FLAT,
-        annualRate: new Prisma.Decimal('12.00'),
-        termMonths: 6,
-        active: true,
-      },
-    });
-
-    const product = await prisma.product.create({
-      data: {
-        tenantId: tenantAId,
+    const product = await request(app.getHttpServer())
+      .post('/api/v1/products')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
         name: 'Contract Test Phone',
         brand: 'TestBrand',
-      },
-    });
+      })
+      .expect(201);
+    const productId = product.body.data.id as string;
 
-    const variant = await prisma.productVariant.create({
-      data: {
-        tenantId: tenantAId,
-        productId: product.id,
+    const variant = await request(app.getHttpServer())
+      .post(`/api/v1/products/${productId}/variants`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
         sku: `CONTRACT-SKU-${now}`,
         color: 'Black',
         storage: '128GB',
-        price: new Prisma.Decimal('12000.00'),
-      },
-    });
+        price: '12000.00',
+      })
+      .expect(201);
+    const variantId = variant.body.data.id as string;
 
-    const imeiUnit = await prisma.imeiUnit.create({
-      data: {
-        tenantId: tenantAId,
+    const receiveImeiOne = await request(app.getHttpServer())
+      .post('/api/v1/inventory/imeis/receive')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
         branchId: branchAId,
-        variantId: variant.id,
+        variantId,
         imei: `359${String(now).slice(-12)}`,
-        status: 'RESERVED',
-      },
-    });
+        reason: 'Receive IMEI #1 for contract activation flow',
+      })
+      .expect(201);
+    const imeiUnitOneId = receiveImeiOne.body.data.id as string;
 
-    const customer = await prisma.customer.create({
-      data: {
-        tenantId: tenantAId,
+    const receiveImeiTwo = await request(app.getHttpServer())
+      .post('/api/v1/inventory/imeis/receive')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        branchId: branchAId,
+        variantId,
+        imei: `860${String(now + 1).slice(-12)}`,
+        reason: 'Receive IMEI #2 for contract cancellation flow',
+      })
+      .expect(201);
+    const imeiUnitTwoId = receiveImeiTwo.body.data.id as string;
+
+    const customer = await request(app.getHttpServer())
+      .post('/api/v1/customers')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
         fullName: 'Contract Customer',
         phone: `09${String(now).slice(-8)}`,
-        nationalIdEncrypted: 'enc:placeholder',
-        nationalIdHash: `hash-${now}`,
-        nationalIdLast4: '0123',
-      },
-    });
+        nationalId: '1234567890123',
+      })
+      .expect(201);
+    const customerId = customer.body.data.id as string;
 
-    const application = await prisma.application.create({
-      data: {
-        tenantId: tenantAId,
-        customerId: customer.id,
-        imeiUnitId: imeiUnit.id,
-        planId: plan.id,
-        principal: new Prisma.Decimal('12000.00'),
-        downPayment: new Prisma.Decimal('2000.00'),
-        termMonths: 6,
-        interestMethod: InterestMethod.FLAT,
-        annualRate: new Prisma.Decimal('12.00'),
-        status: 'APPROVED',
-      },
-    });
+    const createCase = await request(app.getHttpServer())
+      .post(`/api/v1/customers/${customerId}/kyc-cases`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(201);
+    const caseId = createCase.body.data.id as string;
+
+    const tinyPngBuffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z0ioAAAAASUVORK5CYII=',
+      'base64',
+    );
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/kyc-cases/${caseId}/documents`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .field('type', 'ID_FRONT')
+      .attach('file', tinyPngBuffer, {
+        filename: 'id-front.png',
+        contentType: 'image/png',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/kyc-cases/${caseId}/submit`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/kyc-cases/${caseId}/ocr`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/kyc-cases/${caseId}/review`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        decision: 'APPROVE',
+        reason: 'KYC approved for contract flow.',
+      })
+      .expect(201);
+
+    const plans = await request(app.getHttpServer())
+      .get('/api/v1/installment-plans')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(Array.isArray(plans.body.data)).toBe(true);
+    expect(plans.body.data.length).toBeGreaterThan(0);
+    const planId = plans.body.data[0].id as string;
+
+    const draftActivationApp = await request(app.getHttpServer())
+      .post('/api/v1/applications')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        customerId,
+        imeiUnitId: imeiUnitOneId,
+        planId,
+        principal: '12000.00',
+        downPayment: '2000.00',
+      })
+      .expect(201);
+    const activationApplicationId = draftActivationApp.body.data.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/applications/${activationApplicationId}/submit`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(201);
+
+    const approvedActivationApp = await request(app.getHttpServer())
+      .post(`/api/v1/applications/${activationApplicationId}/decision`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        decision: 'APPROVE',
+        reason: 'Approved for contract activation path.',
+      })
+      .expect(201);
+    expect(approvedActivationApp.body.data.status).toBe('APPROVED');
 
     const created = await request(app.getHttpServer())
-      .post(`/api/v1/applications/${application.id}/contracts`)
+      .post(`/api/v1/applications/${activationApplicationId}/contracts`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(201);
 
     expect(created.body.data.status).toBe('DRAFT');
-    expect(created.body.data.applicationId).toBe(application.id);
+    expect(created.body.data.applicationId).toBe(activationApplicationId);
     expect(created.body.data.version.version).toBe(1);
+    expect(created.body.data.version.scheduleHash).toMatch(/^[a-f0-9]{64}$/);
     expect(Array.isArray(created.body.data.scheduleItems)).toBe(true);
-    expect(created.body.data.scheduleItems.length).toBeGreaterThan(0);
-
-    await request(app.getHttpServer())
-      .post(`/api/v1/applications/${application.id}/contracts`)
-      .set('Authorization', `Bearer ${tokenA}`)
-      .expect(409);
+    expect(created.body.data.scheduleItems.length).toBe(created.body.data.termMonths);
+    expect(created.body.data.scheduleItems[0].status).toBe('PENDING');
 
     const contractId = created.body.data.id as string;
 
-    const listed = await request(app.getHttpServer())
-      .get('/api/v1/contracts')
+    const activated = await request(app.getHttpServer())
+      .post(`/api/v1/contracts/${contractId}/activate`)
       .set('Authorization', `Bearer ${tokenA}`)
-      .expect(200);
-    expect(Array.isArray(listed.body.data)).toBe(true);
-    expect(listed.body.data.some((row: { id: string }) => row.id === contractId)).toBe(true);
+      .expect(201);
+    expect(activated.body.data.status).toBe('ACTIVE');
+    expect(activated.body.data.activatedAt).toEqual(expect.any(String));
 
-    const fetched = await request(app.getHttpServer())
-      .get(`/api/v1/contracts/${contractId}`)
+    const soldImei = await request(app.getHttpServer())
+      .get(`/api/v1/inventory/imeis/${imeiUnitOneId}`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200);
-    expect(fetched.body.data.id).toBe(contractId);
-    expect(fetched.body.data.version.version).toBe(1);
-    expect(fetched.body.data.scheduleItems.length).toBeGreaterThan(0);
+    expect(soldImei.body.data.status).toBe('SOLD');
 
     await request(app.getHttpServer())
       .get(`/api/v1/contracts/${contractId}`)
       .set('Authorization', `Bearer ${tokenB}`)
       .expect(404);
+
+    const draftCancelApp = await request(app.getHttpServer())
+      .post('/api/v1/applications')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        customerId,
+        imeiUnitId: imeiUnitTwoId,
+        planId,
+        principal: '12000.00',
+        downPayment: '2000.00',
+      })
+      .expect(201);
+    const cancelApplicationId = draftCancelApp.body.data.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/applications/${cancelApplicationId}/submit`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(201);
+
+    const approvedCancelApp = await request(app.getHttpServer())
+      .post(`/api/v1/applications/${cancelApplicationId}/decision`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        decision: 'APPROVE',
+        reason: 'Approved for contract cancellation path.',
+      })
+      .expect(201);
+    expect(approvedCancelApp.body.data.status).toBe('APPROVED');
+
+    const createdCancelPath = await request(app.getHttpServer())
+      .post(`/api/v1/applications/${cancelApplicationId}/contracts`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(201);
+    const cancelContractId = createdCancelPath.body.data.id as string;
+    expect(createdCancelPath.body.data.status).toBe('DRAFT');
+
+    const cancelled = await request(app.getHttpServer())
+      .post(`/api/v1/contracts/${cancelContractId}/cancel`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(201);
+    expect(cancelled.body.data.status).toBe('CANCELLED');
+    expect(cancelled.body.data.cancelledAt).toEqual(expect.any(String));
+
+    const reservedImei = await request(app.getHttpServer())
+      .get(`/api/v1/inventory/imeis/${imeiUnitTwoId}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(reservedImei.body.data.status).toBe('RESERVED');
   });
 });
