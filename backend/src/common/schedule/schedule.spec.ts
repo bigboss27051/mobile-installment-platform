@@ -1,3 +1,4 @@
+import { d } from './money';
 import { generateSchedule } from './schedule';
 
 type DueFields = {
@@ -7,8 +8,9 @@ type DueFields = {
 };
 
 function sum(items: string[]): string {
-  const total = items.reduce((acc, value) => acc + Number(value), 0);
-  return total.toFixed(2);
+  return items
+    .reduce((acc, value) => acc.plus(d(value)), d('0'))
+    .toFixed(2);
 }
 
 describe('generateSchedule (r1d-v1)', () => {
