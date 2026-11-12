@@ -1,5 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
-import { PlatformRole, TenantStatus } from '@prisma/client';
+import { InterestMethod, PlatformRole, Prisma, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { TenantsService } from './tenants.service';
 
@@ -32,6 +32,9 @@ describe('TenantsService isolation', () => {
       },
       user: {
         create: jest.fn().mockResolvedValue({ id: 'user-a' }),
+      },
+      installmentPlan: {
+        createMany: jest.fn().mockResolvedValue({ count: 2 }),
       },
     };
     prisma.$transaction.mockImplementation(
@@ -78,6 +81,28 @@ describe('TenantsService isolation', () => {
         fullName: 'Owner Name',
         role: PlatformRole.MERCHANT_OWNER,
       },
+    });
+    expect(tx.installmentPlan.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          tenantId: 'tenant-a',
+          code: 'FLAT-6',
+          name: 'Flat 6 months',
+          interestMethod: InterestMethod.FLAT,
+          annualRate: new Prisma.Decimal('12.00'),
+          termMonths: 6,
+          active: true,
+        },
+        {
+          tenantId: 'tenant-a',
+          code: 'REDUCING-12',
+          name: 'Reducing 12 months',
+          interestMethod: InterestMethod.REDUCING,
+          annualRate: new Prisma.Decimal('18.00'),
+          termMonths: 12,
+          active: true,
+        },
+      ],
     });
   });
 

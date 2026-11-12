@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PlatformRole, TenantStatus } from '@prisma/client';
+import { InterestMethod, PlatformRole, Prisma, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
@@ -46,6 +46,29 @@ export class TenantsService {
           fullName: input.ownerFullName,
           role: PlatformRole.MERCHANT_OWNER,
         },
+      });
+
+      await tx.installmentPlan.createMany({
+        data: [
+          {
+            tenantId: tenant.id,
+            code: 'FLAT-6',
+            name: 'Flat 6 months',
+            interestMethod: InterestMethod.FLAT,
+            annualRate: new Prisma.Decimal('12.00'),
+            termMonths: 6,
+            active: true,
+          },
+          {
+            tenantId: tenant.id,
+            code: 'REDUCING-12',
+            name: 'Reducing 12 months',
+            interestMethod: InterestMethod.REDUCING,
+            annualRate: new Prisma.Decimal('18.00'),
+            termMonths: 12,
+            active: true,
+          },
+        ],
       });
 
       return {

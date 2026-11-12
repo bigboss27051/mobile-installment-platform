@@ -8,6 +8,7 @@ import { HealthModule } from './health/health.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { KycModule } from './kyc/kyc.module';
 import { OcrModule } from './common/ocr/ocr.module';
+import { PlansModule } from './plans/plans.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './common/storage/storage.module';
 import { TenantsModule } from './tenants/tenants.module';
@@ -22,6 +23,7 @@ import { TenantsModule } from './tenants/tenants.module';
     HealthModule,
     PrismaModule,
     TenantsModule,
+    PlansModule,
     AuthModule,
     CustomersModule,
     KycModule,
