@@ -33,3 +33,7 @@
 | D-029 | 2026-11-12 | Contract DRAFT then ACTIVATE (SOLD) | Review schedule before committing stock | Accepted |
 | D-030 | 2026-11-12 | Schedule r1d-v1 flat+reducing half-up THB | Matches BR-6 + golden tests | Accepted |
 | D-031 | 2026-11-12 | Activate status+IMEI SOLD atomic | Avoid post-commit inventory drift | Accepted |
+| D-032 | 2026-11-12 | R1e sandbox payments + FIFO allocate + simple ledger | Core idempotent pay path; refunds/UI later | Accepted |
+| D-033 | 2026-11-12 | FIFO allocate by schedule seq with partial last item | Retail collection; multi-installment intents | Accepted |
+| D-034 | 2026-11-12 | PaymentGatewayPort + Sandbox; Omise target later | PromptPay-fit; Stripe not primary | Accepted |
+| D-035 | 2026-11-12 | Staff create payment intents in R1e | No customer auth yet; R1f adds customer path | Accepted |
