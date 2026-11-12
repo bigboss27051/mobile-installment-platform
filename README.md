@@ -6,15 +6,14 @@ Multi-tenant installment management platform for mobile phone retailers in **Tha
 
 ## Current status
 
-**Phase 0 — Product Discovery** (documentation). Application code is not scaffolded yet.
+**R0 foundation scaffold** on `develop`: NestJS backend, Docker Compose (Postgres/Redis), Prisma tenant schema, auth (register/login/refresh), tenant isolation tests, and GitHub Actions CI.
 
 Start here:
 
 1. [docs/roadmap/CURRENT-PHASE.md](docs/roadmap/CURRENT-PHASE.md)
-2. [docs/product/PRD.md](docs/product/PRD.md)
-3. [docs/product/PRODUCT-SCOPE.md](docs/product/PRODUCT-SCOPE.md)
+2. [docs/project-management/PROJECT-STATUS.md](docs/project-management/PROJECT-STATUS.md)
+3. [docs/product/PRD.md](docs/product/PRD.md)
 4. [docs/project-management/DECISION-LOG.md](docs/project-management/DECISION-LOG.md)
-5. [docs/superpowers/specs/2026-11-12-phase-0-product-discovery-design.md](docs/superpowers/specs/2026-11-12-phase-0-product-discovery-design.md)
 
 ## Planned monorepo layout
 
@@ -30,18 +29,33 @@ docs/          product, architecture, database, ...
 
 NestJS · PostgreSQL · Prisma · Redis · BullMQ · React admin apps · Flutter mobile · Kotlin DPC · Docker · GitHub Actions
 
-## Phase gate
+## Local development (R0)
 
-Do not start Phase 1 implementation scaffolding until Phase 0 acceptance is approved. See [docs/product/ACCEPTANCE-CRITERIA.md](docs/product/ACCEPTANCE-CRITERIA.md).
-
-## Local infrastructure (R0)
-
-Postgres and Redis for local development:
+Postgres is published on **host port 5433** (container internal 5432) to avoid conflicts with a local Postgres on 5432. Set `DATABASE_URL` in `.env` to use port **5433** — see `.env.example`.
 
 ```bash
 cp .env.example .env
 docker compose up -d
-docker compose ps
+docker compose ps   # postgres should be healthy on 5433, redis on 6379
+corepack enable
+pnpm install
+pnpm --filter @mip/backend exec prisma migrate dev
+pnpm --filter @mip/backend start:dev
 ```
 
-Services: `postgres` on port 5432 (`mobile_installment`), `redis` on port 6379.
+Health check:
+
+```bash
+curl http://localhost:3000/api/v1/health
+```
+
+Optional: run tests locally (requires Compose up and `.env` / env vars for JWT secrets):
+
+```bash
+pnpm --filter @mip/backend test
+pnpm --filter @mip/backend test:e2e
+```
+
+## CI
+
+On push/PR to `develop` or `main`, GitHub Actions runs migrate deploy, typecheck, unit tests, and e2e against service containers (Postgres on **5432 inside the runner**, Redis on 6379). See `.github/workflows/ci.yml`.
