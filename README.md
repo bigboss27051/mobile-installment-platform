@@ -33,3 +33,15 @@ NestJS · PostgreSQL · Prisma · Redis · BullMQ · React admin apps · Flutter
 ## Phase gate
 
 Do not start Phase 1 implementation scaffolding until Phase 0 acceptance is approved. See [docs/product/ACCEPTANCE-CRITERIA.md](docs/product/ACCEPTANCE-CRITERIA.md).
+
+## Local infrastructure (R0)
+
+Postgres and Redis for local development:
+
+```bash
+cp .env.example .env
+docker compose up -d
+docker compose ps
+```
+
+Services: `postgres` on port 5432 (`mobile_installment`), `redis` on port 6379.

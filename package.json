@@ -1,0 +1,12 @@
+{
+  "name": "mobile-installment-platform",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev:backend": "pnpm --filter @mip/backend start:dev",
+    "test:backend": "pnpm --filter @mip/backend test",
+    "test:backend:e2e": "pnpm --filter @mip/backend test:e2e",
+    "lint:backend": "pnpm --filter @mip/backend lint",
+    "typecheck:backend": "pnpm --filter @mip/backend typecheck"
+  }
+}
