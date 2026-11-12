@@ -21,6 +21,7 @@ describe('PaymentsService', () => {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
   };
 
@@ -106,6 +107,7 @@ describe('PaymentsService', () => {
         updatedAt: createdAt,
       }),
     );
+    prisma.paymentIntent.updateMany.mockResolvedValue({ count: 1 });
   });
 
   it('documents service-level handling for blank idempotency keys', async () => {
@@ -137,6 +139,127 @@ describe('PaymentsService', () => {
     expect(prisma.contract.findFirst).not.toHaveBeenCalled();
     expect(gateway.createPromptPayIntent).not.toHaveBeenCalled();
     expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+  });
+
+  it('resumes existing CREATED intent on idempotency reuse', async () => {
+    const createdIntent = {
+      ...intentRecord,
+      status: PaymentIntentStatus.CREATED,
+      providerRef: null,
+      qrPayloadJson: Prisma.JsonNull,
+    };
+    const resumedIntent = {
+      ...createdIntent,
+      status: PaymentIntentStatus.AWAITING_PROVIDER,
+      provider: 'sandbox',
+      providerRef: 'sandbox_ref',
+      qrPayloadJson: { type: 'promptpay' },
+      updatedAt: createdAt,
+    };
+    prisma.paymentIntent.findFirst
+      .mockResolvedValueOnce(createdIntent)
+      .mockResolvedValueOnce(resumedIntent);
+
+    await expect(
+      service.createIntent(tenantCtx, 'contract-1', '1000.00', 'idem-1'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: createdIntent.id,
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+        providerRef: 'sandbox_ref',
+      }),
+    );
+    expect(gateway.createPromptPayIntent).toHaveBeenCalledWith({
+      tenantId: 'tenant-a',
+      intentId: createdIntent.id,
+      amount: '1000.00',
+      currency: 'THB',
+    });
+    expect(prisma.paymentIntent.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: createdIntent.id,
+        tenantId: 'tenant-a',
+        status: {
+          in: [PaymentIntentStatus.CREATED, PaymentIntentStatus.FAILED],
+        },
+      },
+      data: expect.objectContaining({
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+        provider: 'sandbox',
+        providerRef: 'sandbox_ref',
+        qrPayloadJson: { type: 'promptpay' },
+      }),
+    });
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+  });
+
+  it('retries existing FAILED intent on idempotency reuse', async () => {
+    const failedIntent = {
+      ...intentRecord,
+      status: PaymentIntentStatus.FAILED,
+      providerRef: null,
+      qrPayloadJson: Prisma.JsonNull,
+    };
+    const resumedIntent = {
+      ...failedIntent,
+      status: PaymentIntentStatus.AWAITING_PROVIDER,
+      provider: 'sandbox',
+      providerRef: 'sandbox_ref',
+      qrPayloadJson: { type: 'promptpay' },
+      updatedAt: createdAt,
+    };
+    prisma.paymentIntent.findFirst
+      .mockResolvedValueOnce(failedIntent)
+      .mockResolvedValueOnce(resumedIntent);
+
+    await expect(
+      service.createIntent(tenantCtx, 'contract-1', '1000.00', 'idem-1'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: failedIntent.id,
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+        providerRef: 'sandbox_ref',
+      }),
+    );
+    expect(gateway.createPromptPayIntent).toHaveBeenCalledWith({
+      tenantId: 'tenant-a',
+      intentId: failedIntent.id,
+      amount: '1000.00',
+      currency: 'THB',
+    });
+    expect(prisma.paymentIntent.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: failedIntent.id,
+        tenantId: 'tenant-a',
+        status: {
+          in: [PaymentIntentStatus.CREATED, PaymentIntentStatus.FAILED],
+        },
+      },
+      data: expect.objectContaining({
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+        provider: 'sandbox',
+        providerRef: 'sandbox_ref',
+        qrPayloadJson: { type: 'promptpay' },
+      }),
+    });
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+  });
+
+  it('does not call gateway for existing AWAITING_PROVIDER intent on idempotency reuse', async () => {
+    prisma.paymentIntent.findFirst.mockResolvedValue(intentRecord);
+
+    await expect(
+      service.createIntent(tenantCtx, 'contract-1', '1000.00', 'idem-1'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: intentRecord.id,
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+        providerRef: intentRecord.providerRef,
+      }),
+    );
+    expect(gateway.createPromptPayIntent).not.toHaveBeenCalled();
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+    expect(prisma.paymentIntent.update).not.toHaveBeenCalled();
   });
 
   it('rejects idempotency reuse with different payload using 409', async () => {

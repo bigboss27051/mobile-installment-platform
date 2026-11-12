@@ -67,7 +67,7 @@ export class PaymentsService {
     );
     if (existing) {
       this.assertIdempotencyPayloadMatches(existing, contractId, amount);
-      return this.toResponse(existing);
+      return this.resolveExistingIntent(tenantId, existing);
     }
 
     const contract = await this.prisma.contract.findFirst({
@@ -126,7 +126,7 @@ export class PaymentsService {
             contractId,
             amount,
           );
-          return this.toResponse(idempotentIntent);
+          return this.resolveExistingIntent(tenantId, idempotentIntent);
         }
       }
       throw error;
@@ -208,6 +208,78 @@ export class PaymentsService {
         idempotencyKey,
       },
     });
+  }
+
+  private async findById(
+    tenantId: string,
+    intentId: string,
+  ): Promise<PaymentIntentRecord | null> {
+    return this.prisma.paymentIntent.findFirst({
+      where: {
+        id: intentId,
+        tenantId,
+      },
+    });
+  }
+
+  private async resolveExistingIntent(
+    tenantId: string,
+    intent: PaymentIntentRecord,
+  ): Promise<PaymentIntentResponse> {
+    if (
+      intent.status !== PaymentIntentStatus.CREATED &&
+      intent.status !== PaymentIntentStatus.FAILED
+    ) {
+      return this.toResponse(intent);
+    }
+
+    return this.resumeProviderSetup(tenantId, intent);
+  }
+
+  private async resumeProviderSetup(
+    tenantId: string,
+    intent: PaymentIntentRecord,
+  ): Promise<PaymentIntentResponse> {
+    let providerIntent: Awaited<
+      ReturnType<PaymentGatewayPort['createPromptPayIntent']>
+    >;
+    try {
+      providerIntent = await this.gateway.createPromptPayIntent({
+        tenantId,
+        intentId: intent.id,
+        amount: intent.amount.toFixed(2),
+        currency: 'THB',
+      });
+    } catch (error: unknown) {
+      await this.markIntentFailed(intent.id);
+      throw error;
+    }
+
+    const updateResult = await this.prisma.paymentIntent.updateMany({
+      where: {
+        id: intent.id,
+        tenantId,
+        status: {
+          in: [PaymentIntentStatus.CREATED, PaymentIntentStatus.FAILED],
+        },
+      },
+      data: {
+        status: PaymentIntentStatus.AWAITING_PROVIDER,
+        provider: providerIntent.provider,
+        providerRef: providerIntent.providerRef,
+        qrPayloadJson: providerIntent.qrPayload as Prisma.InputJsonValue,
+      },
+    });
+
+    const currentIntent = await this.findById(tenantId, intent.id);
+    if (!currentIntent) {
+      throw new NotFoundException('Payment intent not found.');
+    }
+    if (updateResult.count === 0) {
+      return this.toResponse(currentIntent);
+    }
+
+    return this.toResponse(currentIntent);
   }
 
   private parseIntentAmount(amount: string): Prisma.Decimal {
