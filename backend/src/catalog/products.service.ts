@@ -69,6 +69,53 @@ export class ProductsService {
     }
   }
 
+  async listProducts(ctx: TenantContext): Promise<Product[]> {
+    const tenantId = this.requireTenantId(ctx);
+    return this.prisma.product.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getProductById(ctx: TenantContext, productId: string): Promise<Product> {
+    const tenantId = this.requireTenantId(ctx);
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id: productId,
+        tenantId,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found.');
+    }
+
+    return product;
+  }
+
+  async listVariants(
+    ctx: TenantContext,
+    productId: string,
+  ): Promise<ProductVariant[]> {
+    const tenantId = this.requireTenantId(ctx);
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id: productId,
+        tenantId,
+      },
+      select: { id: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found.');
+    }
+
+    return this.prisma.productVariant.findMany({
+      where: { tenantId, productId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   private requireTenantId(ctx: TenantContext): string {
     if (!ctx.tenantId) {
       throw new ForbiddenException('Tenant context required.');

@@ -7,14 +7,23 @@ import {
 import {
   ImeiStatus,
   ImeiUnit,
+  ProductVariant,
   Prisma,
   StockMovementType,
+  Branch,
+  StockMovement,
 } from '@prisma/client';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReceiveImeiDto } from './dto/receive-imei.dto';
 import { ReserveImeiDto } from './dto/reserve-imei.dto';
 import { TransferImeiDto } from './dto/transfer-imei.dto';
+
+export interface ListImeiUnitsFilters {
+  imei?: string;
+  branchId?: string;
+  status?: ImeiStatus;
+}
 
 @Injectable()
 export class InventoryService {
@@ -233,6 +242,57 @@ export class InventoryService {
       });
 
       return updated;
+    });
+  }
+
+  async listImeiUnits(
+    ctx: TenantContext,
+    filters: ListImeiUnitsFilters,
+  ): Promise<(ImeiUnit & { variant: ProductVariant; branch: Branch })[]> {
+    const tenantId = this.requireTenantId(ctx);
+    return this.prisma.imeiUnit.findMany({
+      where: {
+        tenantId,
+        imei: filters.imei,
+        branchId: filters.branchId,
+        status: filters.status,
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { variant: true, branch: true },
+    });
+  }
+
+  async getImeiUnitById(
+    ctx: TenantContext,
+    imeiUnitId: string,
+  ): Promise<ImeiUnit & { variant: ProductVariant; branch: Branch }> {
+    const tenantId = this.requireTenantId(ctx);
+    const imeiUnit = await this.prisma.imeiUnit.findFirst({
+      where: {
+        id: imeiUnitId,
+        tenantId,
+      },
+      include: { variant: true, branch: true },
+    });
+
+    if (!imeiUnit) {
+      throw new NotFoundException('IMEI unit not found.');
+    }
+
+    return imeiUnit;
+  }
+
+  async listMovements(
+    ctx: TenantContext,
+    imeiUnitId?: string,
+  ): Promise<StockMovement[]> {
+    const tenantId = this.requireTenantId(ctx);
+    return this.prisma.stockMovement.findMany({
+      where: {
+        tenantId,
+        imeiUnitId,
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

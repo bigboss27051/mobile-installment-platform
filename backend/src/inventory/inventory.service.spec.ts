@@ -23,6 +23,8 @@ describe('InventoryService', () => {
 
   const prisma = {
     $transaction: jest.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
+    imeiUnit: { findMany: jest.fn(), findFirst: jest.fn() },
+    stockMovement: { findMany: jest.fn() },
   };
 
   const service = new InventoryService(prisma as never);
@@ -388,5 +390,60 @@ describe('InventoryService', () => {
         }),
       }),
     );
+  });
+
+  it('lists IMEI units scoped to tenant with filters', async () => {
+    prisma.imeiUnit.findMany.mockResolvedValue([
+      { id: 'u1', tenantId: 'tenant-a', imei: '356938035643809' },
+    ]);
+
+    await expect(
+      service.listImeiUnits(ctx, {
+        imei: '356938035643809',
+        branchId: 'b1',
+        status: ImeiStatus.AVAILABLE,
+      }),
+    ).resolves.toEqual([
+      { id: 'u1', tenantId: 'tenant-a', imei: '356938035643809' },
+    ]);
+
+    expect(prisma.imeiUnit.findMany).toHaveBeenCalledWith({
+      where: {
+        tenantId: 'tenant-a',
+        imei: '356938035643809',
+        branchId: 'b1',
+        status: ImeiStatus.AVAILABLE,
+      },
+      orderBy: { createdAt: 'desc' },
+      include: { variant: true, branch: true },
+    });
+  });
+
+  it('gets IMEI unit by id scoped to tenant', async () => {
+    prisma.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      imei: '356938035643809',
+    });
+
+    await expect(service.getImeiUnitById(ctx, 'u1')).resolves.toMatchObject({
+      id: 'u1',
+      tenantId: 'tenant-a',
+    });
+  });
+
+  it('lists stock movements for tenant and imeiUnitId', async () => {
+    prisma.stockMovement.findMany.mockResolvedValue([
+      { id: 'm1', tenantId: 'tenant-a', imeiUnitId: 'u1' },
+    ]);
+
+    await expect(service.listMovements(ctx, 'u1')).resolves.toEqual([
+      { id: 'm1', tenantId: 'tenant-a', imeiUnitId: 'u1' },
+    ]);
+
+    expect(prisma.stockMovement.findMany).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-a', imeiUnitId: 'u1' },
+      orderBy: { createdAt: 'desc' },
+    });
   });
 });

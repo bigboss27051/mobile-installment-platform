@@ -11,9 +11,11 @@ describe('ProductsService', () => {
     product: {
       create: jest.fn(),
       findFirst: jest.fn(),
+      findMany: jest.fn(),
     },
     productVariant: {
       create: jest.fn(),
+      findMany: jest.fn(),
     },
   };
 
@@ -28,7 +30,9 @@ describe('ProductsService', () => {
   beforeEach(() => {
     prisma.product.create.mockReset();
     prisma.product.findFirst.mockReset();
+    prisma.product.findMany.mockReset();
     prisma.productVariant.create.mockReset();
+    prisma.productVariant.findMany.mockReset();
   });
 
   it('rejects create product without tenant context', async () => {
@@ -136,6 +140,63 @@ describe('ProductsService', () => {
         currency: 'THB',
         price: expect.any(Prisma.Decimal),
       }),
+    });
+  });
+
+  it('lists products for tenant only', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      { id: 'product-1', tenantId: 'tenant-a', name: 'Phone X', brand: 'Acme' },
+    ]);
+
+    await expect(service.listProducts(ctx)).resolves.toEqual([
+      { id: 'product-1', tenantId: 'tenant-a', name: 'Phone X', brand: 'Acme' },
+    ]);
+
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-a' },
+      orderBy: { createdAt: 'desc' },
+    });
+  });
+
+  it('gets product by id scoped to tenant', async () => {
+    prisma.product.findFirst.mockResolvedValue({
+      id: 'product-1',
+      tenantId: 'tenant-a',
+      name: 'Phone X',
+      brand: 'Acme',
+    });
+
+    await expect(service.getProductById(ctx, 'product-1')).resolves.toMatchObject({
+      id: 'product-1',
+      tenantId: 'tenant-a',
+    });
+
+    expect(prisma.product.findFirst).toHaveBeenCalledWith({
+      where: { id: 'product-1', tenantId: 'tenant-a' },
+    });
+  });
+
+  it('throws not found when product not in tenant', async () => {
+    prisma.product.findFirst.mockResolvedValue(null);
+
+    await expect(service.getProductById(ctx, 'missing')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('lists variants by product scoped to tenant', async () => {
+    prisma.product.findFirst.mockResolvedValue({ id: 'product-1' });
+    prisma.productVariant.findMany.mockResolvedValue([
+      { id: 'variant-1', tenantId: 'tenant-a', productId: 'product-1', sku: 'SKU-001' },
+    ]);
+
+    await expect(service.listVariants(ctx, 'product-1')).resolves.toEqual([
+      { id: 'variant-1', tenantId: 'tenant-a', productId: 'product-1', sku: 'SKU-001' },
+    ]);
+
+    expect(prisma.productVariant.findMany).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-a', productId: 'product-1' },
+      orderBy: { createdAt: 'desc' },
     });
   });
 });
