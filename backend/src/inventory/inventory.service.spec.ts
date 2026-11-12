@@ -34,13 +34,45 @@ describe('InventoryService', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  const noTenantCtx = {
+    tenantId: null,
+    userId: 'u',
+    role: PlatformRole.SUPER_ADMIN,
+  };
+
   it('rejects without tenant', async () => {
     await expect(
-      service.receive(
-        { tenantId: null, userId: 'u', role: PlatformRole.SUPER_ADMIN },
-        { branchId: 'b1', variantId: 'v1', imei: '356938035643809' },
-      ),
+      service.receive(noTenantCtx, {
+        branchId: 'b1',
+        variantId: 'v1',
+        imei: '356938035643809',
+      }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it.each([
+    [
+      'transfer',
+      () =>
+        service.transfer(noTenantCtx, 'u1', {
+          toBranchId: 'b2',
+          reason: 'move',
+        }),
+    ],
+    [
+      'reserve',
+      () => service.reserve(noTenantCtx, 'u1', { reason: 'hold' }),
+    ],
+    [
+      'release',
+      () => service.release(noTenantCtx, 'u1', { reason: 'cancel' }),
+    ],
+    [
+      'markSold',
+      () => service.markSold(noTenantCtx, 'u1', { reason: 'paid' }),
+    ],
+  ])('rejects %s without tenant context', async (_label, call) => {
+    await expect(call()).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('rejects when branch does not exist in tenant', async () => {
@@ -163,7 +195,7 @@ describe('InventoryService', () => {
 
     expect(tx.imeiUnit.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'u1' },
+        where: { id: 'u1', status: ImeiStatus.AVAILABLE },
         data: { status: ImeiStatus.RESERVED },
       }),
     );
@@ -204,7 +236,7 @@ describe('InventoryService', () => {
 
     expect(tx.imeiUnit.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'u1' },
+        where: { id: 'u1', status: ImeiStatus.AVAILABLE },
         data: { branchId: 'b2' },
       }),
     );
@@ -248,6 +280,84 @@ describe('InventoryService', () => {
         }),
       }),
     );
+  });
+
+  it('rejects reserve when IMEI unit is missing or wrong tenant', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.reserve(ctx, 'missing-u1', { reason: 'hold' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(tx.imeiUnit.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'missing-u1', tenantId: 'tenant-a' },
+      }),
+    );
+  });
+
+  it('rejects transfer when IMEI unit is missing or wrong tenant', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.transfer(ctx, 'missing-u1', {
+        toBranchId: 'b2',
+        reason: 'move',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects transfer when unit is not AVAILABLE', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.RESERVED,
+    });
+
+    await expect(
+      service.transfer(ctx, 'u1', { toBranchId: 'b2', reason: 'move' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects transfer when destination branch missing in tenant', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.AVAILABLE,
+    });
+    tx.branch.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.transfer(ctx, 'u1', { toBranchId: 'b-missing', reason: 'move' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects release when unit is not RESERVED', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.AVAILABLE,
+    });
+
+    await expect(
+      service.release(ctx, 'u1', { reason: 'cancel hold' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects markSold when unit is not RESERVED', async () => {
+    tx.imeiUnit.findFirst.mockResolvedValue({
+      id: 'u1',
+      tenantId: 'tenant-a',
+      branchId: 'b1',
+      status: ImeiStatus.AVAILABLE,
+    });
+
+    await expect(
+      service.markSold(ctx, 'u1', { reason: 'paid' }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('marks RESERVED unit as SOLD', async () => {

@@ -111,7 +111,7 @@ export class InventoryService {
       }
 
       const updated = await tx.imeiUnit.update({
-        where: { id: imeiUnit.id },
+        where: { id: imeiUnit.id, status: ImeiStatus.AVAILABLE },
         data: { branchId: input.toBranchId },
       });
 
@@ -146,7 +146,7 @@ export class InventoryService {
       }
 
       const updated = await tx.imeiUnit.update({
-        where: { id: imeiUnit.id },
+        where: { id: imeiUnit.id, status: ImeiStatus.AVAILABLE },
         data: { status: ImeiStatus.RESERVED },
       });
 
@@ -181,7 +181,7 @@ export class InventoryService {
       }
 
       const updated = await tx.imeiUnit.update({
-        where: { id: imeiUnit.id },
+        where: { id: imeiUnit.id, status: ImeiStatus.RESERVED },
         data: { status: ImeiStatus.AVAILABLE },
       });
 
@@ -216,7 +216,7 @@ export class InventoryService {
       }
 
       const updated = await tx.imeiUnit.update({
-        where: { id: imeiUnit.id },
+        where: { id: imeiUnit.id, status: ImeiStatus.RESERVED },
         data: { status: ImeiStatus.SOLD },
       });
 
