@@ -1,0 +1,19 @@
+---
+description: Global project standards for Mobile Installment SaaS
+alwaysApply: true
+---
+
+# Project Standards
+
+- This is a multi-tenant Mobile Installment SaaS for Thailand (pilot).
+- Merchants fund receivables; platform does not lend.
+- Follow `docs/roadmap/CURRENT-PHASE.md` and do not skip phase gates.
+- Prefer small increments; never scaffold the entire system in one change.
+- Record architecture changes in `docs/project-management/DECISION-LOG.md`.
+- External integrations use adapters; mark BLOCKED without credentials/hardware proof.
+- No secrets in git. Use `.env.example` only.
+- Decimal-safe money only. No float for currency.
+- Tenant isolation and payment idempotency tests are mandatory for related work.
+- Device restrictive actions require reason + authz; never from unverified webhooks.
+- Emergency calling must remain available at all device levels.
+- Do not claim Device Owner / MDM / live payments work without validation evidence.

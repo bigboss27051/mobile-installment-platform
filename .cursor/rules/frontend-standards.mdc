@@ -1,0 +1,13 @@
+---
+description: Admin web frontend standards
+globs: apps/super-admin/**/*,apps/merchant-web/**/*
+alwaysApply: false
+---
+
+# Frontend Standards
+
+- React + TypeScript; TanStack Query; React Hook Form + Zod.
+- Permission-aware navigation; no fake production data in critical workflows.
+- Loading / empty / error states on list/detail pages.
+- Call versioned APIs only; never embed secrets.
+- Consistent design system components; accessible forms.

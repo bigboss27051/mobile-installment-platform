@@ -1,0 +1,13 @@
+---
+description: Database and Prisma standards
+globs: backend/prisma/**/*,docs/database/**/*
+alwaysApply: false
+---
+
+# Database Standards
+
+- UUID PKs; FKs; unique constraints; indexes for tenant-scoped queries.
+- DECIMAL for money (or documented integer satang); never float.
+- created_at/updated_at; append-only audit tables.
+- IMEI uniqueness and single active contract binding enforced.
+- Migrations reviewed for tenant isolation impact.

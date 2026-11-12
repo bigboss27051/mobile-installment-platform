@@ -1,0 +1,12 @@
+---
+description: Testing requirements
+alwaysApply: true
+---
+
+# Testing Standards
+
+- Do not mark a module done without tests.
+- Required for business modules: unit, integration, validation, authz, error paths.
+- Mandatory suites: tenant isolation, financial math (flat+reducing), payment idempotency, device command authz.
+- E2E for critical journeys: apply → approve → contract → pay.
+- Never skip financial or isolation tests to “finish” a phase.

@@ -1,0 +1,14 @@
+---
+description: Android DPC / Device Owner standards
+globs: apps/android-dpc/**/*
+alwaysApply: false
+---
+
+# Android DPC Standards
+
+- Kotlin; DevicePolicyManager; DeviceAdminReceiver; WorkManager; FCM.
+- Do not claim Device Owner success from normal APK install.
+- Support graduated levels 1–5 per product docs; preserve emergency calling.
+- Commands are async; ack results to backend; handle offline retry.
+- No hidden DPC, no emergency block, no destructive collection actions.
+- Document OEM compatibility from real device tests.

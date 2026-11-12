@@ -1,0 +1,16 @@
+---
+description: NestJS backend standards
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Backend Standards
+
+- NestJS + TypeScript strict; ESLint/Prettier; semicolons.
+- Thin controllers; validated DTOs; services hold use-cases.
+- Prisma repositories; transactions for stock, payments, contract activation.
+- Derive tenant from auth context; never trust body tenant_id.
+- Swagger on public endpoints; version under `/api/v1`.
+- BullMQ for async jobs; idempotent consumers.
+- Providers behind ports in `*/adapters`.
+- Log with requestId; redact national IDs and document contents.

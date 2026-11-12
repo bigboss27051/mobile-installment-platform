@@ -1,0 +1,14 @@
+---
+description: Security requirements
+alwaysApply: true
+---
+
+# Security Standards
+
+- OWASP Top 10 awareness on every feature.
+- Password hashing with strong KDF; refresh rotation; rate-limit auth/OTP.
+- RBAC on mutating routes; branch scope for staff.
+- Webhook signature verification mandatory.
+- No PAN/CVV; mask national IDs in logs/UI lists.
+- Device locks require authorization + reason; never from unverified payments.
+- PDPA-minded retention and access paths for Thailand pilot.

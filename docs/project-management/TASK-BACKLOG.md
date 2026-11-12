@@ -1,0 +1,33 @@
+# Task Backlog
+
+Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTING` | `DONE`
+
+## Phase 0 — Product Discovery
+
+| Task ID | Description | Priority | Owner | Dependencies | Acceptance | Status | Test |
+|---------|-------------|----------|-------|--------------|------------|--------|------|
+| P0-001 | Inspect repository | P0 | Architect | — | Greenfield confirmed | DONE | Manual |
+| P0-002 | Lock critical business decisions | P0 | Architect | P0-001 | Decision log filled | DONE | Review |
+| P0-003 | Write product docs set | P0 | Architect | P0-002 | Files under docs/product | DONE | Review |
+| P0-004 | Write architecture drafts | P0 | Architect | P0-002 | docs/architecture + api standards | DONE | Review |
+| P0-005 | Write domain/ERD drafts | P0 | Architect | P0-002 | docs/database | DONE | Review |
+| P0-006 | Risk + backlog + release plan | P0 | Architect | P0-002 | PM docs exist | DONE | Review |
+| P0-007 | Cursor rules/agents stubs | P0 | Architect | P0-003 | .cursor/* present | DONE | Review |
+| P0-008 | Phase 0 review report | P0 | Architect | P0-003..007 | Report delivered | DONE | Review |
+| P0-009 | Human approve Phase 0 → Phase 1 | P0 | Stakeholder | P0-008 | Explicit approval | DONE | — |
+
+## Phase 1+ (preview)
+
+| Task ID | Description | Priority | Owner | Status |
+|---------|-------------|----------|-------|--------|
+| P1-001 | Finalize architecture for foundation | P0 | Architect | BACKLOG |
+| P2-001 | Scaffold monorepo + NestJS + Prisma + Compose | P0 | Backend | BACKLOG |
+| P3-001 | Auth + tenant isolation tests | P0 | Backend/QA | BACKLOG |
+| P4-001 | Inventory/IMEI module | P1 | Backend | BACKLOG |
+| P5-001 | Customer/KYC module | P1 | Backend | BACKLOG |
+| P6-001 | Installment/contract math + tests | P0 | Backend/QA | BACKLOG |
+| P7-001 | Payment adapters + webhook idempotency | P0 | Backend | BACKLOG |
+| P8-001 | Merchant/Super Admin web critical pages | P1 | Frontend | BACKLOG |
+| P9-001 | Flutter merchant/customer apps | P1 | Flutter | BACKLOG |
+| P10-001 | Android DPC Device Owner PoC | P0 | Android | BACKLOG |
+| P11-001 | iOS MDM adapter skeleton | P1 | Backend/Android | BACKLOG |

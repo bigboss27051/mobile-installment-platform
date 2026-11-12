@@ -1,0 +1,14 @@
+---
+description: Flutter mobile app standards
+globs: apps/merchant-mobile/**/*,apps/customer-mobile/**/*
+alwaysApply: false
+---
+
+# Flutter Standards
+
+- Flutter + Bloc/Cubit; repository pattern; Dio; GoRouter; Freezed; secure storage.
+- Separate merchant and customer apps.
+- Tokens in secure storage only.
+- Offline-safe UX for critical reads where practical; never invent payment success offline.
+- Generate models from OpenAPI when available.
+- Unit + widget tests for critical flows.
