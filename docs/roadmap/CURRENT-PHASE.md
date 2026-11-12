@@ -1,45 +1,19 @@
-# Current Phase: Phase 1–2 / R0 — Foundation
+# Current Phase: R1a — Inventory + Product + IMEI
 
-**Previous:** Phase 0 Product Discovery — **APPROVED** 2026-11-12
-
-**R0 foundation scaffold:** **COMPLETE** (2026-11-12) — Compose, NestJS health/validation, Prisma tenant tables, tenant isolation (unit + e2e), owner auth (register/login/refresh), GitHub Actions CI. **Not** full Phase 3 RBAC or production integrations.
+**Previous:** Phase 0 approved; R0 Foundation complete on `develop`/`main` (`7a75843`)
 
 ## Scope
 
-Lock implementation-ready architecture details, then scaffold monorepo foundation: NestJS backend, Prisma/Postgres, Redis, Docker Compose, health checks, CI skeleton, and baseline auth/tenant schema (no full installment domain yet).
+Backend inventory domain: Product → Variant → ImeiUnit, branch-bound stock, movements, reserve/release. No Merchant Web/Flutter in this slice.
 
-## Tasks
+## Spec
 
-See `docs/superpowers/plans/2026-11-12-r0-foundation.md`
+`docs/superpowers/specs/2026-11-12-r1a-inventory-imei-design.md`
 
-## R0 follow-ups (not done)
+## Status
 
-- Full RBAC permission matrix (Phase 3 continuation)
-- Swagger / OpenAPI polish on all public endpoints
-- BullMQ workers wired to Redis (queues stubbed only if present)
-- Inventory, KYC, installment domain modules
-- Admin web, Flutter apps, Android DPC, live payment adapters
+Design documented — awaiting user review of spec, then implementation plan via writing-plans.
 
-## Dependencies
+## Out of Scope (this slice)
 
-- Stakeholder answers on funding, market, device policy, interest, pilot ambition, credit flow — received
-
-## Expected Files
-
-See master plan Phase 0 deliverables + PM + API standards + design spec path.
-
-## Acceptance Criteria
-
-- Docs reviewable without code
-- Assumptions/risks explicit
-- Release slices defined
-- No false claims of working integrations
-
-## Risks
-
-- Full-stack ambition may pressure skipping gates → mitigated by R0–R3
-- Legal review of device enforcement not yet done → Risk R-001
-
-## Next Phase (after approval)
-
-**Phase 1: System Architecture** solidification (refine drafts into implementation-ready architecture) then continued **Phase 2/3** foundation (RBAC matrix, API standards enforcement, async jobs).
+R1b–R1f, device management, payments, full RBAC matrix
