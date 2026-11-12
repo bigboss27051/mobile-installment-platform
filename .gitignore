@@ -8,3 +8,4 @@ coverage
 backend/prisma/*.db
 .turbo
 /storage/
+backend/storage/
