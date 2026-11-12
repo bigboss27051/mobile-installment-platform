@@ -36,6 +36,9 @@ jobs:
       REDIS_URL: redis://localhost:6379
       JWT_ACCESS_SECRET: ci-access-secret-change-me
       JWT_REFRESH_SECRET: ci-refresh-secret-change-me
+      NATIONAL_ID_ENCRYPTION_KEY: ci-national-id-encryption-key-32ch-min
+      KYC_STORAGE_ROOT: ./storage/kyc
+      OCR_PROVIDER: sandbox
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
