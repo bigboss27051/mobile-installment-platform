@@ -66,11 +66,16 @@ describe('KycService', () => {
     await expect(service.createCase(ctx, 'customer-1')).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('rejects createCase when an open case already exists', async () => {
+  it.each([
+    KycCaseStatus.DRAFT,
+    KycCaseStatus.SUBMITTED,
+    KycCaseStatus.IN_REVIEW,
+    KycCaseStatus.NEEDS_RESUBMIT,
+  ])('rejects createCase when open case status is %s', async (openStatus) => {
     prisma.customer.findFirst.mockResolvedValue({ id: 'customer-1' });
     prisma.kycCase.findFirst.mockResolvedValue({
       id: 'case-open',
-      status: KycCaseStatus.SUBMITTED,
+      status: openStatus,
     });
 
     await expect(service.createCase(ctx, 'customer-1')).rejects.toBeInstanceOf(ConflictException);
@@ -107,6 +112,16 @@ describe('KycService', () => {
         mimeType: 'image/jpeg',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects addDocument without tenant context', async () => {
+    await expect(
+      service.addDocument(noTenantCtx, 'case-1', {
+        type: KycDocumentType.ID_FRONT,
+        buffer: Buffer.from('file'),
+        mimeType: 'image/jpeg',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('uploads object and creates KycDocument row', async () => {
@@ -148,12 +163,62 @@ describe('KycService', () => {
     );
   });
 
+  it('uploads object and creates KycDocument row for NEEDS_RESUBMIT', async () => {
+    prisma.kycCase.findFirst.mockResolvedValue({
+      id: 'case-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      status: KycCaseStatus.NEEDS_RESUBMIT,
+    });
+    prisma.kycDocument.create.mockResolvedValue({
+      id: 'doc-2',
+      kycCaseId: 'case-1',
+      type: KycDocumentType.ID_BACK,
+      storageKey: 'tenant-a/customer-1/case-1/id-back',
+      mimeType: 'image/jpeg',
+    });
+
+    await expect(
+      service.addDocument(ctx, 'case-1', {
+        type: KycDocumentType.ID_BACK,
+        buffer: Buffer.from('file'),
+        mimeType: 'image/jpeg',
+      }),
+    ).resolves.toMatchObject({
+      id: 'doc-2',
+      kycCaseId: 'case-1',
+      type: KycDocumentType.ID_BACK,
+    });
+  });
+
   it('transitions submit from DRAFT to SUBMITTED', async () => {
     prisma.kycCase.findFirst.mockResolvedValue({
       id: 'case-1',
       tenantId: 'tenant-a',
       customerId: 'customer-1',
       status: KycCaseStatus.DRAFT,
+    });
+    prisma.kycCase.update.mockResolvedValue({
+      id: 'case-1',
+      status: KycCaseStatus.SUBMITTED,
+    });
+
+    await expect(service.submit(ctx, 'case-1')).resolves.toMatchObject({
+      id: 'case-1',
+      status: KycCaseStatus.SUBMITTED,
+    });
+  });
+
+  it('rejects submit without tenant context', async () => {
+    await expect(service.submit(noTenantCtx, 'case-1')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('transitions submit from NEEDS_RESUBMIT to SUBMITTED', async () => {
+    prisma.kycCase.findFirst.mockResolvedValue({
+      id: 'case-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      status: KycCaseStatus.NEEDS_RESUBMIT,
     });
     prisma.kycCase.update.mockResolvedValue({
       id: 'case-1',
@@ -175,6 +240,10 @@ describe('KycService', () => {
     });
 
     await expect(service.submit(ctx, 'case-1')).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects runOcr without tenant context', async () => {
+    await expect(service.runOcr(noTenantCtx, 'case-1')).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('runs OCR on SUBMITTED case and transitions to IN_REVIEW', async () => {
@@ -228,6 +297,10 @@ describe('KycService', () => {
     });
 
     await expect(service.runOcr(ctx, 'case-1')).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('rejects getCase without tenant context', async () => {
+    await expect(service.getCase(noTenantCtx, 'case-1')).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('gets case by id within tenant scope', async () => {
