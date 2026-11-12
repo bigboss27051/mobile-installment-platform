@@ -3,7 +3,12 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { KycCaseStatus, KycDocumentType, PlatformRole } from '@prisma/client';
+import {
+  KycCaseStatus,
+  KycDocumentType,
+  KycReviewDecision,
+  PlatformRole,
+} from '@prisma/client';
 import { OcrProviderPort } from '../common/ocr/ocr-provider.port';
 import { ObjectStoragePort } from '../common/storage/object-storage.port';
 import { KycService } from './kyc.service';
@@ -19,6 +24,9 @@ describe('KycService', () => {
       update: jest.fn(),
     },
     kycDocument: {
+      create: jest.fn(),
+    },
+    kycReviewAction: {
       create: jest.fn(),
     },
   };
@@ -48,6 +56,12 @@ describe('KycService', () => {
     tenantId: null,
     userId: 'admin-1',
     role: PlatformRole.SUPER_ADMIN,
+  };
+
+  const staffCtx = {
+    tenantId: 'tenant-a',
+    userId: 'staff-1',
+    role: PlatformRole.MERCHANT_STAFF,
   };
 
   beforeEach(() => {
@@ -322,5 +336,156 @@ describe('KycService', () => {
     prisma.kycCase.findFirst.mockResolvedValue(null);
 
     await expect(service.getCase(ctx, 'missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('approves case from IN_REVIEW and appends audit action', async () => {
+    prisma.kycCase.findFirst.mockResolvedValue({
+      id: 'case-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      status: KycCaseStatus.IN_REVIEW,
+    });
+    prisma.kycCase.update.mockResolvedValue({
+      id: 'case-1',
+      status: KycCaseStatus.APPROVED,
+    });
+    prisma.kycReviewAction.create.mockResolvedValue({
+      id: 'audit-1',
+      decision: KycReviewDecision.APPROVE,
+    });
+
+    await expect(
+      service.review(ctx, 'case-1', {
+        decision: KycReviewDecision.APPROVE,
+      }),
+    ).resolves.toMatchObject({
+      id: 'case-1',
+      status: KycCaseStatus.APPROVED,
+    });
+
+    expect(prisma.kycReviewAction.create).toHaveBeenCalledWith({
+      data: {
+        tenantId: 'tenant-a',
+        kycCaseId: 'case-1',
+        actorUserId: 'user-1',
+        decision: KycReviewDecision.APPROVE,
+        reason: undefined,
+      },
+    });
+  });
+
+  it('rejects case from IN_REVIEW and appends audit action with reason', async () => {
+    prisma.kycCase.findFirst.mockResolvedValue({
+      id: 'case-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      status: KycCaseStatus.IN_REVIEW,
+    });
+    prisma.kycCase.update.mockResolvedValue({
+      id: 'case-1',
+      status: KycCaseStatus.REJECTED,
+    });
+    prisma.kycReviewAction.create.mockResolvedValue({
+      id: 'audit-2',
+      decision: KycReviewDecision.REJECT,
+      reason: 'ID mismatch',
+    });
+
+    await expect(
+      service.review(staffCtx, 'case-1', {
+        decision: KycReviewDecision.REJECT,
+        reason: 'ID mismatch',
+      }),
+    ).resolves.toMatchObject({
+      id: 'case-1',
+      status: KycCaseStatus.REJECTED,
+    });
+
+    expect(prisma.kycReviewAction.create).toHaveBeenCalledWith({
+      data: {
+        tenantId: 'tenant-a',
+        kycCaseId: 'case-1',
+        actorUserId: 'staff-1',
+        decision: KycReviewDecision.REJECT,
+        reason: 'ID mismatch',
+      },
+    });
+  });
+
+  it('requests resubmit from IN_REVIEW and appends audit action', async () => {
+    prisma.kycCase.findFirst.mockResolvedValue({
+      id: 'case-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      status: KycCaseStatus.IN_REVIEW,
+    });
+    prisma.kycCase.update.mockResolvedValue({
+      id: 'case-1',
+      status: KycCaseStatus.NEEDS_RESUBMIT,
+    });
+    prisma.kycReviewAction.create.mockResolvedValue({
+      id: 'audit-3',
+      decision: KycReviewDecision.REQUEST_RESUBMIT,
+    });
+
+    await expect(
+      service.review(ctx, 'case-1', {
+        decision: KycReviewDecision.REQUEST_RESUBMIT,
+      }),
+    ).resolves.toMatchObject({
+      id: 'case-1',
+      status: KycCaseStatus.NEEDS_RESUBMIT,
+    });
+  });
+
+  it.each([
+    KycCaseStatus.DRAFT,
+    KycCaseStatus.SUBMITTED,
+    KycCaseStatus.APPROVED,
+    KycCaseStatus.REJECTED,
+    KycCaseStatus.NEEDS_RESUBMIT,
+  ])('rejects review when case status is %s', async (status) => {
+    prisma.kycCase.findFirst.mockResolvedValue({
+      id: 'case-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      status,
+    });
+
+    await expect(
+      service.review(ctx, 'case-1', {
+        decision: KycReviewDecision.APPROVE,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.kycReviewAction.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects review without tenant context', async () => {
+    await expect(
+      service.review(noTenantCtx, 'case-1', {
+        decision: KycReviewDecision.APPROVE,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('rejects review for unauthorized role', async () => {
+    prisma.kycCase.findFirst.mockResolvedValue({
+      id: 'case-1',
+      tenantId: 'tenant-a',
+      customerId: 'customer-1',
+      status: KycCaseStatus.IN_REVIEW,
+    });
+
+    await expect(
+      service.review(
+        {
+          tenantId: 'tenant-a',
+          userId: 'admin-1',
+          role: PlatformRole.SUPER_ADMIN,
+        },
+        'case-1',
+        { decision: KycReviewDecision.APPROVE },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

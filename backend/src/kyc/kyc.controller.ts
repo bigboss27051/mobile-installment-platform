@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { AddKycDocumentDto } from './dto/add-kyc-document.dto';
+import { ReviewKycCaseDto } from './dto/review-kyc-case.dto';
 import { KycService } from './kyc.service';
 
 @Controller()
@@ -75,6 +76,16 @@ export class KycController {
     @CurrentUser() user: TenantContext,
   ) {
     const kycCase = await this.kyc.getCase(user, caseId);
+    return { data: kycCase };
+  }
+
+  @Post('kyc-cases/:id/review')
+  async review(
+    @Param('id', new ParseUUIDPipe()) caseId: string,
+    @Body() input: ReviewKycCaseDto,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const kycCase = await this.kyc.review(user, caseId, input);
     return { data: kycCase };
   }
 }
