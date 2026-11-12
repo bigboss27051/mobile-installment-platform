@@ -25,3 +25,7 @@
 | D-021 | 2026-11-12 | Customer phone unique per tenant | Practical duplicate prevention for retail | Accepted |
 | D-022 | 2026-11-12 | R1b backend Customer+KYC+OCR port+manual review | UI deferred; unlocks R1c | Accepted |
 | D-023 | 2026-11-12 | Object storage behind port; local/mock OK in R1b | S3 when available | Accepted |
+| D-024 | 2026-11-12 | R1c Application+Scorecard; Plan seed/read-only | Defer Plan CRUD; unlock applications | Accepted |
+| D-025 | 2026-11-12 | Hardcoded scorecard pure function r1c-v1 | Testable advisory scoring; bureau later | Accepted |
+| D-026 | 2026-11-12 | Submit reserves IMEI; reject/cancel releases | BR-3.4 stock truth; SOLD deferred to R1d | Accepted |
+| D-027 | 2026-11-12 | Application decisions OWNER/STAFF only | Align R1b; CREDIT_OFFICER with full RBAC later | Accepted |

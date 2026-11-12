@@ -1,28 +1,19 @@
 # Current Phase: R1c — Application + Scorecard
 
-**Previous:** R1b Customer + KYC complete on `develop` (`68bbbd6`)
+**Previous:** R1b Customer + KYC — **COMPLETE** on `develop`
 
 ## Scope
 
-Backend application intake and scorecard rails as the next gated slice. Keep tenant isolation and financial correctness standards from R0/R1a/R1b.
+Backend application intake, seeded installment plans (read-only), advisory scorecard, and approve/reject audit. Integrates R1a IMEI reserve/release and R1b APPROVED KYC gate. No Merchant Web/Flutter in this slice.
+
+## Spec
+
+`docs/superpowers/specs/2026-11-12-r1c-application-scorecard-design.md`
 
 ## Status
 
-**Next slice** — R1c spec and implementation plan should be drafted and approved before implementation.
+Spec approved. Implementation plan next (`docs/superpowers/plans/`).
 
-## R1b (complete)
+## Out of Scope
 
-- Spec: `docs/superpowers/specs/2026-11-12-r1b-customer-kyc-design.md`
-- Plan: `docs/superpowers/plans/2026-11-12-r1b-customer-kyc.md`
-- Exit:
-  - Customer create with encrypted national ID + tenant-unique phone
-  - KYC case/document upload and submit flows via storage port
-  - OCR sandbox/mock integration via OCR port
-  - Staff KYC review with auditable review actions
-  - Cross-tenant e2e denial for customer/KYC flows
-  - Backend-only slice; no Merchant Web/Flutter UI claimed complete
-  - Production OCR credentials remain BLOCKED
-
-## Out of Scope (until later R1 slices)
-
-R1d–R1f, production OCR credentials, full RBAC matrix, UI apps, device/payment live integrations
+R1d–R1f, Plan CRUD, contracts/schedules, payments, full RBAC / CREDIT_OFFICER, bureau scoring, UI apps
