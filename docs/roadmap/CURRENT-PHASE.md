@@ -1,19 +1,21 @@
-# Current Phase: R1a — Inventory + Product + IMEI
+# Current Phase: R1b — Customer + KYC
 
-**Previous:** Phase 0 approved; R0 Foundation complete on `develop`/`main` (`7a75843`)
+**Previous:** R1a Inventory + Product + IMEI complete on `develop` (`4ee21d0`)
 
 ## Scope
 
-Backend inventory domain: Product → Variant → ImeiUnit, branch-bound stock, movements, reserve/release. No Merchant Web/Flutter in this slice.
-
-## Spec
-
-`docs/superpowers/specs/2026-11-12-r1a-inventory-imei-design.md`
+Backend customer domain and KYC capture/validation. No Merchant Web or Flutter in the early R1 slices (see D-016).
 
 ## Status
 
-Design documented — awaiting user review of spec, then implementation plan via writing-plans.
+**Next slice** — R1b spec and implementation plan not yet written. Start with product/spec review per Phase 0 artifacts.
 
-## Out of Scope (this slice)
+## R1a (complete)
 
-R1b–R1f, device management, payments, full RBAC matrix
+- Spec: `docs/superpowers/specs/2026-11-12-r1a-inventory-imei-design.md`
+- Plan: `docs/superpowers/plans/2026-11-12-r1a-inventory-imei.md`
+- Exit: Prisma inventory models; catalog + inventory REST; tenant-scoped IMEI flows; e2e isolation; no Merchant Web in slice
+
+## Out of Scope (until later R1 slices)
+
+R1c–R1f, device management, live payments, full RBAC matrix
