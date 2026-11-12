@@ -77,6 +77,30 @@ enum KycReviewDecision {
   REQUEST_RESUBMIT
 }
 
+enum InterestMethod {
+  FLAT
+  REDUCING
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ScorecardBand {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ApplicationDecision {
+  APPROVE
+  REJECT
+}
+
 model Tenant {
   id        String       @id @default(uuid()) @db.Uuid
   name      String
@@ -94,6 +118,10 @@ model Tenant {
   kycDocuments    KycDocument[]
   consents        Consent[]
   kycReviewActions KycReviewAction[]
+  installmentPlans InstallmentPlan[]
+  applications     Application[]
+  scorecardResults ScorecardResult[]
+  approvalActions  ApprovalAction[]
 
   @@map("tenants")
 }
@@ -128,6 +156,7 @@ model User {
   stockMovements StockMovement[]
   kycDocumentsUploaded KycDocument[]
   kycReviewActions     KycReviewAction[]
+  approvalActions      ApprovalAction[]
 
   @@index([tenantId])
   @@map("users")
@@ -147,6 +176,7 @@ model Customer {
   tenant              Tenant         @relation(fields: [tenantId], references: [id])
   kycCases            KycCase[]
   consents            Consent[]
+  applications        Application[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, nationalIdHash])
@@ -284,6 +314,7 @@ model ImeiUnit {
   branch    Branch         @relation(fields: [branchId], references: [id])
   variant   ProductVariant @relation(fields: [variantId], references: [id])
   movements StockMovement[]
+  applications Application[]
 
   @@unique([tenantId, imei])
   @@index([tenantId, branchId])
@@ -308,4 +339,85 @@ model StockMovement {
   @@index([tenantId, imeiUnitId])
   @@index([tenantId, createdAt])
   @@map("stock_movements")
+}
+
+model InstallmentPlan {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  code           String
+  name           String
+  interestMethod InterestMethod @map("interest_method")
+  annualRate     Decimal        @map("annual_rate") @db.Decimal(18, 2)
+  termMonths     Int            @map("term_months")
+  feesJson       Json?          @map("fees_json")
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+  applications   Application[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, active])
+  @@map("installment_plans")
+}
+
+model Application {
+  id              String            @id @default(uuid()) @db.Uuid
+  tenantId        String            @map("tenant_id") @db.Uuid
+  customerId      String            @map("customer_id") @db.Uuid
+  imeiUnitId      String            @map("imei_unit_id") @db.Uuid
+  planId          String            @map("plan_id") @db.Uuid
+  principal       Decimal           @db.Decimal(18, 2)
+  downPayment     Decimal           @map("down_payment") @db.Decimal(18, 2)
+  termMonths      Int               @map("term_months")
+  interestMethod  InterestMethod    @map("interest_method")
+  annualRate      Decimal           @map("annual_rate") @db.Decimal(18, 2)
+  status          ApplicationStatus @default(DRAFT)
+  submittedAt     DateTime?         @map("submitted_at")
+  decidedAt       DateTime?         @map("decided_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  customer        Customer          @relation(fields: [customerId], references: [id])
+  imeiUnit        ImeiUnit          @relation(fields: [imeiUnitId], references: [id])
+  plan            InstallmentPlan   @relation(fields: [planId], references: [id])
+  scorecard       ScorecardResult?
+  approvalActions ApprovalAction[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+  @@index([tenantId, imeiUnitId])
+  @@map("applications")
+}
+
+model ScorecardResult {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @map("tenant_id") @db.Uuid
+  applicationId String        @unique @map("application_id") @db.Uuid
+  score         Int
+  band          ScorecardBand
+  reasonsJson   Json          @map("reasons_json")
+  version       String
+  createdAt     DateTime      @default(now()) @map("created_at")
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  application   Application   @relation(fields: [applicationId], references: [id])
+
+  @@index([tenantId])
+  @@map("scorecard_results")
+}
+
+model ApprovalAction {
+  id            String              @id @default(uuid()) @db.Uuid
+  tenantId      String              @map("tenant_id") @db.Uuid
+  applicationId String              @map("application_id") @db.Uuid
+  actorUserId   String              @map("actor_user_id") @db.Uuid
+  decision      ApplicationDecision
+  reason        String?
+  createdAt     DateTime            @default(now()) @map("created_at")
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  application   Application         @relation(fields: [applicationId], references: [id])
+  actor         User                @relation(fields: [actorUserId], references: [id])
+
+  @@index([tenantId, applicationId])
+  @@map("approval_actions")
 }
