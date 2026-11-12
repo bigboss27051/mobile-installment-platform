@@ -14,7 +14,17 @@ import { ObjectStoragePort } from '../common/storage/object-storage.port';
 import { KycService } from './kyc.service';
 
 describe('KycService', () => {
+  const tx = {
+    kycCase: {
+      update: jest.fn(),
+    },
+    kycReviewAction: {
+      create: jest.fn(),
+    },
+  };
+
   const prisma = {
+    $transaction: jest.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
     customer: {
       findFirst: jest.fn(),
     },
@@ -345,11 +355,11 @@ describe('KycService', () => {
       customerId: 'customer-1',
       status: KycCaseStatus.IN_REVIEW,
     });
-    prisma.kycCase.update.mockResolvedValue({
+    tx.kycCase.update.mockResolvedValue({
       id: 'case-1',
       status: KycCaseStatus.APPROVED,
     });
-    prisma.kycReviewAction.create.mockResolvedValue({
+    tx.kycReviewAction.create.mockResolvedValue({
       id: 'audit-1',
       decision: KycReviewDecision.APPROVE,
     });
@@ -363,7 +373,8 @@ describe('KycService', () => {
       status: KycCaseStatus.APPROVED,
     });
 
-    expect(prisma.kycReviewAction.create).toHaveBeenCalledWith({
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.kycReviewAction.create).toHaveBeenCalledWith({
       data: {
         tenantId: 'tenant-a',
         kycCaseId: 'case-1',
@@ -381,11 +392,11 @@ describe('KycService', () => {
       customerId: 'customer-1',
       status: KycCaseStatus.IN_REVIEW,
     });
-    prisma.kycCase.update.mockResolvedValue({
+    tx.kycCase.update.mockResolvedValue({
       id: 'case-1',
       status: KycCaseStatus.REJECTED,
     });
-    prisma.kycReviewAction.create.mockResolvedValue({
+    tx.kycReviewAction.create.mockResolvedValue({
       id: 'audit-2',
       decision: KycReviewDecision.REJECT,
       reason: 'ID mismatch',
@@ -401,7 +412,7 @@ describe('KycService', () => {
       status: KycCaseStatus.REJECTED,
     });
 
-    expect(prisma.kycReviewAction.create).toHaveBeenCalledWith({
+    expect(tx.kycReviewAction.create).toHaveBeenCalledWith({
       data: {
         tenantId: 'tenant-a',
         kycCaseId: 'case-1',
@@ -419,11 +430,11 @@ describe('KycService', () => {
       customerId: 'customer-1',
       status: KycCaseStatus.IN_REVIEW,
     });
-    prisma.kycCase.update.mockResolvedValue({
+    tx.kycCase.update.mockResolvedValue({
       id: 'case-1',
       status: KycCaseStatus.NEEDS_RESUBMIT,
     });
-    prisma.kycReviewAction.create.mockResolvedValue({
+    tx.kycReviewAction.create.mockResolvedValue({
       id: 'audit-3',
       decision: KycReviewDecision.REQUEST_RESUBMIT,
     });
@@ -435,6 +446,16 @@ describe('KycService', () => {
     ).resolves.toMatchObject({
       id: 'case-1',
       status: KycCaseStatus.NEEDS_RESUBMIT,
+    });
+
+    expect(tx.kycReviewAction.create).toHaveBeenCalledWith({
+      data: {
+        tenantId: 'tenant-a',
+        kycCaseId: 'case-1',
+        actorUserId: 'user-1',
+        decision: KycReviewDecision.REQUEST_RESUBMIT,
+        reason: undefined,
+      },
     });
   });
 
@@ -457,7 +478,7 @@ describe('KycService', () => {
         decision: KycReviewDecision.APPROVE,
       }),
     ).rejects.toBeInstanceOf(ConflictException);
-    expect(prisma.kycReviewAction.create).not.toHaveBeenCalled();
+    expect(tx.kycReviewAction.create).not.toHaveBeenCalled();
   });
 
   it('rejects review without tenant context', async () => {

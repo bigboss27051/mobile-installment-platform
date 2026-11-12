@@ -198,22 +198,24 @@ export class KycService {
     }
 
     const nextStatus = this.mapReviewDecisionToStatus(input.decision);
-    const updatedCase = await this.prisma.kycCase.update({
-      where: { id: caseId },
-      data: { status: nextStatus },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const updatedCase = await tx.kycCase.update({
+        where: { id: caseId },
+        data: { status: nextStatus },
+      });
 
-    await this.prisma.kycReviewAction.create({
-      data: {
-        tenantId,
-        kycCaseId: caseId,
-        actorUserId: ctx.userId,
-        decision: input.decision,
-        reason: input.reason,
-      },
-    });
+      await tx.kycReviewAction.create({
+        data: {
+          tenantId,
+          kycCaseId: caseId,
+          actorUserId: ctx.userId,
+          decision: input.decision,
+          reason: input.reason,
+        },
+      });
 
-    return updatedCase;
+      return updatedCase;
+    });
   }
 
   private async getCaseScopedOrThrow(tenantId: string, caseId: string) {
