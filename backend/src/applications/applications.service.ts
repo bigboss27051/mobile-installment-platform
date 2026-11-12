@@ -6,9 +6,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  ApplicationDecision,
   ApplicationStatus,
   InterestMethod,
   KycCaseStatus,
+  PlatformRole,
   Prisma,
   ScorecardBand,
 } from '@prisma/client';
@@ -17,6 +19,7 @@ import { InventoryService } from '../inventory/inventory.service';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { ApplicationDecisionDto } from './dto/application-decision.dto';
 
 type ScorecardResponse = {
   score: number;
@@ -261,6 +264,101 @@ export class ApplicationsService {
     }
   }
 
+  async decision(
+    ctx: TenantContext,
+    applicationId: string,
+    input: ApplicationDecisionDto,
+  ): Promise<ApplicationResponse> {
+    const tenantId = this.requireTenantId(ctx);
+    this.requireDecisionRole(ctx);
+    const application = await this.prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        tenantId,
+      },
+      include: { scorecard: true },
+    });
+    if (!application) {
+      throw new NotFoundException('Application not found.');
+    }
+    if (application.status !== ApplicationStatus.SUBMITTED) {
+      throw new ConflictException('Application can only be decided from SUBMITTED.');
+    }
+
+    const nextStatus =
+      input.decision === ApplicationDecision.APPROVE
+        ? ApplicationStatus.APPROVED
+        : ApplicationStatus.REJECTED;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedApplication = await tx.application.update({
+        where: { id: application.id },
+        data: {
+          status: nextStatus,
+          decidedAt: new Date(),
+        },
+        include: { scorecard: true },
+      });
+
+      await tx.approvalAction.create({
+        data: {
+          tenantId,
+          applicationId: application.id,
+          actorUserId: ctx.userId,
+          decision: input.decision,
+          reason: input.reason,
+        },
+      });
+
+      return updatedApplication;
+    });
+
+    if (nextStatus === ApplicationStatus.REJECTED) {
+      await this.inventory.release(ctx, application.imeiUnitId, {
+        reason: `application:${application.id}:rejected`,
+      });
+    }
+
+    return this.toResponse(updated);
+  }
+
+  async cancel(ctx: TenantContext, applicationId: string): Promise<ApplicationResponse> {
+    const tenantId = this.requireTenantId(ctx);
+    const application = await this.prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        tenantId,
+      },
+      include: { scorecard: true },
+    });
+    if (!application) {
+      throw new NotFoundException('Application not found.');
+    }
+    if (
+      application.status !== ApplicationStatus.DRAFT &&
+      application.status !== ApplicationStatus.SUBMITTED
+    ) {
+      throw new ConflictException('Application can only be cancelled from DRAFT or SUBMITTED.');
+    }
+
+    const updated = await this.prisma.application.update({
+      where: { id: application.id },
+      data: {
+        status: ApplicationStatus.CANCELLED,
+        decidedAt: new Date(),
+      },
+      include: { scorecard: true },
+    });
+
+    if (application.status === ApplicationStatus.SUBMITTED) {
+      await this.inventory.release(ctx, application.imeiUnitId, {
+        reason: `application:${application.id}:cancelled`,
+      });
+    }
+
+    return this.toResponse(updated);
+  }
+
   private toResponse(
     application: Prisma.ApplicationGetPayload<{ include: { scorecard: true } }>,
   ): ApplicationResponse {
@@ -305,6 +403,12 @@ export class ApplicationsService {
       throw new ForbiddenException('Tenant context required.');
     }
     return ctx.tenantId;
+  }
+
+  private requireDecisionRole(ctx: TenantContext): void {
+    if (ctx.role !== PlatformRole.MERCHANT_OWNER && ctx.role !== PlatformRole.MERCHANT_STAFF) {
+      throw new ForbiddenException('Only merchant staff can decide applications.');
+    }
   }
 
   private isUniqueConstraintViolation(error: unknown): boolean {

@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@n
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
+import { ApplicationDecisionDto } from './dto/application-decision.dto';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationsService } from './applications.service';
 
@@ -37,6 +38,22 @@ export class ApplicationsController {
     @CurrentUser() user: TenantContext,
   ) {
     const application = await this.applications.submit(user, id);
+    return { data: application };
+  }
+
+  @Post(':id/decision')
+  async decision(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() input: ApplicationDecisionDto,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const application = await this.applications.decision(user, id, input);
+    return { data: application };
+  }
+
+  @Post(':id/cancel')
+  async cancel(@Param('id', new ParseUUIDPipe()) id: string, @CurrentUser() user: TenantContext) {
+    const application = await this.applications.cancel(user, id);
     return { data: application };
   }
 }
