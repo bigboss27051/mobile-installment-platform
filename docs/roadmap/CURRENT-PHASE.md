@@ -1,19 +1,19 @@
-# Current Phase: R1d — Contract + Schedule
+# Current Phase: R1e — Payment Verify + Allocate
 
-**Previous:** R1c Application + Scorecard — **COMPLETE** on `develop`
+**Previous:** R1d Contract + Schedule — **COMPLETE** on `develop`
 
 ## Scope
 
-Backend contract creation from APPROVED applications, `r1d-v1` flat/reducing schedules, DRAFT→ACTIVATE with atomic IMEI SOLD. No Merchant Web/Flutter, e-sign, or payments in this slice.
+Prepare and execute the R1e payment verification and allocation slice after R1d contract/schedule completion. R1d did not deliver e-sign, payment posting, or UI clients.
 
 ## Spec
 
-`docs/superpowers/specs/2026-11-12-r1d-contract-schedule-design.md`
+TBD in `docs/superpowers/specs/` for R1e.
 
 ## Status
 
-Spec approved. Implementation plan ready: `docs/superpowers/plans/2026-11-12-r1d-contract-schedule.md` — awaiting execution.
+R1d exit criteria are met on `develop` (contract draft/activate/cancel + schedule engine + tenant isolation e2e). R1e is the next gated slice.
 
 ## Out of Scope
 
-R1e–R1f, e-sign/PDF, payments, device bind, Plan CRUD, early settlement, full RBAC, UI apps
+R1f+, e-sign/PDF, UI apps, device bind, early settlement, full RBAC
