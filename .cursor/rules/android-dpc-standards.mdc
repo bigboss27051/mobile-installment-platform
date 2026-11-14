@@ -7,8 +7,9 @@ alwaysApply: false
 # Android DPC Standards
 
 - Kotlin; DevicePolicyManager; DeviceAdminReceiver; WorkManager; FCM.
-- Do not claim Device Owner success from normal APK install.
+- Do not claim Device Owner success from normal APK install. QR / Android Enterprise / AMAPI paths are documented in docs/device-management/ANDROID-ENROLLMENT.md; AMAPI vs custom DPC is pending DM0.
+- Enrollment QR must not contain Wi-Fi passwords, private keys, or integration secrets. Do not require disabling Play Protect.
 - Support graduated levels 1–5 per product docs; preserve emergency calling.
 - Commands are async; ack results to backend; handle offline retry.
 - No hidden DPC, no emergency block, no destructive collection actions.
-- Document OEM compatibility from real device tests.
+- Document OEM compatibility from real device tests. Not all SKUs support the same provisioning gesture.

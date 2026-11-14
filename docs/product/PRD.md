@@ -1,9 +1,9 @@
 # Product Requirements Document (PRD)
 
 **Product:** Mobile Installment SaaS Platform  
-**Version:** 0.1 (Phase 0)  
+**Version:** 0.2 (Phase 0 + R2 enrollment expansion 2026-11-14)  
 **Market:** Thailand  
-**Status:** Draft for review  
+**Status:** Active planning; R1 delivered, R2 gated on DM0  
 
 ## 1. Vision
 
@@ -20,7 +20,7 @@ Independent phone shops struggle to operate installment programs with consistent
 1. Multi-tenant isolation with branch-aware RBAC  
 2. Accurate installment schedules using decimal-safe math (flat or reducing)  
 3. Reliable payment capture via PromptPay and verified webhooks  
-4. Merchant-configurable graduated device enforcement (Android primary; iOS via MDM adapter)  
+4. Merchant-configurable graduated device enforcement (Android primary; iOS via MDM adapter), with an auditable **provisioning and enrollment** path before any restriction  
 5. Auditable credit decisions via scorecard + merchant approval  
 6. Production-grade ops path: tests, security, monitoring, deployment docs  
 
@@ -63,6 +63,8 @@ Independent phone shops struggle to operate installment programs with consistent
 - Stack: NestJS, PostgreSQL, Prisma, Redis, BullMQ, React admin apps, Flutter mobile, Kotlin DPC  
 - Compliance posture: PDPA-aware data handling for Thailand  
 - Device: emergency calling must remain available at all enforcement levels  
+- Enrollment QR/instructions must not carry passwords or private keys; Play Protect disable is not a required step  
+- iOS management requires Apple organizational authorization; model A vs B is pending DM0  
 
 ## 9. Dependencies
 
@@ -74,3 +76,5 @@ Payment gateway account, e-signature provider, OCR/KYC vendor (optional), Apple 
 - [FEATURE-SPECIFICATION.md](./FEATURE-SPECIFICATION.md)  
 - [USER-JOURNEY.md](./USER-JOURNEY.md)  
 - [../superpowers/specs/2026-11-12-phase-0-product-discovery-design.md](../superpowers/specs/2026-11-12-phase-0-product-discovery-design.md)  
+- [../project-management/MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md)  
+- [../device-management/README.md](../device-management/README.md)  

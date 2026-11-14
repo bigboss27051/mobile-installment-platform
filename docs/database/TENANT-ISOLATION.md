@@ -17,6 +17,9 @@
 | TI-02 | Tenant A updates Tenant B contract | 403/404 |
 | TI-03 | Webhook without valid tenant mapping | reject |
 | TI-04 | Device command for other tenant device | 403 |
+| TI-06 | Tenant A enrollment token activates Tenant B session | 403/404 |
+| TI-07 | Tenant A binds device to Tenant B contract | 403/404 |
+| TI-08 | Tenant A MDM account cannot command Tenant B devices | 403 |
 | TI-05 | Report export limited to tenant | no foreign rows |
 
 ## Defense in Depth (later hardening)

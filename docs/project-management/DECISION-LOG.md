@@ -42,3 +42,11 @@
 | D-038 | 2026-11-12 | Public tenant slug lookup | Customers never send tenantId | Accepted |
 | D-039 | 2026-11-12 | Customers create sandbox intents for own ACTIVE contracts | Completes pay path from Android | Accepted |
 | D-040 | 2026-11-12 | Sandbox OTP env code; SMS BLOCKED | No SMS vendor in pilot | Accepted |
+| D-041 | 2026-11-14 | R2 is a Device Provisioning & Enrollment Platform (sessions → provision → verify → activate → bind → policy → heartbeat → recovery) | Competitor retail UX + SaaS auditability; enforcement still after enroll | Accepted (documentation) |
+| D-042 | 2026-11-14 | Android stack: AMAPI vs custom DPC vs hybrid | Need hardware + policy-expressiveness evidence | **Pending DM0** |
+| D-043 | 2026-11-14 | iOS Apple Business Model A (platform) vs Model B (merchant) vs vendor MDM host | Apple eligibility and consumer-sale legality unverified | **Pending DM0** |
+| D-044 | 2026-11-14 | Do not require disabling Google Play Protect | Competitor SOP is unsafe and not an official Enterprise requirement | Accepted |
+| D-045 | 2026-11-14 | Enrollment QR/payloads contain no passwords, private keys, or integration secrets | Tokens hashed at rest; Wi-Fi entered on device | Accepted |
+| D-046 | 2026-11-14 | Deliver R2 as DM0–DM5; production DO/MDM claims stay BLOCKED until evidence | Avoid skipping feasibility; preserve R0/R1/R3 | Accepted |
+| D-047 | 2026-11-14 | Do not require skipping iOS passcode, Apple ID, or Location Services | Competitor “skip Apple ID” is not our product rule | Accepted |
+| D-048 | 2026-11-14 | Keep NestJS modular monolith, REST `/api/v1`, Flutter, Prisma/Postgres; add ports not new deployables for R2 | No strong reason to change stack | Accepted |

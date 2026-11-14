@@ -22,6 +22,12 @@
 | LedgerEntry | direction, amount, account_code, domain | INSTALLMENT vs SAAS |
 | Allocation | transaction_id, schedule_item_id, amount | |
 | EnforcementPolicy | preset, levels_json | Merchant configurable |
-| Device | platform, external_id, status | ANDROID/IOS |
+| Device | platform, identifiers, status, last_heartbeat_at | ANDROID/IOS; hashes for IMEI/UDID |
+| DeviceEnrollmentSession | platform, status, token_hash, expires_at | Short-lived; no raw token |
+| DeviceProvisioningProfile | platform, version, extras_json | No secrets |
+| DeviceActivation | device_id, session_id, customer_id | First registration |
+| DeviceContractBinding | device_id, contract_id, status | One ACTIVE per device/IMEI |
+| DeviceManagementAccount | provider, secret_ref, scope | PLATFORM or TENANT |
+| DeviceRecoveryRequest | type, reason, status | REENROLL/REPLACE/UNENROLL/… |
 | DeviceCommand | type, level, reason, status, expires_at, result | Async |
 | AuditEvent | actor, action, entity, payload_redacted | Append-only |

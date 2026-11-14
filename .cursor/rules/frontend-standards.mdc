@@ -11,3 +11,4 @@ alwaysApply: false
 - Loading / empty / error states on list/detail pages.
 - Call versioned APIs only; never embed secrets.
 - Consistent design system components; accessible forms.
+- Device enrollment UI (R2) follows docs/device-management/DEVICE-PROVISIONING-ENROLLMENT.md; never embed enrollment secrets in client source.

@@ -40,10 +40,22 @@
 2. Customer e-signs (adapter) + staff countersign as required  
 3. Activate contract; bind IMEI; convert reservation → sold  
 4. Generate payment schedule (decimal-safe; flat or reducing)  
-5. If device management enabled: enroll/bind device to contract  
-6. Device starts at Level 1 (normal)  
+5. If device management enabled: **J4b enrollment** (below)  
+6. Device starts at Level 1 (normal) after successful bind  
 
 **Outcome:** Active contract + schedule + optional device binding.
+
+## J4b — Device Provisioning & Enrollment (R2)
+
+Staff wizard (Merchant Web or Merchant Mobile). Details: [../device-management/DEVICE-PROVISIONING-ENROLLMENT.md](../device-management/DEVICE-PROVISIONING-ENROLLMENT.md).
+
+**Android (target):** consent → session → QR (no secrets) → factory-reset/new device → 6-tap scan → Wi-Fi on device → Enterprise/DO provision → verify IMEI → activate → bind. **Do not** require Play Protect off.
+
+**iOS (target):** ABM/MDM prerequisites → session + instructions (optional shop code) → Configurator (iPhone or Mac) or ADE → Remote Management → standard Setup Assistant (passcode/Apple ID/location not force-skipped) → MDM check-in → activate → bind.
+
+Session states: Not Started, Waiting for Device, Provisioning, Enrolling, Verifying, Activating, Completed, Failed, Expired, Cancelled, Recovery Required.
+
+**Not shown in competitor videos:** overdue locking. That remains J6.
 
 ## J5 — Customer Payment (PromptPay)
 
@@ -92,7 +104,7 @@ flowchart LR
   C --> D{Approve?}
   D -->|No| E[Rejected]
   D -->|Yes| F[Contract + Schedule]
-  F --> G[Optional Device Enroll]
+  F --> G[Optional Device Provision and Enroll]
   F --> H[Payments]
   H --> I{Current?}
   I -->|No| J[Enforcement Levels]

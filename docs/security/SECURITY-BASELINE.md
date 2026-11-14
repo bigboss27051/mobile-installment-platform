@@ -11,6 +11,7 @@ See also [../architecture/SECURITY-ARCHITECTURE.md](../architecture/SECURITY-ARC
 5. PII redaction in logs  
 6. Private object storage for KYC artifacts  
 7. Device command authorization + reason + audit  
+7b. Enrollment session TTL, hashed tokens, no secrets in QR, audited bind/unenroll  
 8. Dependency scanning planned in CI (Phase 2+)  
 9. Secrets only via env/secret manager  
 

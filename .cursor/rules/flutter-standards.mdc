@@ -12,3 +12,5 @@ alwaysApply: false
 - Offline-safe UX for critical reads where practical; never invent payment success offline.
 - Generate models from OpenAPI when available.
 - Unit + widget tests for critical flows.
+- Merchant enrollment wizard (when implemented) must surface session states from device-management docs; iOS path shows Configurator/ABM prerequisites, not an Android QR fake.
+- Customer app shows device status only; it does not enroll Device Owner / MDM.

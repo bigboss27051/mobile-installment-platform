@@ -14,6 +14,7 @@
 - Merchant + Customer Flutter apps  
 - Android DPC (Device Owner) with 5-level enforcement  
 - iOS MDM integration via approved provider/adapter  
+- Device **provisioning & enrollment** (sessions, QR/instructions, activation, contract bind, recovery)  
 - Customer installment lifecycle: KYC → scorecard → approval → contract → payments → collection  
 - Inventory + IMEI uniqueness and contract binding  
 - PromptPay / payment gateway adapters, ledger, reconciliation  
@@ -37,8 +38,8 @@ Auth, tenants, branches, RBAC, project skeleton, Docker Compose infra, health ch
 ### R1 — Installment Core
 Merchant/inventory/IMEI, customer/KYC, installment application, scorecard, approve/reject, contracts, schedules (flat/reducing), PromptPay sandbox path, Merchant Web + Customer App (Android) critical flows.
 
-### R2 — Device Management
-Android enrollment + 5-level policies (merchant presets + custom), command queue, heartbeat, audit, recovery; iOS MDM adapter + capability matrix.
+### R2 — Device Management (Provisioning & Enrollment Platform)
+Split internally as **DM0–DM5** (feasibility → enrollment foundation → bind → management integration → automation → production readiness). Includes Android QR/Enterprise enrollment, iOS Configurator/ADE/MDM (ownership model pending), activation, contract binding, 5-level policies (merchant presets + custom), command queue, heartbeat, audit, recovery; iOS capability matrix. See [../project-management/MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md).
 
 ### R3 — SaaS Operations
 Super Admin complete, subscription billing separate from installment money, notification channels, advanced reporting, production hardening.
@@ -62,6 +63,6 @@ Super Admin complete, subscription billing separate from installment money, noti
 | Live PromptPay settle | Licensed gateway credentials |
 | E-signature production | Provider account + legal templates |
 | OCR KYC automation | OCR vendor (manual KYC remains available) |
-| Android Device Owner proof | Physical devices + provisioning |
-| iOS MDM | MDM provider / APNs setup |
+| Android Device Owner / AMAPI proof | Physical devices + QR/Zero-touch evaluation (DM0) |
+| iOS MDM | Apple Business eligibility + MDM provider / APNs + Configurator/ADE (DM0) |
 | LINE / SMS production | Provider accounts + consent templates |

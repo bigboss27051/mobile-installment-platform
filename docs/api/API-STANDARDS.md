@@ -50,7 +50,7 @@ Never return raw stack traces to clients.
 
 ## Idempotency
 
-Required on: payment intents, webhook processing, device command create (optional key), refunds.  
+Required on: payment intents, webhook processing, device command create, enrollment session create, device activate, bind/unbind, refunds.  
 Header: `Idempotency-Key: <string>`  
 
 ## Status Codes
@@ -83,7 +83,9 @@ Header: `Idempotency-Key: <string>`
 /api/v1/contracts/*
 /api/v1/payments/*
 /api/v1/devices/*
+/api/v1/devices/enrollment-sessions/*
 /api/v1/device-commands/*
+/api/v1/webhooks/device-management/*
 /api/v1/subscriptions/*
 /api/v1/reports/*
 /api/v1/webhooks/payments/*
@@ -97,3 +99,5 @@ Header: `Idempotency-Key: <string>`
 ## Tenant Rule
 
 Server derives tenant from auth context. Bodies may include branchId if authorized; they must not select arbitrary tenantId.
+
+Device enrollment endpoints: [DEVICE-ENROLLMENT-API.md](./DEVICE-ENROLLMENT-API.md).

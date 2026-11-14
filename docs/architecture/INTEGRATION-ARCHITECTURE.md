@@ -33,16 +33,24 @@ flowchart LR
 
 ## Android Device Channel
 
-- DPC authenticates as device agent  
+- Enrollment: Android Enterprise **QR** (6-tap) as default counter path; Zero-touch evaluated in DM0; NFC out of pilot unless proven  
+- Management: **pending DM0** — Android Management API, custom Device Owner DPC, or hybrid. Phase 0 assumed custom Kotlin DPC; that remains a valid prototype path  
+- DPC or AMAPI agent authenticates as device agent after consuming a short-lived enrollment token  
 - Heartbeat + command poll/push (FCM)  
 - WorkManager for offline sync  
+- QR extras must not include Wi-Fi passwords or private keys  
+- Play Protect disable is **not** an integration requirement  
+- Status: **BLOCKED for production** until DM0 hardware evidence  
 
 ## iOS MDM
 
-- Via approved MDM provider or properly designed MDM server  
+- Via approved MDM provider or properly designed MDM server (`MdmProviderPort`)  
+- Apple Business Manager + supervision (Configurator on iPhone/Mac and/or ADE) required for the retail flow observed in reference materials  
+- Ownership **Model A (platform ABM)** vs **Model B (merchant ABM)** is **pending** — see [../device-management/TENANT-OWNERSHIP-MODELS.md](../device-management/TENANT-OWNERSHIP-MODELS.md)  
 - APNs for wake; check-in protocol behind adapter  
 - Capability matrix gates commands  
-- Status: **BLOCKED for production** until MDM test environment available  
+- Do not require skipping Apple ID / passcode / Location Services  
+- Status: **BLOCKED for production** until MDM test environment **and** Apple program eligibility evidence   
 
 ## Notifications
 

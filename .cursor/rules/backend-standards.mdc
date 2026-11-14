@@ -12,5 +12,5 @@ alwaysApply: false
 - Derive tenant from auth context; never trust body tenant_id.
 - Swagger on public endpoints; version under `/api/v1`.
 - BullMQ for async jobs; idempotent consumers.
-- Providers behind ports in `*/adapters`.
+- Providers behind ports in `*/adapters` (payments, OCR, e-sign, `MdmProviderPort`, future `AndroidEnterprisePort`).
 - Log with requestId; redact national IDs and document contents.

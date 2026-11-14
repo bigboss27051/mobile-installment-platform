@@ -9,4 +9,5 @@ alwaysApply: true
 - Required for business modules: unit, integration, validation, authz, error paths.
 - Mandatory suites: tenant isolation, financial math (flat+reducing), payment idempotency, device command authz.
 - E2E for critical journeys: apply → approve → contract → pay.
+- Device (when in slice): tenant isolation of enrollment/bind, expired token rejection, command authz, webhook/event idempotency, recovery/unenroll.
 - Never skip financial or isolation tests to “finish” a phase.

@@ -31,6 +31,7 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 | MW-11 | Collection dashboard | R1–R2 |
 | MW-12 | Device management console | R2 |
 | MW-13 | Enforcement policy settings (presets + custom) | R2 |
+| MW-17 | Enrollment wizard (QR / iOS instructions, session states) | R2 / DM1–DM2 |
 | MW-14 | Installment plan settings (flat/reducing) | R1 |
 | MW-15 | Reports | R3 |
 | MW-16 | Tenant settings | R1 |
@@ -50,6 +51,7 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 | MM-09 | Sales history | R1 |
 | MM-10 | Notifications | R3 |
 | MM-11 | Device status / request recovery | R2 |
+| MM-12 | Enrollment wizard (Android QR / iOS Configurator checklist) | R2 |
 
 ## 4. Customer Mobile (Flutter)
 
@@ -79,7 +81,7 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 | Contract | R1 | Versions, schedules, closure |
 | Payment / Ledger | R1 | Intents, webhooks, allocation |
 | Collection | R1–R2 | Overdue queues, workflows |
-| Device | R2 | Registry, policies, commands |
+| Device | R2 | Registry, enrollment sessions, provisioning profiles, activation, bind, policies, commands, heartbeat, recovery |
 | Notification | R3 | Templates + channels |
 | Reporting | R3 | Operational/financial reports |
 | Audit | R0–R1 | Immutable event store |
@@ -88,14 +90,15 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 
 | ID | Feature | Slice |
 |----|---------|-------|
-| AD-01 | DeviceAdminReceiver + Device Owner PoC | R2 |
-| AD-02 | QR / token enrollment | R2 |
-| AD-03 | Heartbeat + identity | R2 |
-| AD-04 | Policy apply for levels 1–5 | R2 |
-| AD-05 | Command execution + ack | R2 |
-| AD-06 | Offline queue / retry | R2 |
-| AD-07 | Recovery / unlock path | R2 |
-| AD-08 | Audit events upload | R2 |
+| AD-01 | DeviceAdminReceiver + Device Owner PoC | R2 / DM0–DM3 |
+| AD-02 | QR / token enrollment (Enterprise extras; no secrets; no Play Protect-off SOP) | R2 / DM1 |
+| AD-03 | Heartbeat + identity | R2 / DM2–DM3 |
+| AD-04 | Policy apply for levels 1–5 | R2 / DM3 |
+| AD-05 | Command execution + ack | R2 / DM3 |
+| AD-06 | Offline queue / retry | R2 / DM3 |
+| AD-07 | Recovery / unlock path | R2 / DM4 |
+| AD-08 | Audit events upload | R2 / DM3 |
+| AD-09 | AMAPI vs custom DPC evaluation | DM0 |
 
 ### Level Mapping (Android)
 
@@ -111,12 +114,14 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 
 | ID | Feature | Slice |
 |----|---------|-------|
-| IO-01 | MDM provider adapter | R2 |
-| IO-02 | Enrollment + check-in | R2 |
-| IO-03 | Device info sync | R2 |
-| IO-04 | Supported commands only | R2 |
-| IO-05 | Capability matrix enforcement | R2 |
-| IO-06 | Command history | R2 |
+| IO-01 | MDM provider adapter | R2 / DM0–DM3 |
+| IO-02 | Enrollment + check-in (Configurator / ADE; Remote Management) | R2 / DM1–DM3 |
+| IO-03 | Device info sync | R2 / DM3 |
+| IO-04 | Supported commands only | R2 / DM3 |
+| IO-05 | Capability matrix enforcement | R2 / DM3 |
+| IO-06 | Command history | R2 / DM3 |
+| IO-07 | Apple Business Model A vs B evaluation | DM0 |
+| IO-08 | Activation (shop code optional) + contract bind | R2 / DM2 |
 
 Unsupported Android-equivalent actions return structured `UNSUPPORTED_CAPABILITY` — never silently pretended.
 

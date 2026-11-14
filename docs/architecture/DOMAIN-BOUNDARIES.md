@@ -12,7 +12,7 @@
 | Contracting | Contract versions, schedules, settlements rules | Payment provider calls |
 | Money Movement | Intents, transactions, ledger, allocation, reconciliation | Device policies |
 | Collection | Overdue cases, workflows, authorized actions | Arbitrary ledger edits |
-| Device Control | Registry, policies, commands, heartbeats | Payment verification |
+| Device Control | Registry, enrollment sessions, provisioning profiles, activation, contract bindings, policies, commands, heartbeats, recovery | Payment verification |
 | Comms | Templates, deliveries, channel adapters | Business state changes |
 | Audit | Immutable event records | Source-of-truth business mutations |
 
@@ -31,6 +31,7 @@
 | OCR | `OcrProviderPort` |
 | E-sign | `ESignProviderPort` |
 | iOS MDM | `MdmProviderPort` |
+| Android Enterprise / AMAPI | `AndroidEnterprisePort` (optional until DM0 chooses stack) |
 | SMS/LINE/Email/Push | `NotificationChannelPort` |
 
 Sandbox/mock implementations are first-class until production credentials exist.

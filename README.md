@@ -6,14 +6,16 @@ Multi-tenant installment management platform for mobile phone retailers in **Tha
 
 ## Current status
 
-**R1 installment core** on `develop`: NestJS backend (R0–R1e) plus R1f Merchant Web and Customer Android critical paths. Live payments/MDM remain BLOCKED.
+**R1 installment core** on `develop`: NestJS backend (R0–R1e) plus R1f Merchant Web and Customer Android critical paths. Live payments/MDM remain BLOCKED. Next planning gate: **DM0** device enrollment feasibility.
 
 Start here:
 
 1. [docs/roadmap/CURRENT-PHASE.md](docs/roadmap/CURRENT-PHASE.md)
-2. [docs/project-management/PROJECT-STATUS.md](docs/project-management/PROJECT-STATUS.md)
-3. [docs/product/PRD.md](docs/product/PRD.md)
-4. [docs/project-management/DECISION-LOG.md](docs/project-management/DECISION-LOG.md)
+2. [docs/project-management/MASTER-EXECUTION-PLAN.md](docs/project-management/MASTER-EXECUTION-PLAN.md)
+3. [docs/project-management/PROJECT-STATUS.md](docs/project-management/PROJECT-STATUS.md)
+4. [docs/product/PRD.md](docs/product/PRD.md)
+5. [docs/project-management/DECISION-LOG.md](docs/project-management/DECISION-LOG.md)
+6. [docs/device-management/README.md](docs/device-management/README.md) (R2 enrollment)
 
 Merchant Web (Vite): `pnpm --filter @mip/merchant-web dev` (proxies `/api` to port 3000).  
 Customer Android: `apps/customer-mobile` (`flutter run`; sandbox OTP `123456`).

@@ -1,0 +1,15 @@
+---
+description: iOS MDM / Apple Business enrollment standards
+globs: **/*mdm*,**/*ios*
+alwaysApply: false
+---
+
+# iOS MDM Standards
+
+- Manage iOS only through an MDM adapter (`MdmProviderPort`). Do not claim native MDM protocol completeness without a test environment.
+- Do not assume the platform can supervise merchant devices without Apple Business authorization (Model A or B — see docs/device-management/TENANT-OWNERSHIP-MODELS.md).
+- Do not require skipping passcode, Apple ID, Location Services, or other Setup Assistant privacy/security screens.
+- Lost Mode is forbidden for debt collection. Emergency calling must remain available.
+- Unsupported Android-equivalent actions return `UNSUPPORTED_CAPABILITY`; never fake parity.
+- No secrets in enrollment instructions or QR stand-ins. Per-tenant MDM credentials in secret storage only.
+- Mark production iOS management BLOCKED until ABM + MDM evidence exists.

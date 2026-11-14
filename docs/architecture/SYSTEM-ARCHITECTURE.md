@@ -14,7 +14,8 @@ Person(merchantStaff, "Merchant Staff")
 Person(customer, "Customer")
 System(platform, "Mobile Installment SaaS")
 System_Ext(pay, "Payment Gateway")
-System_Ext(mdm, "iOS MDM Provider")
+System_Ext(mdm, "iOS MDM / Apple Business")
+System_Ext(ae, "Android Enterprise / AMAPI")
 System_Ext(ocr, "OCR/KYC Vendor")
 System_Ext(esign, "E-Sign Provider")
 System_Ext(notify, "SMS/LINE/Email/Push")
@@ -23,6 +24,7 @@ Rel(merchantStaff, platform, "Web/Flutter")
 Rel(customer, platform, "Flutter")
 Rel(platform, pay, "API + Webhooks")
 Rel(platform, mdm, "MDM APIs")
+Rel(platform, ae, "Android Enterprise APIs")
 Rel(platform, ocr, "Optional")
 Rel(platform, esign, "Optional")
 Rel(platform, notify, "Adapters")
@@ -53,7 +55,7 @@ flowchart TB
     INS[Installment/Scorecard]
     CON[Contract]
     PAY[Payment/Ledger]
-    DEV[Device]
+    DEV[Device / Enrollment]
     SUB[Subscription]
     NOT[Notification]
     AUD[Audit]
@@ -95,7 +97,7 @@ flowchart TB
 14. Payment  
 15. Ledger  
 16. Collection  
-17. Device Management  
+17. Device Management (registry, enrollment, provisioning, activation, bind, policy, commands, heartbeat, recovery)  
 18. Notification  
 19. Reporting  
 20. Audit Log  
@@ -110,6 +112,11 @@ Customer → Payment Intent → Gateway → Webhook → Verify → Transaction �
 
 Authorized actor/policy → Command record → Queue → Device pull/push → Execute → Ack/result → Audit  
 Success of HTTP create ≠ device executed.
+
+### Device Enrollment
+
+Staff wizard → Enrollment session (TTL token) → Android QR **or** iOS Configurator/ADE instructions → OS provisioning → Agent/MDM check-in → Verify identity → Activate → Bind contract → Level 1 policy.  
+Details: [../device-management/DEVICE-PROVISIONING-ENROLLMENT.md](../device-management/DEVICE-PROVISIONING-ENROLLMENT.md). AMAPI vs custom DPC and iOS Model A vs B are **pending DM0**.
 
 ## Cross-Cutting
 

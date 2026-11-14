@@ -4,6 +4,37 @@
 
 ### Added
 
+- Master Execution Plan index (`docs/project-management/MASTER-EXECUTION-PLAN.md`)
+- Device Provisioning & Enrollment documentation under `docs/device-management/` (workflows, Android/iOS, tenancy models, open decisions, video observations)
+- Device Enrollment API draft (`docs/api/DEVICE-ENROLLMENT-API.md`)
+- Design spec `docs/superpowers/specs/2026-11-14-device-provisioning-enrollment-design.md`
+- Cursor rule `.cursor/rules/ios-mdm-standards.mdc`
+- Reference media index `docs/reference/README.md` (existing `mango_android.mp4` / `mango_ios.mp4`)
+- Enrollment entities in database design (sessions, profiles, activations, bindings, management accounts, recovery)
+
+### Changed
+
+- R2 Device expanded from “DPC + MDM adapter” to a provisioning & enrollment platform sliced **DM0–DM5**
+- Current phase: next work is **DM0 feasibility**, not enrollment implementation
+- Decisions D-041..D-048; risks R-013..R-020
+- Product/architecture/API/security/test/Cursor rules cross-references updated
+- Android: Play Protect disable is **not** required; QR must not contain secrets
+- iOS: Model A vs B pending; do not require skipping Apple ID/passcode/location
+
+### Unchanged
+
+- R0/R1 delivery status, installment math, PromptPay sandbox, modular monolith, 5-level enforcement *intent*, Lost Mode prohibition, adapter pattern
+
+### Pending
+
+- D-042 Android AMAPI vs custom DPC; D-043 iOS ABM ownership; MDM vendor; hardware compatibility
+
+### Notes
+
+- Documentation and Cursor rules only. No application source, migrations, or APIs implemented.
+
+### Added (prior unreleased)
+
 - Phase 0 product discovery documentation set
 - Decision log, risk register, backlog, release plan
 - Architecture and database drafts

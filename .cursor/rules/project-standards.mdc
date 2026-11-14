@@ -17,3 +17,5 @@ alwaysApply: true
 - Device restrictive actions require reason + authz; never from unverified webhooks.
 - Emergency calling must remain available at all device levels.
 - Do not claim Device Owner / MDM / live payments work without validation evidence.
+- Treat R2 as a Device Provisioning & Enrollment Platform (DM0–DM5). Follow docs/project-management/MASTER-EXECUTION-PLAN.md.
+- Enrollment tokens are short-lived; QR payloads contain no passwords or private keys; Play Protect disable is not a required step.

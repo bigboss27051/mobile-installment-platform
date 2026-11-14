@@ -1,7 +1,7 @@
 # Project Status
 
-**Updated:** 2026-11-12  
-**Current Phase:** R1f — Merchant Web + Customer Android critical paths (**complete**); next = R2 Device  
+**Updated:** 2026-11-14  
+**Current Phase:** R1f complete; next = **DM0** (R2 Device Provisioning & Enrollment feasibility)  
 **Branch:** `develop`  
 **Codebase:** NestJS backend R0–R1e plus R1f customer OTP/`/me` portal, Merchant Web, Customer Android on `develop`; CI on push/PR
 
@@ -19,7 +19,7 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 ## In Progress
 
-- Nothing active; **R2 Device** is the next gated slice (brainstorm/spec/plan first; hardware BLOCKED for production claims)
+- Documentation: R2 expanded to enrollment platform (2026-11-14). **DM0** is the next gated slice. Hardware/Apple/Google proof BLOCKED for production claims. No device application code in this update.
 
 ## Follow-ups (R0 / early Phase 3)
 
@@ -37,9 +37,11 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 ## Next Session Entry Point
 
-1. `docs/roadmap/CURRENT-PHASE.md` — R2 Device
-2. `docs/superpowers/specs/2026-11-12-r1f-merchant-web-customer-android-design.md` — R1f reference
-3. `docs/superpowers/plans/2026-11-12-r1f-merchant-web-customer-android.md`
+1. `docs/roadmap/CURRENT-PHASE.md` — DM0  
+2. `docs/project-management/MASTER-EXECUTION-PLAN.md`  
+3. `docs/device-management/README.md`  
+4. `docs/superpowers/specs/2026-11-12-r1f-merchant-web-customer-android-design.md` — R1f reference  
+5. `docs/superpowers/plans/2026-11-12-r1f-merchant-web-customer-android.md`
 
 ## Do Not
 

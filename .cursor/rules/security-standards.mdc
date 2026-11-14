@@ -11,4 +11,5 @@ alwaysApply: true
 - Webhook signature verification mandatory.
 - No PAN/CVV; mask national IDs in logs/UI lists.
 - Device locks require authorization + reason; never from unverified payments.
+- Enrollment sessions: hashed tokens, TTL, tenant isolation, audited bind/unenroll; no secrets in QR.
 - PDPA-minded retention and access paths for Thailand pilot.

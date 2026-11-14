@@ -1,8 +1,11 @@
-# Device Capability Matrix (Phase 0)
+# Device Capability Matrix (Phase 0 + enrollment 2026-11-14)
+
+Enrollment workflows: [ANDROID-ENROLLMENT.md](./ANDROID-ENROLLMENT.md), [IOS-ENROLLMENT.md](./IOS-ENROLLMENT.md).  
+This matrix is **post-enrollment control**, not a claim that integrations work.
 
 | Capability | Android Device Owner | iOS MDM (typical supervised) | Pilot policy |
 |------------|----------------------|------------------------------|--------------|
-| Enrollment / bind to contract | Yes | Yes (via MDM provider) | Required where device mgmt enabled |
+| Enrollment / bind to contract | Yes (QR / Enterprise; AMAPI TBD) | Yes (Configurator/ADE + MDM; ABM model TBD) | Required where device mgmt enabled |
 | Heartbeat / inventory | Yes | Yes | Required |
 | Level 1 Normal | Yes | Yes | Default |
 | Level 2 Warning notify | Yes | Yes (push) | Allowed |

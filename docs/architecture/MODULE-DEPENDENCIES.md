@@ -5,7 +5,7 @@ Allowed dependency direction (left depends on right only via stable interfaces):
 ```text
 Notification, Reporting, Collection
         ↓
-Device ← Contract ← Installment ← Customer/KYC
+Device (enroll/bind) ← Contract ← Installment ← Customer/KYC
    ↓         ↓           ↓
 Payment/Ledger ← Inventory/IMEI ← Product
         ↓

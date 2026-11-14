@@ -14,3 +14,11 @@
 | R-010 | E-sign / OCR vendor lock-in | Medium | Medium | Ports/adapters | Open |
 | R-011 | Secret leakage in repo/logs | High | Medium | .env.example only; redaction; scanning | Open |
 | R-012 | Collection UX harms emergency calling | Critical | Low | Explicit Level 5 constraint + tests | Open |
+| R-013 | Apple rejects platform or merchant ABM for installment-sold consumer devices | High | High | DM0 legal/Apple review; iOS device mgmt may stay limited or opt-in | Open |
+| R-014 | AMAPI cannot express lock-task levels 4–5 | High | Medium | Hybrid companion DPC; document iOS/Android gaps | Open |
+| R-015 | OEM QR/6-tap fragmentation (incl. non-GMS) | High | High | Compatibility matrix; unsupported SKUs | Open |
+| R-016 | Secrets leaked via QR / Configurator / logs | Critical | Medium | D-045; hashed tokens; secret_ref only | Open |
+| R-017 | Unauthorized bind (shop code stuffing, stolen QR) | High | Medium | Short TTL, staff confirm, rate limits, IMEI match | Open |
+| R-018 | Merchant offboarding leaves MDM access | High | Medium | Revoke accounts; unenroll SOP | Open |
+| R-019 | Zero-touch unavailable for same-day walk-in stock | Medium | High | Default to QR/Configurator; ZT optional | Open |
+| R-020 | Copying competitor Play Protect / skip-Apple-ID SOP causes security or review failure | High | Medium | D-044, D-047; Play-distributed or AMAPI agent | Open |

@@ -31,3 +31,8 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | P9-001 | Flutter merchant/customer apps | P1 | Flutter | BACKLOG |
 | P10-001 | Android DPC Device Owner PoC | P0 | Android | BACKLOG |
 | P11-001 | iOS MDM adapter skeleton | P1 | Backend/Android | BACKLOG |
+| DM0-001 | Android Enterprise / AMAPI vs DPC / QR / Zero-touch lab | P0 | Architect/Android | BACKLOG |
+| DM0-002 | Apple Business + Configurator + MDM architecture & Model A/B | P0 | Architect | BACKLOG |
+| DM0-003 | Compatibility matrix + cost/risk note | P0 | QA/Architect | BACKLOG |
+| DM1-001 | Enrollment sessions API + token lifecycle (after DM0) | P0 | Backend | BACKLOG |
+| DM2-001 | Activation + contract bind + isolation tests | P0 | Backend | BACKLOG |

@@ -57,7 +57,7 @@
 
 ## BR-8 Device Management
 
-- BR-8.1 Android uses Device Owner / DPC path for supported controls.  
+- BR-8.1 Android uses Device Owner / DPC and/or Android Management API for supported controls (**stack pending DM0**).  
 - BR-8.2 Enforcement levels: (1) normal (2) warn (3) app limit (4) screen lock (5) suspend.  
 - BR-8.3 Merchants choose presets and customize overdue days / human approval gates.  
 - BR-8.4 Restrictive commands require reason, actor, tenant, expiry, and result tracking.  
@@ -65,6 +65,13 @@
 - BR-8.6 Emergency calling remains available; recovery/dispute paths exist.  
 - BR-8.7 Unverified payment webhooks must not trigger restrictive actions.  
 - BR-8.8 iOS uses MDM adapter; capabilities are a documented subset; no Lost Mode for debt collection.  
+- BR-8.9 Enrollment is an auditable session: generate credentials → provision → verify identity → activate → bind contract.  
+- BR-8.10 Enrollment tokens are short-lived and hashed at rest; QR/Configurator material contains no Wi-Fi passwords, private keys, or integration secrets.  
+- BR-8.11 Disabling Play Protect is not a required Android step.  
+- BR-8.12 iOS enrollment must not require skipping passcode, Apple ID, or Location Services.  
+- BR-8.13 Customer consent and contract authorization are required before bind.  
+- BR-8.14 Tenant isolation applies to devices, sessions, MDM configs, and commands; unauthorized bind is rejected.  
+- BR-8.15 Device replacement, unenrollment, and contract termination have explicit recovery workflows.  
 
 ## BR-9 Notifications
 

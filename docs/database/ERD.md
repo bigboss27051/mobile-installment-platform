@@ -35,6 +35,15 @@ erDiagram
   CONTRACT ||--o{ PAYMENT_SCHEDULE_ITEM : schedules
   CONTRACT ||--o| IMEI_UNIT : binds
   CONTRACT ||--o| DEVICE : manages
+  TENANT ||--o{ DEVICE_ENROLLMENT_SESSION : scopes
+  CONTRACT ||--o{ DEVICE_ENROLLMENT_SESSION : enrolls
+  DEVICE_ENROLLMENT_SESSION ||--o| DEVICE : yields
+  TENANT ||--o{ DEVICE_MANAGEMENT_ACCOUNT : configures
+  DEVICE }o--o| DEVICE_MANAGEMENT_ACCOUNT : uses
+  DEVICE ||--o{ DEVICE_CONTRACT_BINDING : binds
+  CONTRACT ||--o{ DEVICE_CONTRACT_BINDING : bound
+  DEVICE ||--o| DEVICE_ACTIVATION : activated
+  DEVICE ||--o{ DEVICE_RECOVERY_REQUEST : recovers
 
   PAYMENT_INTENT }o--|| CONTRACT : for
   PAYMENT_INTENT ||--o{ PAYMENT_TRANSACTION : yields
@@ -56,6 +65,9 @@ erDiagram
 
 - `ENFORCEMENT_POLICY` stores preset reference + per-level thresholds and approval flags.  
 - `DEVICE_POLICY_STATE.level` ∈ {1..5}.  
+- `DEVICE_ENROLLMENT_SESSION.status` follows the enrollment state machine in device-management docs.  
+- At most one `DEVICE_CONTRACT_BINDING` with status `ACTIVE` per device and per IMEI.  
+- `DEVICE_MANAGEMENT_ACCOUNT.secret_ref` points at a secret store; not the credential.  
 - `INSTALLMENT_PLAN.interest_method` ∈ {`FLAT`,`REDUCING`}.  
 - `SCORECARD_RESULT` informs humans; does not auto-activate contracts.  
 - SaaS `TENANT_SUBSCRIPTION` tables are separate from installment `LEDGER_ENTRY` streams (tag `ledger_domain = SAAS|INSTALLMENT`).  

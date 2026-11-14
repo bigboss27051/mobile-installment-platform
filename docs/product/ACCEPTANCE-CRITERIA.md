@@ -42,15 +42,32 @@ Phase 0 is accepted when the checklist above is complete and reviewers approve m
 
 ## R2 Acceptance
 
-- Android device enrolls via supported Device Owner flow on test hardware  
-- Device registers and binds to contract  
+R2 is accepted only when **DM0–DM5** exit criteria below are met for in-scope platforms. Production DO/MDM remains unclaimed without evidence.
+
+### DM0
+- Written feasibility report: AMAPI vs custom DPC; QR modes; Zero-touch; ABM; Configurator; MDM architecture; Model A vs B  
+- Compatibility notes from real devices (unsupported SKUs listed)  
+- ADRs in Decision Log; open questions explicit  
+- No production feasibility claim without tests  
+
+### DM1–DM2
+- Enrollment sessions with TTL, hashed tokens, cancel/expire/retry  
+- Android QR generation without secrets; iOS instruction + prereq gating  
+- Activate + bind; duplicate IMEI/device rejected; tenant isolation tests  
+- Merchant wizard states including Failed/Expired/Recovery Required  
+
+### DM3–DM5
+- Android device enrolls via supported Device Owner / AMAPI flow on test hardware  
+- iOS adapter enrolls in test env; unsupported commands handled explicitly  
 - Levels 1–5 map to policies; emergency dial preserved  
 - Merchant can configure presets + custom thresholds  
 - Commands carry reason/expiry/status/result  
 - Offline/retry behavior documented and tested  
-- Recovery unlock works  
-- iOS adapter enrolls in test env; unsupported commands handled explicitly  
+- Recovery unlock, replacement, unenroll, contract-close paths  
 - Unverified payment cannot raise restriction level  
+- Security review + isolation + enrollment failure tests  
+
+See also [../project-management/MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md).  
 
 ## R3 Acceptance
 
@@ -73,4 +90,4 @@ Phase 0 is accepted when the checklist above is complete and reviewers approve m
 
 ## Definition of Done (Commercial Pilot)
 
-See master plan Part 10. Pilot readiness requires R0–R3 acceptance for in-scope features, with external blockers explicitly listed rather than falsely marked complete.
+See [../project-management/MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md) §9. Pilot readiness requires R0–R3 acceptance for in-scope features, with external blockers explicitly listed rather than falsely marked complete.

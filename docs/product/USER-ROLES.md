@@ -34,7 +34,7 @@
 |-------|---------|
 | `PAYMENT_WEBHOOK` | Ingest signed gateway events |
 | `SCHEDULER` | Reminders, overdue transitions, subscription billing jobs |
-| `DEVICE_AGENT` | DPC/MDM check-in, heartbeat, command ack |
+| `DEVICE_AGENT` | DPC/MDM check-in, heartbeat, command ack (not bind-contract) |
 | `NOTIFICATION_WORKER` | Deliver templated messages |
 
 ## Permission Model Notes
@@ -53,6 +53,8 @@
 | Approve application | Y | Y | Y | N | N | N |
 | Create contract from approval | Y | Y | Y | Y† | N | N |
 | Collect payment | Y | Y | N | Y | Y | Self-pay |
+| Start enrollment session | Y | Y | N | Y† | N | N |
+| Bind / unbind device | Y | Y | N | N | Y‡ | N |
 | Issue device level ≥4 | Y | Y | N | N | Y‡ | N |
 | View other tenants | N | N | N | N | N | N |
 

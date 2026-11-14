@@ -40,7 +40,7 @@
 |-------|--------|
 | R0 | Foundation: monorepo, auth, tenant, RBAC, Docker, CI |
 | R1 | Installment core: inventory/IMEI, KYC, application, scorecard, contract, schedule, PromptPay |
-| R2 | Device: Android DPC 5 levels + iOS MDM adapter |
+| R2 | Device: provisioning & enrollment platform (DM0–DM5); Android DPC/AMAPI 5 levels + iOS MDM adapter — see 2026-11-14 spec |
 | R3 | SaaS ops: Super Admin complete, subscription billing, multi-channel notifications, reporting |
 
 ## Architecture Direction

@@ -10,4 +10,5 @@ alwaysApply: false
 - DECIMAL for money (or documented integer satang); never float.
 - created_at/updated_at; append-only audit tables.
 - IMEI uniqueness and single active contract binding enforced.
+- Device enrollment rows are tenant-scoped; store token hashes not raw tokens; MDM secrets via secret_ref.
 - Migrations reviewed for tenant isolation impact.
