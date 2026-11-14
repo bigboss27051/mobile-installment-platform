@@ -640,13 +640,17 @@ function ContractsPage({
   } | null>(null);
   const [qr, setQr] = useState<unknown>(null);
   const [amount, setAmount] = useState('100.00');
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
+    setLoading(true);
     try {
       setRows(await apiRequest('/api/v1/contracts'));
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('contracts.loadFailed'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -655,66 +659,84 @@ function ContractsPage({
   }, []);
 
   return (
-    <div>
-      <h1>{t('contracts.title')}</h1>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await apiRequest(`/api/v1/applications/${applicationId}/contracts`, {
-            method: 'POST',
-          });
-          await refresh();
-        }}
-      >
-        <input
-          placeholder={t('contracts.applicationId')}
-          aria-label={t('contracts.applicationId')}
-          value={applicationId}
-          onChange={(e) => setApplicationId(e.target.value)}
-        />
-        <button className="primary">{t('contracts.create')}</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>{t('contracts.colId')}</th>
-            <th>{t('contracts.colStatus')}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td>
-              <td>{row.status}</td>
-              <td>
-                <button
-                  onClick={async () => {
-                    setSelected(await apiRequest(`/api/v1/contracts/${row.id}`));
-                  }}
-                >
-                  {t('contracts.open')}
-                </button>
-                <button
-                  onClick={async () => {
-                    await apiRequest(`/api/v1/contracts/${row.id}/activate`, {
-                      method: 'POST',
-                    });
-                    await refresh();
-                  }}
-                >
-                  {t('contracts.activate')}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <Page title={t('contracts.title')}>
+      <Section title={t('contracts.new')}>
+        <form
+          className="mip-form-grid"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await apiRequest(`/api/v1/applications/${applicationId}/contracts`, {
+              method: 'POST',
+            });
+            await refresh();
+          }}
+        >
+          <FormField label={t('contracts.applicationId')} htmlFor="contract-app" required>
+            <Input
+              id="contract-app"
+              value={applicationId}
+              onChange={(e) => setApplicationId(e.target.value)}
+            />
+          </FormField>
+          <div className="mip-form-actions">
+            <Button type="submit" variant="primary">
+              {t('contracts.create')}
+            </Button>
+          </div>
+        </form>
+      </Section>
+      <Section title={t('contracts.list')}>
+        {loading ? (
+          <Spinner />
+        ) : rows.length === 0 ? (
+          <EmptyState>{t('contracts.empty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('contracts.colId')}</th>
+                <th>{t('contracts.colStatus')}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.id}</td>
+                  <td>{row.status}</td>
+                  <td>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={async () => {
+                        setSelected(await apiRequest(`/api/v1/contracts/${row.id}`));
+                      }}
+                    >
+                      {t('contracts.open')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={async () => {
+                        await apiRequest(`/api/v1/contracts/${row.id}/activate`, {
+                          method: 'POST',
+                        });
+                        await refresh();
+                      }}
+                    >
+                      {t('contracts.activate')}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
       {selected ? (
-        <div className="card">
-          <h2>{t('contracts.detailTitle', { id: selected.id })}</h2>
+        <Section title={t('contracts.detailTitle', { id: selected.id })}>
           <p>{t('contracts.status', { status: selected.status })}</p>
-          <table>
+          <Table>
             <thead>
               <tr>
                 <th>{t('contracts.colSeq')}</th>
@@ -733,8 +755,9 @@ function ContractsPage({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
           <form
+            className="mip-form-grid"
             onSubmit={async (event) => {
               event.preventDefault();
               const intent = await apiRequest<{ qrPayload: unknown }>(
@@ -748,17 +771,22 @@ function ContractsPage({
               setQr(intent.qrPayload);
             }}
           >
-            <input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder={t('contracts.amount')}
-              aria-label={t('contracts.amount')}
-            />
-            <button className="primary">{t('contracts.createIntent')}</button>
+            <FormField label={t('contracts.amount')} htmlFor="pay-amount" required>
+              <Input
+                id="pay-amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </FormField>
+            <div className="mip-form-actions">
+              <Button type="submit" variant="primary">
+                {t('contracts.createIntent')}
+              </Button>
+            </div>
           </form>
-          {qr ? <pre>{JSON.stringify(qr, null, 2)}</pre> : null}
-        </div>
+          {qr ? <pre className="mip-pre">{JSON.stringify(qr, null, 2)}</pre> : null}
+        </Section>
       ) : null}
-    </div>
+    </Page>
   );
 }
