@@ -1,11 +1,33 @@
+import { createHash } from 'crypto';
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ContractStatus, PlatformRole } from '@prisma/client';
 import { EnrollmentService } from './enrollment.service';
+import { hashEnrollmentToken } from './enrollment-token';
+
+const DPC_ENV = {
+  DPC_COMPONENT_NAME: 'com.mip.dpc/com.mip.dpc.DeviceAdminReceiver',
+  DPC_DOWNLOAD_URL: 'https://downloads.example.test/dpc.apk',
+  DPC_PACKAGE_CHECKSUM: createHash('sha256').update('phase2-dpc').digest('base64url'),
+  DPC_ENROLLMENT_ENDPOINT: 'https://api.example.test/api/v1/devices/enroll/check-in',
+};
+
+function applyDpcEnv(): void {
+  for (const [key, value] of Object.entries(DPC_ENV)) {
+    process.env[key] = value;
+  }
+}
+
+function clearDpcEnv(): void {
+  for (const key of Object.keys(DPC_ENV)) {
+    delete process.env[key];
+  }
+}
 
 describe('EnrollmentService', () => {
   const prisma = {
@@ -118,14 +140,6 @@ describe('EnrollmentService', () => {
   });
 
   it('sets QR_GENERATED when Android QR is materialized', async () => {
-    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
-      id: 's1',
-      tenantId: 'tenant-a',
-      platform: 'ANDROID',
-      status: 'WAITING_FOR_DEVICE',
-      expiresAt: new Date(Date.now() + 60_000),
-      tokenHash: 'aa'.repeat(32),
-    });
     prisma.deviceEnrollmentSession.update.mockImplementation(async (args: {
       data: Record<string, unknown>;
     }) => ({
@@ -134,16 +148,67 @@ describe('EnrollmentService', () => {
       qrFingerprint: args.data.qrFingerprint,
     }));
 
-    await service.materializeQr(tenantCtx, 's1');
+    applyDpcEnv();
+    const expiresAt = new Date(Date.now() + 60_000);
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      id: 's1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      status: 'WAITING_FOR_DEVICE',
+      expiresAt,
+      tokenHash: 'aa'.repeat(32),
+    });
 
-    expect(prisma.deviceEnrollmentSession.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          status: 'QR_GENERATED',
-          qrFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
-        }),
-      }),
+    const qr = await service.materializeQr(tenantCtx, 's1');
+
+    const bundle = qr.payload[
+      'android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE'
+    ] as { enrollmentToken: string };
+    const update = prisma.deviceEnrollmentSession.update.mock.calls[0][0] as {
+      data: Record<string, unknown>;
+    };
+    expect(update.data.status).toBe('QR_GENERATED');
+    expect(update.data.tokenHash).toBe(hashEnrollmentToken(bundle.enrollmentToken));
+    expect(update.data.tokenHash).not.toBe('aa'.repeat(32));
+    expect(update.data.expiresAt).toBeUndefined();
+    expect(qr.expiresAt).toEqual(expiresAt);
+    expect(
+      qr.payload['android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME'],
+    ).toBe(DPC_ENV.DPC_COMPONENT_NAME);
+    clearDpcEnv();
+  });
+
+  it('refuses QR when DPC settings are missing and leaves the session unchanged', async () => {
+    clearDpcEnv();
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      id: 's1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      status: 'WAITING_FOR_DEVICE',
+      expiresAt: new Date(Date.now() + 60_000),
+      tokenHash: 'aa'.repeat(32),
+    });
+    await expect(service.materializeQr(tenantCtx, 's1')).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
     );
+    expect(prisma.deviceEnrollmentSession.update).not.toHaveBeenCalled();
+  });
+
+  it('refuses QR outside waiting and generated states', async () => {
+    applyDpcEnv();
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      id: 's1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      status: 'NOT_STARTED',
+      expiresAt: new Date(Date.now() + 60_000),
+      tokenHash: 'aa'.repeat(32),
+    });
+    await expect(service.materializeQr(tenantCtx, 's1')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.deviceEnrollmentSession.update).not.toHaveBeenCalled();
+    clearDpcEnv();
   });
 
   it('refuses iOS QR materialization', async () => {

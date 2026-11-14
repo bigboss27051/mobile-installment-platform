@@ -34,6 +34,14 @@ export function showsAndroidQr(status: string): boolean {
   return status === 'WAITING_FOR_DEVICE' || status === 'QR_GENERATED';
 }
 
+export function canIssueEnrollmentQr(
+  platform: string,
+  status: string,
+  hasQrPayload: boolean,
+): boolean {
+  return platform === 'ANDROID' && showsAndroidQr(status) && !hasQrPayload;
+}
+
 export function canStaffCancel(status: string): boolean {
   return OPEN_STATUSES.has(status);
 }

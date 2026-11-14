@@ -1,6 +1,6 @@
 # Enrollment wizard mockup (Merchant Web / Merchant Mobile)
 
-**Status:** Merchant Web enroll wizard has session + stub QR, Thai/EN, consent, iOS steps, cancel/refresh, and expired/failed chips. Stub QR currently still names Google Cloud DPC extras in code; **target** is custom DPC extras (D-057). Legal copy still draft (D-051).  
+**Status:** Merchant Web enroll wizard has session + project DPC QR, Thai/EN, consent, iOS steps, cancel/refresh, issue-QR when the page is not holding a payload, and expired/failed chips. QR extras come from `DPC_*` env (D-057). Check-in and the Kotlin DPC are still later. Legal copy still draft (D-051).  
 **Rules:** Device management is **mandatory** (D-050). Android = custom DPC QR (D-057, D-049). iOS = Model B + Configurator iPhone (D-043).
 
 Sale cannot be marked **handed over** while enrollment is not `COMPLETED`. Staff may have an `ACTIVE` contract (R1) but the phone stays in-store until this wizard finishes.

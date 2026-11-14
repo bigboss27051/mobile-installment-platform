@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { createHash } from 'crypto';
 import {
@@ -13,8 +14,16 @@ import {
 } from '@prisma/client';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildAndroidEnrollmentQrPayload } from './enrollment-qr';
+import {
+  buildAndroidEnrollmentQrPayload,
+  resolveDpcQrSettings,
+} from './enrollment-qr';
 import { issueEnrollmentToken } from './enrollment-token';
+
+const QR_ISSUABLE_STATUSES: EnrollmentSessionStatus[] = [
+  EnrollmentSessionStatus.WAITING_FOR_DEVICE,
+  EnrollmentSessionStatus.QR_GENERATED,
+];
 
 const OPEN_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.NOT_STARTED,
@@ -142,9 +151,21 @@ export class EnrollmentService {
     if (session.status === EnrollmentSessionStatus.EXPIRED) {
       throw new ConflictException('ENROLLMENT_EXPIRED');
     }
+    if (!QR_ISSUABLE_STATUSES.includes(session.status)) {
+      throw new ConflictException('SESSION_NOT_QR_READY');
+    }
+    const settings = resolveDpcQrSettings(process.env);
+    if (!settings) {
+      throw new ServiceUnavailableException('DPC_QR_NOT_CONFIGURED');
+    }
+    const token = issueEnrollmentToken();
     const payload = buildAndroidEnrollmentQrPayload({
-      enrollmentToken: `session:${session.id}`,
+      enrollmentToken: token.raw,
       sessionId: session.id,
+      componentName: settings.componentName,
+      downloadUrl: settings.downloadUrl,
+      packageChecksum: settings.packageChecksum,
+      enrollmentEndpoint: settings.enrollmentEndpoint,
     });
     const serialized = JSON.stringify(payload);
     if (/WIFI_PASSWORD/i.test(serialized)) {
@@ -156,6 +177,7 @@ export class EnrollmentService {
     await this.prisma.deviceEnrollmentSession.update({
       where: { id: session.id },
       data: {
+        tokenHash: token.hash,
         qrFingerprint: payloadFingerprint,
         status: EnrollmentSessionStatus.QR_GENERATED,
       },

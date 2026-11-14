@@ -133,6 +133,7 @@ const th: Record<string, string> = {
   'enroll.iosThirtyDays':
     'เครื่องที่เพิ่มด้วย Configurator อาจออกจาก Remote Management ได้ใน 30 วัน ต้องเปิดเผยในสัญญา',
   'enroll.refresh': 'รีเฟรชสถานะ',
+  'enroll.issueQr': 'ออก QR',
   'enroll.cancel': 'ยกเลิกเซสชัน',
   'enroll.newSession': 'เริ่มเซสชันใหม่',
   'enroll.handoverBlocked': 'ยังส่งมอบเครื่องไม่ได้ จนกว่าสถานะจะเป็นเสร็จสิ้น',
@@ -285,6 +286,7 @@ const en: Record<string, string> = {
   'enroll.iosThirtyDays':
     'Configurator-added devices may leave Remote Management for 30 days — disclose in the contract.',
   'enroll.refresh': 'Refresh status',
+  'enroll.issueQr': 'Issue QR',
   'enroll.cancel': 'Cancel session',
   'enroll.newSession': 'Start a new session',
   'enroll.handoverBlocked': 'Handover is blocked until enrollment is completed.',
@@ -324,6 +326,8 @@ const apiErrorTh: Record<string, string> = {
   ENROLLMENT_CANCELLED: 'เซสชันถูกยกเลิก',
   SESSION_OPEN: 'ยังมีเซสชันเปิดอยู่',
   QR_NOT_APPLICABLE: 'แพลตฟอร์มนี้ไม่มีคิวอาร์',
+  DPC_QR_NOT_CONFIGURED: 'ยังไม่ได้ตั้งค่า DPC สำหรับออก QR',
+  SESSION_NOT_QR_READY: 'สถานะนี้ยังออก QR ไม่ได้',
   'Idempotency-Key header is required.': 'ต้องส่ง Idempotency-Key',
 };
 

@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { ApiError, apiRequest, withIdempotency } from './api';
 import {
+  canIssueEnrollmentQr,
   canStaffActivate,
   canStaffCancel,
   isTerminalEnrollment,
@@ -57,11 +58,16 @@ export function EnrollPage({
   const iosReady = Object.values(iosPrereq).every(Boolean);
 
   async function loadQr(sessionId: string) {
-    const material = await apiRequest<EnrollmentQr>(
-      `/api/v1/devices/enrollment-sessions/${sessionId}/qr`,
-      { method: 'POST' },
-    );
-    setQr(material);
+    try {
+      const material = await apiRequest<EnrollmentQr>(
+        `/api/v1/devices/enrollment-sessions/${sessionId}/qr`,
+        { method: 'POST' },
+      );
+      setQr(material);
+      onError(null);
+    } catch (err) {
+      onError(err instanceof ApiError ? apiError(err.message) : t('enroll.failed'));
+    }
   }
 
   async function createSession(event: FormEvent) {
@@ -256,6 +262,11 @@ export function EnrollPage({
             <Button type="button" variant="secondary" onClick={() => void refreshSession()}>
               {t('enroll.refresh')}
             </Button>
+            {canIssueEnrollmentQr(session.platform, viewStatus, qr !== null) ? (
+              <Button type="button" variant="primary" onClick={() => void loadQr(session.id)}>
+                {t('enroll.issueQr')}
+              </Button>
+            ) : null}
             {canStaffCancel(viewStatus) ? (
               <Button type="button" variant="danger" onClick={() => void cancelSession()}>
                 {t('enroll.cancel')}

@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PlatformRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -47,6 +48,13 @@ describe('Device enrollment sessions (e2e)', () => {
       }),
     );
     app.useGlobalFilters(new AllExceptionsFilter());
+    process.env.DPC_COMPONENT_NAME = 'com.mip.dpc/com.mip.dpc.DeviceAdminReceiver';
+    process.env.DPC_DOWNLOAD_URL = 'https://downloads.example.test/dpc.apk';
+    process.env.DPC_PACKAGE_CHECKSUM = createHash('sha256')
+      .update('phase2-dpc')
+      .digest('base64url');
+    process.env.DPC_ENROLLMENT_ENDPOINT =
+      'https://api.example.test/api/v1/devices/enroll/check-in';
     await app.init();
     prisma = app.get(PrismaService);
   });
@@ -135,7 +143,7 @@ describe('Device enrollment sessions (e2e)', () => {
     await app.close();
   });
 
-  it('creates Android enrollment sessions with isolation, stub QR without Wi-Fi secrets, and cancel', async () => {
+  it('creates Android enrollment sessions with isolation, project DPC QR, and cancel', async () => {
     const now = Date.now();
 
     const regA = await request(app.getHttpServer())
@@ -326,6 +334,31 @@ describe('Device enrollment sessions (e2e)', () => {
       .expect(201);
     expect(qr.body.data.format).toBe('ANDROID_ENTERPRISE_QR');
     expect(JSON.stringify(qr.body.data.payload)).not.toMatch(/WIFI_PASSWORD/i);
+    expect(JSON.stringify(qr.body.data.payload)).not.toContain(
+      'com.google.android.apps.work.clouddpc',
+    );
+    expect(
+      qr.body.data.payload[
+        'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME'
+      ],
+    ).toBe('com.mip.dpc/com.mip.dpc.DeviceAdminReceiver');
+    const bundle = qr.body.data.payload[
+      'android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE'
+    ] as { enrollmentToken: string; enrollmentEndpoint: string };
+    expect(bundle.enrollmentToken).toMatch(/^enc_/);
+    expect(bundle.enrollmentToken).not.toBe(createdSession.body.data.enrollmentToken);
+    expect(bundle.enrollmentEndpoint).toBe(
+      'https://api.example.test/api/v1/devices/enroll/check-in',
+    );
+    const stored = await prisma.deviceEnrollmentSession.findUniqueOrThrow({
+      where: { id: sessionId },
+    });
+    expect(stored.tokenHash).toBe(
+      createHash('sha256').update(bundle.enrollmentToken, 'utf8').digest('hex'),
+    );
+    expect(stored.expiresAt.toISOString()).toBe(
+      createdSession.body.data.expiresAt,
+    );
     expect(qr.body.data.payloadFingerprint).toMatch(/^[a-f0-9]{64}$/);
 
     const afterQr = await request(app.getHttpServer())

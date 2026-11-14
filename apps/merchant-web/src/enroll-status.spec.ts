@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  canIssueEnrollmentQr,
   canStaffActivate,
   canStaffCancel,
   isTerminalEnrollment,
@@ -43,6 +44,14 @@ describe('enrollment wizard status', () => {
     expect(canStaffCancel('NOT_STARTED')).toBe(true);
     expect(showsAndroidQr('QR_GENERATED')).toBe(true);
     expect(showsAndroidQr('ENROLLING')).toBe(false);
+  });
+
+  it('offers another QR only while Android is waiting and the page has no payload', () => {
+    expect(canIssueEnrollmentQr('ANDROID', 'WAITING_FOR_DEVICE', false)).toBe(true);
+    expect(canIssueEnrollmentQr('ANDROID', 'QR_GENERATED', false)).toBe(true);
+    expect(canIssueEnrollmentQr('ANDROID', 'QR_GENERATED', true)).toBe(false);
+    expect(canIssueEnrollmentQr('ANDROID', 'PROVISIONING', false)).toBe(false);
+    expect(canIssueEnrollmentQr('IOS', 'WAITING_FOR_DEVICE', false)).toBe(false);
   });
 
   it('expires a generated QR after TTL', () => {
