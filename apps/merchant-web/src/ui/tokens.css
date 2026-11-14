@@ -1,0 +1,25 @@
+:root {
+  --mip-bg: #f8fafc;
+  --mip-surface: #ffffff;
+  --mip-primary: #1d4ed8;
+  --mip-text: #1e293b;
+  --mip-text-secondary: #64748b;
+  --mip-border: #e2e8f0;
+  --mip-error: #dc2626;
+  --mip-success: #16a34a;
+  --mip-sidebar: #1e293b;
+  --mip-radius: 6px;
+  --mip-input-height: 44px;
+  --mip-page-max: 960px;
+  --mip-space-1: 4px;
+  --mip-space-2: 8px;
+  --mip-space-3: 12px;
+  --mip-space-4: 16px;
+  --mip-space-5: 24px;
+  --mip-font: Inter, Sarabun, system-ui, sans-serif;
+  --mip-title-size: 24px;
+  --mip-section-size: 18px;
+  --mip-label-size: 14px;
+  --mip-input-size: 15px;
+  --mip-helper-size: 12px;
+}
