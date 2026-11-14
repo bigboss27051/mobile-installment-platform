@@ -8,6 +8,7 @@ import {
   statusTone,
 } from './enroll-status';
 import { useI18n } from './i18n-context';
+import { Alert, Button, FormField, Input, Page, Section, Select } from './ui';
 
 type EnrollmentSession = {
   id: string;
@@ -131,28 +132,25 @@ export function EnrollPage({
   }
 
   return (
-    <div>
-      <h1>{t('enroll.title')}</h1>
-      <div className="card">
+    <Page title={t('enroll.title')}>
+      <Section>
         <p>{t('enroll.stubNote')}</p>
-        <p className="muted">{t('enroll.handoverBlocked')}</p>
-      </div>
+        <Alert tone="info">{t('enroll.handoverBlocked')}</Alert>
+      </Section>
 
-      <div className="card">
+      <Section title={platform === 'ANDROID' ? t('enroll.androidHow') : t('enroll.iosHow')}>
         {platform === 'ANDROID' ? (
           <>
-            <h2>{t('enroll.androidHow')}</h2>
             <ol>
               <li>{t('enroll.androidStep1')}</li>
               <li>{t('enroll.androidStep2')}</li>
               <li>{t('enroll.androidStep3')}</li>
               <li>{t('enroll.androidStep4')}</li>
             </ol>
-            <p className="error">{t('enroll.playProtect')}</p>
+            <Alert tone="error">{t('enroll.playProtect')}</Alert>
           </>
         ) : (
           <>
-            <h2>{t('enroll.iosHow')}</h2>
             <p>{t('enroll.iosPrereqTitle')}</p>
             <label className="check-row">
               <input
@@ -195,40 +193,54 @@ export function EnrollPage({
               <li>{t('enroll.iosStep4')}</li>
               <li>{t('enroll.iosStep5')}</li>
             </ol>
-            <p className="error">{t('enroll.iosNoSkip')}</p>
+            <Alert tone="error">{t('enroll.iosNoSkip')}</Alert>
             <p>{t('enroll.iosThirtyDays')}</p>
           </>
         )}
-      </div>
+      </Section>
 
-      <form onSubmit={createSession}>
-        <input
-          placeholder={t('enroll.contractId')}
-          aria-label={t('enroll.contractId')}
-          value={contractId}
-          onChange={(e) => setContractId(e.target.value)}
-        />
-        <select
-          value={platform}
-          onChange={(e) => setPlatform(e.target.value as 'ANDROID' | 'IOS')}
-          aria-label={t('enroll.title')}
-        >
-          <option value="ANDROID">{t('enroll.android')}</option>
-          <option value="IOS">{t('enroll.ios')}</option>
-        </select>
-        <label className="check-row">
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
-          />
-          {t('enroll.consent')}
-        </label>
-        <button className="primary">{t('enroll.createSession')}</button>
-      </form>
+      <Section>
+        <form className="mip-form-grid mip-form-grid--2" onSubmit={createSession}>
+          <FormField label={t('enroll.contractId')} htmlFor="enroll-contract-id" required>
+            <Input
+              id="enroll-contract-id"
+              value={contractId}
+              onChange={(e) => setContractId(e.target.value)}
+            />
+          </FormField>
+          <FormField
+            label={`${t('enroll.android')} / ${t('enroll.ios')}`}
+            htmlFor="enroll-platform"
+          >
+            <Select
+              id="enroll-platform"
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value as 'ANDROID' | 'IOS')}
+            >
+              <option value="ANDROID">{t('enroll.android')}</option>
+              <option value="IOS">{t('enroll.ios')}</option>
+            </Select>
+          </FormField>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+              />
+              {t('enroll.consent')}
+            </label>
+          </div>
+          <div className="mip-form-actions" style={{ gridColumn: '1 / -1' }}>
+            <Button type="submit" variant="primary">
+              {t('enroll.createSession')}
+            </Button>
+          </div>
+        </form>
+      </Section>
 
       {session && viewStatus ? (
-        <div className="card">
+        <Section>
           <p>
             <span className={`chip chip-${statusTone(viewStatus)}`}>
               {t(`enroll.state.${viewStatus}`)}
@@ -236,85 +248,97 @@ export function EnrollPage({
           </p>
           <p>{t('enroll.sessionId', { id: session.id })}</p>
           <p>{t('enroll.expires', { at: session.expiresAt })}</p>
-          {session.lastErrorCode ? <p className="error">{session.lastErrorCode}</p> : null}
-          <div className="action-row">
-            <button type="button" onClick={() => void refreshSession()}>
+          {session.lastErrorCode ? (
+            <Alert tone="error">{session.lastErrorCode}</Alert>
+          ) : null}
+          <div className="mip-form-actions">
+            <Button type="button" variant="secondary" onClick={() => void refreshSession()}>
               {t('enroll.refresh')}
-            </button>
+            </Button>
             {canStaffCancel(viewStatus) ? (
-              <button type="button" onClick={() => void cancelSession()}>
+              <Button type="button" variant="danger" onClick={() => void cancelSession()}>
                 {t('enroll.cancel')}
-              </button>
+              </Button>
             ) : null}
             {isTerminalEnrollment(viewStatus) ? (
-              <button type="button" onClick={resetWizard}>
+              <Button type="button" variant="secondary" onClick={resetWizard}>
                 {t('enroll.newSession')}
-              </button>
+              </Button>
             ) : null}
           </div>
-        </div>
+        </Section>
       ) : null}
 
       {session?.platform === 'ANDROID' && qr && viewStatus === 'WAITING_FOR_DEVICE' ? (
-        <div className="card">
+        <Section>
           <p>{qr.format}</p>
           <p>{t('enroll.fingerprint', { hash: qr.payloadFingerprint })}</p>
           {qrHasWifiSecret ? (
-            <p className="error">{t('enroll.wifiForbidden')}</p>
+            <Alert tone="error">{t('enroll.wifiForbidden')}</Alert>
           ) : (
-            <pre>{JSON.stringify(qr.payload, null, 2)}</pre>
+            <pre className="mip-pre">{JSON.stringify(qr.payload, null, 2)}</pre>
           )}
-        </div>
+        </Section>
       ) : null}
 
       {session && viewStatus && canStaffActivate(viewStatus) ? (
-        <form
-          onSubmit={async (event) => {
-            event.preventDefault();
-            try {
-              const activation = await apiRequest<{ deviceId: string }>(
-                '/api/v1/devices/activate',
-                withIdempotency({
-                  method: 'POST',
-                  body: JSON.stringify({
-                    enrollmentSessionId: session.id,
-                    contractId: session.contractId || contractId,
-                    reason,
+        <Section>
+          <form
+            className="mip-form-grid"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              try {
+                const activation = await apiRequest<{ deviceId: string }>(
+                  '/api/v1/devices/activate',
+                  withIdempotency({
+                    method: 'POST',
+                    body: JSON.stringify({
+                      enrollmentSessionId: session.id,
+                      contractId: session.contractId || contractId,
+                      reason,
+                    }),
                   }),
-                }),
-              );
-              setDeviceId(activation.deviceId);
-              await apiRequest(`/api/v1/devices/${activation.deviceId}/bind-contract`, {
-                ...withIdempotency({
-                  method: 'POST',
-                  body: JSON.stringify({
-                    contractId: session.contractId || contractId,
-                    reason,
+                );
+                setDeviceId(activation.deviceId);
+                await apiRequest(`/api/v1/devices/${activation.deviceId}/bind-contract`, {
+                  ...withIdempotency({
+                    method: 'POST',
+                    body: JSON.stringify({
+                      contractId: session.contractId || contractId,
+                      reason,
+                    }),
                   }),
-                }),
-              });
-              const latest = await apiRequest<EnrollmentSession>(
-                `/api/v1/devices/enrollment-sessions/${session.id}`,
-              );
-              setSession(latest);
-              onError(null);
-            } catch (err) {
-              onError(err instanceof ApiError ? apiError(err.message) : t('enroll.bindFailed'));
-            }
-          }}
-        >
-          <input
-            placeholder={t('enroll.reason')}
-            aria-label={t('enroll.reason')}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-          <button className="primary">{t('enroll.activateBind')}</button>
-          {deviceId ? <p>{t('enroll.bound', { id: deviceId })}</p> : null}
-        </form>
+                });
+                const latest = await apiRequest<EnrollmentSession>(
+                  `/api/v1/devices/enrollment-sessions/${session.id}`,
+                );
+                setSession(latest);
+                onError(null);
+              } catch (err) {
+                onError(err instanceof ApiError ? apiError(err.message) : t('enroll.bindFailed'));
+              }
+            }}
+          >
+            <FormField label={t('enroll.reason')} htmlFor="enroll-reason" required>
+              <Input
+                id="enroll-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </FormField>
+            <div className="mip-form-actions">
+              <Button type="submit" variant="primary">
+                {t('enroll.activateBind')}
+              </Button>
+            </div>
+            {deviceId ? <p>{t('enroll.bound', { id: deviceId })}</p> : null}
+          </form>
+        </Section>
       ) : null}
 
-      {viewStatus === 'COMPLETED' ? <p>{t('enroll.handoverReady')}</p> : null}
-    </div>
+      {viewStatus === 'COMPLETED' ? (
+        <Alert tone="success">{t('enroll.handoverReady')}</Alert>
+      ) : null}
+    </Page>
   );
 }
