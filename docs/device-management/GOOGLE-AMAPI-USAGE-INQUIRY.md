@@ -2,7 +2,9 @@
 
 **Status:** Ready for a **human** to submit. Engineering cannot send this form.  
 **Task:** DM0-006. This is the **first** device gate — not lock-device code.  
-**Form:** [Android Management API Permissible Usage](https://developers.google.com/android/management/permissible-usage) (inquiry / quota forms linked from that page).  
+**Form (submit here):** [Android Management API General Usage Inquiry](https://services.google.com/fb/forms/AMAPIUsageInquiry/) (`https://goo.gle/android-enterprise-response`)  
+**Policy page:** [Permissible Usage](https://developers.google.com/android/management/permissible-usage) (last updated 2026-03-30).  
+**Field-by-field packet:** [OPERATOR-PACKET.md](./OPERATOR-PACKET.md).  
 **Why:** Published policy forbids “device financing / EMI” control. Our product includes **graduated restriction after overdue**, so we must not call AMAPI for that until Google answers.
 
 Fill Cloud project ID, legal entity, and contact email at submit time. Do not invent Google credentials.
@@ -49,10 +51,21 @@ Does this **retail installment / EMI-adjacent** use, with **informed contract co
 
 ---
 
+## Form fields (as of 2026-11-14)
+
+| Google field | What to enter |
+|--------------|----------------|
+| Name | Human contact |
+| Company Name | Legal entity |
+| Contact email | Company mailbox that can receive Google mail |
+| Enterprise type | Commercial EMM developer (not OEM, not in-house-only) |
+| Android Management API Project ID | Cloud project ID, or `none` |
+| Please describe your use case | Paste the English block above in full |
+
 ## Operator checklist
 
-1. Create (or use) a Google Cloud project; enable Android Management API; note project ID.  
-2. Paste the text above into Google’s inquiry/quota form.  
+1. Create (or use) a Google Cloud **dev** project; enable Android Management API; note project ID.  
+2. Open [the inquiry form](https://services.google.com/fb/forms/AMAPIUsageInquiry/) and paste the English block into **use case**.  
 3. Store the ticket/email ID here when submitted: `_not submitted_`  
 4. File Google’s written answer under `docs/device-management/lab-evidence/` (no secrets) and add a Decision Log row updating D-054.
 

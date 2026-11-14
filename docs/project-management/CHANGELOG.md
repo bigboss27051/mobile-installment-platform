@@ -5,6 +5,7 @@
 ### Added
 
 - Phase 3a RBAC: permission codes + `PermissionsGuard` on application decide, contract activate, device enroll/activate/bind/unbind (OWNER has unbind; STAFF does not)
+- Operator packet for human AMAPI submit + hardware shopping list (`docs/device-management/OPERATOR-PACKET.md`); live form URL `https://services.google.com/fb/forms/AMAPIUsageInquiry/`
 - Human-ops pack: `HUMAN-OPS-NOW.md`, MDM vendor shortlist, D-051 legal draft (incl. 30-day leave Remote Management)
 - DM2 stub: activate / bind-contract / unbind-contract APIs (tenant isolation, IMEI match, idempotency, audit+reason; no AMAPI/Apple HTTP)
 - Merchant Web enroll page: create session + show stub QR from API

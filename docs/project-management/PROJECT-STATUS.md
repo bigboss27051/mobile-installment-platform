@@ -38,7 +38,7 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 ## Next Session Entry Point
 
-1. `docs/device-management/HUMAN-OPS-NOW.md` — submit Google form + find lab devices  
+1. `docs/device-management/OPERATOR-PACKET.md` — submit AMAPI form + buy/borrow lab phones  
 2. `docs/roadmap/CURRENT-PHASE.md`  
 3. `docs/project-management/MASTER-EXECUTION-PLAN.md`  
 4. `docs/superpowers/specs/2026-11-12-r1f-merchant-web-customer-android-design.md` — R1f reference  

@@ -8,11 +8,13 @@ This list can run **in parallel with DM2 software** (activate/bind, no AMAPI HTT
 
 ## 1. Submit AMAPI permissible-usage inquiry (DM0-006) — first
 
-Use [GOOGLE-AMAPI-USAGE-INQUIRY.md](./GOOGLE-AMAPI-USAGE-INQUIRY.md).
+Printable steps + shopping list: [OPERATOR-PACKET.md](./OPERATOR-PACKET.md).  
+Copy-paste English: [GOOGLE-AMAPI-USAGE-INQUIRY.md](./GOOGLE-AMAPI-USAGE-INQUIRY.md).  
+**Submit URL:** https://services.google.com/fb/forms/AMAPIUsageInquiry/
 
 1. Create or reuse a Google Cloud project; enable Android Management API; copy **project ID**.  
 2. Fill legal entity name + contact email (do not invent credentials in git).  
-3. Paste the English text from the inquiry doc into [Google’s form](https://developers.google.com/android/management/permissible-usage).  
+3. Paste the English text from the inquiry doc into [the AMAPI usage inquiry form](https://services.google.com/fb/forms/AMAPIUsageInquiry/).  
 4. Record ticket/email ID in the inquiry doc (`_not submitted_` until you have one).  
 5. File Google’s written answer under `docs/device-management/lab-evidence/` (no secrets) and add a Decision Log row for D-054.
 

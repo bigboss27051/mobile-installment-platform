@@ -16,3 +16,10 @@ apps/customer-mobile/build
 apps/customer-mobile/.flutter-plugins
 apps/customer-mobile/.flutter-plugins-dependencies
 .worktrees/
+docs/device-management/lab-evidence/**/*.env
+docs/device-management/lab-evidence/**/*secret*
+docs/device-management/lab-evidence/**/*.json
+docs/device-management/lab-evidence/**/*.p8
+docs/device-management/lab-evidence/**/*.pem
+docs/device-management/lab-evidence/**/*.key
+

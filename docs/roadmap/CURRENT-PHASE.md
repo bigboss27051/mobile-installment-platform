@@ -14,7 +14,7 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Architecture (stakeholder):** AMAPI; iOS Model B + vendor MDM + Configurator iPhone; QR + reseller Zero-touch; device management **mandatory**. See D-042–D-053.
 
-**Next (people, not lock code):** submit Google AMAPI inquiry ([GOOGLE-AMAPI-USAGE-INQUIRY.md](../device-management/GOOGLE-AMAPI-USAGE-INQUIRY.md), DM0-006). Checklist: [HUMAN-OPS-NOW.md](../device-management/HUMAN-OPS-NOW.md). **CRITICAL:** AMAPI Permissible Usage forbids EMI/payment-based device restriction (**D-054**). Hardware enroll **not run**.
+**Next (people, not lock code):** submit Google AMAPI inquiry — packet [OPERATOR-PACKET.md](../device-management/OPERATOR-PACKET.md), form https://services.google.com/fb/forms/AMAPIUsageInquiry/ (DM0-006). Checklist: [HUMAN-OPS-NOW.md](../device-management/HUMAN-OPS-NOW.md). **CRITICAL:** AMAPI Permissible Usage forbids EMI/payment-based device restriction (**D-054**). Hardware enroll **not run**.
 
 **DM1/DM2 stubs:** sessions + activate/bind on API. Still submit Google inquiry and physical lab. Do **not** implement AMAPI lock-on-overdue. Do **not** claim Device Owner production.
 

@@ -18,6 +18,7 @@ Canonical specs for the **Device Provisioning & Enrollment Platform** (R2 / DM0â
 | [COMPATIBILITY-MATRIX-RESULTS.md](./COMPATIBILITY-MATRIX-RESULTS.md) | SKU rows (NOT RUN) |
 | [PHYSICAL-LAB-RUNBOOK.md](./PHYSICAL-LAB-RUNBOOK.md) | What humans must do on devices |
 | [GOOGLE-AMAPI-USAGE-INQUIRY.md](./GOOGLE-AMAPI-USAGE-INQUIRY.md) | D-054 form draft for Google â€” **human must submit** |
+| [OPERATOR-PACKET.md](./OPERATOR-PACKET.md) | **Do this now:** Google form fields + Android/iOS shopping list |
 | [HUMAN-OPS-NOW.md](./HUMAN-OPS-NOW.md) | Google form + lab hardware + ABM checklist |
 | [MDM-VENDOR-SHORTLIST.md](./MDM-VENDOR-SHORTLIST.md) | Vendor comparison; SKU still open |
 | [LEGAL-COPY-D-051-DRAFT.md](./LEGAL-COPY-D-051-DRAFT.md) | Draft shop/customer wording incl. 30-day leave-RM |
