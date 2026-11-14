@@ -12,6 +12,7 @@ const th: Record<string, string> = {
   'nav.contracts': 'สัญญา',
   'nav.enroll': 'ลงทะเบียนเครื่อง',
   'nav.logout': 'ออกจากระบบ',
+  'nav.menu': 'เมนู',
   'nav.langTh': 'ไทย',
   'nav.langEn': 'EN',
 
@@ -28,6 +29,8 @@ const th: Record<string, string> = {
   'products.loadFailed': 'โหลดสินค้าไม่สำเร็จ',
   'products.colName': 'ชื่อ',
   'products.colBrand': 'ยี่ห้อ',
+  'products.empty': 'ยังไม่มีสินค้า',
+  'products.new': 'เพิ่มสินค้า',
 
   'inventory.title': 'สต็อก',
   'inventory.variantId': 'รหัสรุ่นสินค้า',
@@ -37,6 +40,8 @@ const th: Record<string, string> = {
   'inventory.colStatus': 'สถานะ',
   'inventory.loadFailed': 'โหลดสต็อกไม่สำเร็จ',
   'inventory.receiveReason': 'รับเข้าจากเว็บร้าน',
+  'inventory.empty': 'ยังไม่มี IMEI',
+  'inventory.new': 'รับเครื่องเข้าสต็อก',
 
   'customers.title': 'ลูกค้า',
   'customers.fullName': 'ชื่อ-นามสกุล',
@@ -47,6 +52,9 @@ const th: Record<string, string> = {
   'customers.colPhone': 'เบอร์โทร',
   'customers.colNationalId': 'บัตรประชาชน',
   'customers.loadFailed': 'โหลดลูกค้าไม่สำเร็จ',
+  'customers.empty': 'ยังไม่มีลูกค้า',
+  'customers.new': 'เพิ่มลูกค้า',
+  'customers.nationalIdHelper': 'เลขบัตร 13 หลัก แสดงแบบปกปิดในรายการ',
 
   'applications.title': 'คำขอผ่อน',
   'applications.customerId': 'รหัสลูกค้า',
@@ -60,6 +68,8 @@ const th: Record<string, string> = {
   'applications.approve': 'อนุมัติ',
   'applications.approveReason': 'อนุมัติจากเว็บร้าน',
   'applications.loadFailed': 'โหลดคำขอไม่สำเร็จ',
+  'applications.empty': 'ยังไม่มีใบสมัคร',
+  'applications.new': 'สร้างใบสมัคร',
 
   'contracts.title': 'สัญญา',
   'contracts.applicationId': 'รหัสคำขอที่อนุมัติแล้ว',
@@ -76,6 +86,9 @@ const th: Record<string, string> = {
   'contracts.amount': 'จำนวนเงิน',
   'contracts.createIntent': 'สร้าง PromptPay',
   'contracts.loadFailed': 'โหลดสัญญาไม่สำเร็จ',
+  'contracts.empty': 'ยังไม่มีสัญญา',
+  'contracts.new': 'สร้างสัญญา',
+  'contracts.list': 'สัญญา',
 
   'enroll.title': 'ลงทะเบียนเครื่อง',
   'enroll.stubNote':
@@ -149,6 +162,7 @@ const en: Record<string, string> = {
   'nav.contracts': 'Contracts',
   'nav.enroll': 'Enroll device',
   'nav.logout': 'Log out',
+  'nav.menu': 'Menu',
   'nav.langTh': 'ไทย',
   'nav.langEn': 'EN',
 
@@ -165,6 +179,8 @@ const en: Record<string, string> = {
   'products.loadFailed': 'Failed to load products',
   'products.colName': 'Name',
   'products.colBrand': 'Brand',
+  'products.empty': 'No products yet.',
+  'products.new': 'New product',
 
   'inventory.title': 'Inventory',
   'inventory.variantId': 'Variant ID',
@@ -174,6 +190,8 @@ const en: Record<string, string> = {
   'inventory.colStatus': 'Status',
   'inventory.loadFailed': 'Failed to load inventory',
   'inventory.receiveReason': 'Merchant web receive',
+  'inventory.empty': 'No IMEI units yet.',
+  'inventory.new': 'Receive IMEI',
 
   'customers.title': 'Customers',
   'customers.fullName': 'Full name',
@@ -184,6 +202,9 @@ const en: Record<string, string> = {
   'customers.colPhone': 'Phone',
   'customers.colNationalId': 'National ID',
   'customers.loadFailed': 'Failed to load customers',
+  'customers.empty': 'No customers yet.',
+  'customers.new': 'New customer',
+  'customers.nationalIdHelper': '13-digit national ID. Stored masked in lists.',
 
   'applications.title': 'Applications',
   'applications.customerId': 'Customer ID',
@@ -197,6 +218,8 @@ const en: Record<string, string> = {
   'applications.approve': 'Approve',
   'applications.approveReason': 'Approved from merchant web',
   'applications.loadFailed': 'Failed to load applications',
+  'applications.empty': 'No applications yet.',
+  'applications.new': 'New application',
 
   'contracts.title': 'Contracts',
   'contracts.applicationId': 'Approved application ID',
@@ -213,6 +236,9 @@ const en: Record<string, string> = {
   'contracts.amount': 'Amount',
   'contracts.createIntent': 'Create PromptPay intent',
   'contracts.loadFailed': 'Failed to load contracts',
+  'contracts.empty': 'No contracts yet.',
+  'contracts.new': 'Create contract',
+  'contracts.list': 'Contracts',
 
   'enroll.title': 'Device enrollment',
   'enroll.stubNote':

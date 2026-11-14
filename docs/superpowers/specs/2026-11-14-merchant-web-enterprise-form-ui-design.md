@@ -35,8 +35,8 @@ Make Merchant Web look and behave like a professional enterprise / banking admin
 
 - Professional, trustworthy, minimal, symmetrical, readable  
 - Usability and consistency over visual effects  
-- Controlled max-width content; 12-column grid where useful  
-- 1-column for complex/ID fields; 2-column for related pairs  
+- Controlled max-width content; **no 12-column grid** — 1–2 column CSS Grid only  
+- 1-column default; 2-column only for related pairs (opt-in, `min-width: 768px`)  
 - Labels always above inputs; required marker; validation/helper below field  
 
 ## Color system
@@ -70,19 +70,24 @@ Avoid excessive shadows. Section elevation = 1px border (optional very light sha
 - Sidebar: brand, language switch, nav buttons for all pages, logout  
 - Active nav: primary blue background, clear selected state  
 - Mobile (<768px): sidebar becomes an off-canvas drawer opened by a header menu button (keyboard accessible, focus trap not required in this pass); content remains single-column stacked  
+- **One breakpoint:** 768px. Do not add 640 / 1024 / 1280 unless a layout later proves it.  
 
 ### Page
 
-- `Page` component: horizontal padding, max-width **960px**, page title (`h1` 24px)  
-- Stacked `Section` surfaces: white, 6px radius, 1px `#E2E8F0` border, consistent internal padding **16px** (24px on desktop if space allows)  
-- Vertical rhythm: **16px** between nested blocks, **24px** between major sections  
+- `Page` component: max-width **1200px**, centered in the main column; page title (`h1` 24px)  
+- Main gutters: **16px** below 768px, **24px** from 768px up (no 32px gutter this pass)  
+- Stacked `Section` surfaces: white, 6px radius, 1px `#E2E8F0` border, internal padding **16px at all breakpoints**  
+- Vertical rhythm: **16px** between fields, **24px** between related groups, **32px** between major sections (`--mip-space-6`)  
 
 ### Forms
 
-- Input height **44px**; border radius **6px**  
+- Input / button height **44px**; border radius **6px** (documented exceptions to the 8-point scale)  
+- Field grids (`mip-form-grid`) max-width **720px**, left-aligned inside the section; tables use the full page width  
+- Login is a centered card max-width **420px** (not `Page`)  
 - `FormField` wraps control: label (+ required `*`) above; helper or error below (one message slot)  
-- Related fields (e.g. name/brand, principal/down payment) in 2-column grid; full-width for IDs, reasons, checklists  
-- Primary action button size consistent with 44px height  
+- Related fields (e.g. name/brand, principal/down payment) in opt-in 2-column grid at ≥768px; full-width for IDs, reasons, checklists  
+- Two or more form actions stack full-width below 768px  
+- Tables: `overflow-x: auto` wrapper; do not restyle rows as cards  
 
 ## Component architecture
 
@@ -111,7 +116,7 @@ apps/merchant-web/src/
 
 | Component | Responsibility |
 |-----------|----------------|
-| `Page` | Max-width container + page title + optional toolbar slot |
+| `Page` | 1200px max-width container + page title + optional toolbar slot |
 | `Section` | Surface card + optional section title |
 | `FormField` | Label, required, `htmlFor`, helperText, error, children |
 | `Input` / `Select` / `TextArea` | Styled native controls; forward refs/props; 44px where applicable |

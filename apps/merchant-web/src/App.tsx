@@ -8,8 +8,19 @@ import {
 } from './api';
 import { EnrollPage } from './enroll-page';
 import { LanguageSwitch, useI18n } from './i18n-context';
+import {
+  Alert,
+  Button,
+  EmptyState,
+  FormField,
+  Input,
+  Page,
+  Section,
+  Spinner,
+  Table,
+} from './ui';
 
-type Page =
+type AppPage =
   | 'products'
   | 'inventory'
   | 'customers'
@@ -23,7 +34,7 @@ type TenantMe = {
   branches: { id: string; code: string; name: string }[];
 };
 
-const PAGES: Page[] = [
+const PAGES: AppPage[] = [
   'products',
   'inventory',
   'customers',
@@ -35,8 +46,9 @@ const PAGES: Page[] = [
 export function App() {
   const { t, apiError } = useI18n();
   const [token, setToken] = useState<string | null>(getAccessToken());
-  const [page, setPage] = useState<Page>('contracts');
+  const [page, setPage] = useState<AppPage>('contracts');
   const [error, setError] = useState<string | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
 
   if (!token) {
     return (
@@ -50,16 +62,33 @@ export function App() {
   }
 
   return (
-    <div className="app-shell">
-      <nav>
-        <strong>{t('nav.brand')}</strong>
+    <div className={`app-shell${navOpen ? ' nav-open' : ''}`}>
+      {navOpen ? (
+        <button
+          type="button"
+          className="app-backdrop"
+          aria-label="Close menu"
+          onClick={() => setNavOpen(false)}
+        />
+      ) : null}
+      <nav className="app-sidebar" aria-label="Main">
+        <div className="app-sidebar__brand">{t('nav.brand')}</div>
         <LanguageSwitch />
         {PAGES.map((item) => (
-          <button key={item} onClick={() => setPage(item)}>
+          <button
+            key={item}
+            type="button"
+            className={page === item ? 'active' : undefined}
+            onClick={() => {
+              setPage(item);
+              setNavOpen(false);
+            }}
+          >
             {t(`nav.${item}`)}
           </button>
         ))}
         <button
+          type="button"
           onClick={() => {
             setAccessToken(null);
             setToken(null);
@@ -68,8 +97,13 @@ export function App() {
           {t('nav.logout')}
         </button>
       </nav>
-      <main>
-        {error ? <p className="error">{error}</p> : null}
+      <div className="app-main">
+        <div className="app-topbar">
+          <Button type="button" variant="secondary" onClick={() => setNavOpen(true)}>
+            {t('nav.menu')}
+          </Button>
+        </div>
+        {error ? <Alert tone="error">{error}</Alert> : null}
         {page === 'products' ? <ProductsPage onError={setError} apiError={apiError} /> : null}
         {page === 'inventory' ? <InventoryPage onError={setError} apiError={apiError} /> : null}
         {page === 'customers' ? <CustomersPage onError={setError} apiError={apiError} /> : null}
@@ -78,7 +112,7 @@ export function App() {
         ) : null}
         {page === 'contracts' ? <ContractsPage onError={setError} apiError={apiError} /> : null}
         {page === 'enroll' ? <EnrollPage onError={setError} apiError={apiError} /> : null}
-      </main>
+      </div>
     </div>
   );
 }
@@ -100,31 +134,38 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
   }
 
   return (
-    <main>
-      <div className="card login-card">
+    <div className="login-screen">
+      <div className="login-card">
         <LanguageSwitch />
         <h1>{t('login.title')}</h1>
-        <form onSubmit={onSubmit}>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t('login.email')}
-            aria-label={t('login.email')}
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={t('login.password')}
-            aria-label={t('login.password')}
-          />
-          <button className="primary" type="submit">
-            {t('login.submit')}
-          </button>
+        <form className="mip-form-grid" onSubmit={onSubmit}>
+          <FormField label={t('login.email')} htmlFor="login-email" required>
+            <Input
+              id="login-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+            />
+          </FormField>
+          <FormField label={t('login.password')} htmlFor="login-password" required>
+            <Input
+              id="login-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </FormField>
+          <div className="mip-form-actions">
+            <Button type="submit" variant="primary">
+              {t('login.submit')}
+            </Button>
+          </div>
         </form>
-        {error ? <p className="error">{error}</p> : null}
+        {error ? <Alert tone="error">{error}</Alert> : null}
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -139,13 +180,17 @@ function ProductsPage({
   const [rows, setRows] = useState<{ id: string; name: string; brand: string }[]>([]);
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
+    setLoading(true);
     try {
       setRows(await apiRequest('/api/v1/products'));
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('products.loadFailed'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -154,49 +199,59 @@ function ProductsPage({
   }, []);
 
   return (
-    <div>
-      <h1>{t('products.title')}</h1>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await apiRequest('/api/v1/products', {
-            method: 'POST',
-            body: JSON.stringify({ name, brand }),
-          });
-          await refresh();
-        }}
-      >
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('products.name')}
-          aria-label={t('products.name')}
-        />
-        <input
-          value={brand}
-          onChange={(e) => setBrand(e.target.value)}
-          placeholder={t('products.brand')}
-          aria-label={t('products.brand')}
-        />
-        <button className="primary">{t('products.create')}</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>{t('products.colName')}</th>
-            <th>{t('products.colBrand')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.name}</td>
-              <td>{row.brand}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Page title={t('products.title')}>
+      <Section title={t('products.new')}>
+        <form
+          className="mip-form-grid mip-form-grid--2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await apiRequest('/api/v1/products', {
+              method: 'POST',
+              body: JSON.stringify({ name, brand }),
+            });
+            setName('');
+            setBrand('');
+            await refresh();
+          }}
+        >
+          <FormField label={t('products.name')} htmlFor="product-name" required>
+            <Input id="product-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </FormField>
+          <FormField label={t('products.brand')} htmlFor="product-brand" required>
+            <Input id="product-brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
+          </FormField>
+          <div className="mip-form-actions mip-form-grid__span">
+            <Button type="submit" variant="primary">
+              {t('products.create')}
+            </Button>
+          </div>
+        </form>
+      </Section>
+      <Section title={t('products.title')}>
+        {loading ? (
+          <Spinner />
+        ) : rows.length === 0 ? (
+          <EmptyState>{t('products.empty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('products.colName')}</th>
+                <th>{t('products.colBrand')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.name}</td>
+                  <td>{row.brand}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
+    </Page>
   );
 }
 
@@ -212,8 +267,10 @@ function InventoryPage({
   const [imei, setImei] = useState('');
   const [variantId, setVariantId] = useState('');
   const [branchId, setBranchId] = useState('');
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
+    setLoading(true);
     try {
       const [imeis, me] = await Promise.all([
         apiRequest<{ id: string; imei: string; status: string }[]>('/api/v1/inventory/imeis'),
@@ -226,6 +283,8 @@ function InventoryPage({
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('inventory.loadFailed'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -234,54 +293,68 @@ function InventoryPage({
   }, []);
 
   return (
-    <div>
-      <h1>{t('inventory.title')}</h1>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await apiRequest('/api/v1/inventory/imeis/receive', {
-            method: 'POST',
-            body: JSON.stringify({
-              branchId,
-              variantId,
-              imei,
-              reason: t('inventory.receiveReason'),
-            }),
-          });
-          await refresh();
-        }}
-      >
-        <input
-          placeholder={t('inventory.variantId')}
-          aria-label={t('inventory.variantId')}
-          value={variantId}
-          onChange={(e) => setVariantId(e.target.value)}
-        />
-        <input
-          placeholder={t('inventory.imei')}
-          aria-label={t('inventory.imei')}
-          value={imei}
-          onChange={(e) => setImei(e.target.value)}
-        />
-        <button className="primary">{t('inventory.receive')}</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>{t('inventory.colImei')}</th>
-            <th>{t('inventory.colStatus')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.imei}</td>
-              <td>{row.status}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Page title={t('inventory.title')}>
+      <Section title={t('inventory.new')}>
+        <form
+          className="mip-form-grid mip-form-grid--2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await apiRequest('/api/v1/inventory/imeis/receive', {
+              method: 'POST',
+              body: JSON.stringify({
+                branchId,
+                variantId,
+                imei,
+                reason: t('inventory.receiveReason'),
+              }),
+            });
+            setVariantId('');
+            setImei('');
+            await refresh();
+          }}
+        >
+          <FormField label={t('inventory.variantId')} htmlFor="inventory-variant" required>
+            <Input
+              id="inventory-variant"
+              value={variantId}
+              onChange={(e) => setVariantId(e.target.value)}
+            />
+          </FormField>
+          <FormField label={t('inventory.imei')} htmlFor="inventory-imei" required>
+            <Input id="inventory-imei" value={imei} onChange={(e) => setImei(e.target.value)} />
+          </FormField>
+          <div className="mip-form-actions mip-form-grid__span">
+            <Button type="submit" variant="primary">
+              {t('inventory.receive')}
+            </Button>
+          </div>
+        </form>
+      </Section>
+      <Section title={t('inventory.title')}>
+        {loading ? (
+          <Spinner />
+        ) : rows.length === 0 ? (
+          <EmptyState>{t('inventory.empty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('inventory.colImei')}</th>
+                <th>{t('inventory.colStatus')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.imei}</td>
+                  <td>{row.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
+    </Page>
   );
 }
 
@@ -299,13 +372,17 @@ function CustomersPage({
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [nationalId, setNationalId] = useState('');
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
+    setLoading(true);
     try {
       setRows(await apiRequest('/api/v1/customers'));
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('customers.loadFailed'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -314,57 +391,80 @@ function CustomersPage({
   }, []);
 
   return (
-    <div>
-      <h1>{t('customers.title')}</h1>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await apiRequest('/api/v1/customers', {
-            method: 'POST',
-            body: JSON.stringify({ fullName, phone, nationalId }),
-          });
-          await refresh();
-        }}
-      >
-        <input
-          placeholder={t('customers.fullName')}
-          aria-label={t('customers.fullName')}
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
-        <input
-          placeholder={t('customers.phone')}
-          aria-label={t('customers.phone')}
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-        <input
-          placeholder={t('customers.nationalId')}
-          aria-label={t('customers.nationalId')}
-          value={nationalId}
-          onChange={(e) => setNationalId(e.target.value)}
-        />
-        <button className="primary">{t('customers.create')}</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>{t('customers.colName')}</th>
-            <th>{t('customers.colPhone')}</th>
-            <th>{t('customers.colNationalId')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.fullName}</td>
-              <td>{row.phone}</td>
-              <td>{row.nationalIdMasked}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Page title={t('customers.title')}>
+      <Section title={t('customers.new')}>
+        <form
+          className="mip-form-grid mip-form-grid--2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await apiRequest('/api/v1/customers', {
+              method: 'POST',
+              body: JSON.stringify({ fullName, phone, nationalId }),
+            });
+            setFullName('');
+            setPhone('');
+            setNationalId('');
+            await refresh();
+          }}
+        >
+          <FormField label={t('customers.fullName')} htmlFor="customer-name" required>
+            <Input
+              id="customer-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+          </FormField>
+          <FormField label={t('customers.phone')} htmlFor="customer-phone" required>
+            <Input id="customer-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </FormField>
+          <div className="mip-form-grid__span">
+            <FormField
+              label={t('customers.nationalId')}
+              htmlFor="customer-nid"
+              required
+              helperText={t('customers.nationalIdHelper')}
+            >
+              <Input
+                id="customer-nid"
+                value={nationalId}
+                onChange={(e) => setNationalId(e.target.value)}
+              />
+            </FormField>
+          </div>
+          <div className="mip-form-actions mip-form-grid__span">
+            <Button type="submit" variant="primary">
+              {t('customers.create')}
+            </Button>
+          </div>
+        </form>
+      </Section>
+      <Section title={t('customers.title')}>
+        {loading ? (
+          <Spinner />
+        ) : rows.length === 0 ? (
+          <EmptyState>{t('customers.empty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('customers.colName')}</th>
+                <th>{t('customers.colPhone')}</th>
+                <th>{t('customers.colNationalId')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.fullName}</td>
+                  <td>{row.phone}</td>
+                  <td>{row.nationalIdMasked}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
+    </Page>
   );
 }
 
@@ -382,8 +482,10 @@ function ApplicationsPage({
   const [planId, setPlanId] = useState('');
   const [principal, setPrincipal] = useState('12000.00');
   const [downPayment, setDownPayment] = useState('2000.00');
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
+    setLoading(true);
     try {
       const [apps, plans] = await Promise.all([
         apiRequest<{ id: string; status: string }[]>('/api/v1/applications'),
@@ -396,6 +498,8 @@ function ApplicationsPage({
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('applications.loadFailed'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -404,94 +508,120 @@ function ApplicationsPage({
   }, []);
 
   return (
-    <div>
-      <h1>{t('applications.title')}</h1>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await apiRequest('/api/v1/applications', {
-            method: 'POST',
-            body: JSON.stringify({
-              customerId,
-              imeiUnitId,
-              planId,
-              principal,
-              downPayment,
-            }),
-          });
-          await refresh();
-        }}
-      >
-        <input
-          placeholder={t('applications.customerId')}
-          aria-label={t('applications.customerId')}
-          value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
-        />
-        <input
-          placeholder={t('applications.imeiUnitId')}
-          aria-label={t('applications.imeiUnitId')}
-          value={imeiUnitId}
-          onChange={(e) => setImeiUnitId(e.target.value)}
-        />
-        <input
-          value={principal}
-          onChange={(e) => setPrincipal(e.target.value)}
-          placeholder={t('applications.principal')}
-          aria-label={t('applications.principal')}
-        />
-        <input
-          value={downPayment}
-          onChange={(e) => setDownPayment(e.target.value)}
-          placeholder={t('applications.downPayment')}
-          aria-label={t('applications.downPayment')}
-        />
-        <button className="primary">{t('applications.create')}</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>{t('applications.colId')}</th>
-            <th>{t('applications.colStatus')}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td>
-              <td>{row.status}</td>
-              <td>
-                <button
-                  onClick={async () => {
-                    await apiRequest(`/api/v1/applications/${row.id}/submit`, {
-                      method: 'POST',
-                    });
-                    await refresh();
-                  }}
-                >
-                  {t('applications.submit')}
-                </button>
-                <button
-                  onClick={async () => {
-                    await apiRequest(`/api/v1/applications/${row.id}/decision`, {
-                      method: 'POST',
-                      body: JSON.stringify({
-                        decision: 'APPROVE',
-                        reason: t('applications.approveReason'),
-                      }),
-                    });
-                    await refresh();
-                  }}
-                >
-                  {t('applications.approve')}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Page title={t('applications.title')}>
+      <Section title={t('applications.new')}>
+        <form
+          className="mip-form-grid"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await apiRequest('/api/v1/applications', {
+              method: 'POST',
+              body: JSON.stringify({
+                customerId,
+                imeiUnitId,
+                planId,
+                principal,
+                downPayment,
+              }),
+            });
+            await refresh();
+          }}
+        >
+          <FormField label={t('applications.customerId')} htmlFor="app-customer" required>
+            <Input
+              id="app-customer"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+            />
+          </FormField>
+          <FormField label={t('applications.imeiUnitId')} htmlFor="app-imei" required>
+            <Input
+              id="app-imei"
+              value={imeiUnitId}
+              onChange={(e) => setImeiUnitId(e.target.value)}
+            />
+          </FormField>
+          <div className="mip-form-grid mip-form-grid--2">
+            <FormField label={t('applications.principal')} htmlFor="app-principal" required>
+              <Input
+                id="app-principal"
+                value={principal}
+                onChange={(e) => setPrincipal(e.target.value)}
+              />
+            </FormField>
+            <FormField label={t('applications.downPayment')} htmlFor="app-down" required>
+              <Input
+                id="app-down"
+                value={downPayment}
+                onChange={(e) => setDownPayment(e.target.value)}
+              />
+            </FormField>
+          </div>
+          <div className="mip-form-actions">
+            <Button type="submit" variant="primary">
+              {t('applications.create')}
+            </Button>
+          </div>
+        </form>
+      </Section>
+      <Section title={t('applications.title')}>
+        {loading ? (
+          <Spinner />
+        ) : rows.length === 0 ? (
+          <EmptyState>{t('applications.empty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('applications.colId')}</th>
+                <th>{t('applications.colStatus')}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.id}</td>
+                  <td>{row.status}</td>
+                  <td>
+                    <div className="mip-inline-actions">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={async () => {
+                          await apiRequest(`/api/v1/applications/${row.id}/submit`, {
+                            method: 'POST',
+                          });
+                          await refresh();
+                        }}
+                      >
+                        {t('applications.submit')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={async () => {
+                          await apiRequest(`/api/v1/applications/${row.id}/decision`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              decision: 'APPROVE',
+                              reason: t('applications.approveReason'),
+                            }),
+                          });
+                          await refresh();
+                        }}
+                      >
+                        {t('applications.approve')}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
+    </Page>
   );
 }
 
@@ -512,13 +642,17 @@ function ContractsPage({
   } | null>(null);
   const [qr, setQr] = useState<unknown>(null);
   const [amount, setAmount] = useState('100.00');
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
+    setLoading(true);
     try {
       setRows(await apiRequest('/api/v1/contracts'));
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('contracts.loadFailed'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -527,66 +661,86 @@ function ContractsPage({
   }, []);
 
   return (
-    <div>
-      <h1>{t('contracts.title')}</h1>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await apiRequest(`/api/v1/applications/${applicationId}/contracts`, {
-            method: 'POST',
-          });
-          await refresh();
-        }}
-      >
-        <input
-          placeholder={t('contracts.applicationId')}
-          aria-label={t('contracts.applicationId')}
-          value={applicationId}
-          onChange={(e) => setApplicationId(e.target.value)}
-        />
-        <button className="primary">{t('contracts.create')}</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>{t('contracts.colId')}</th>
-            <th>{t('contracts.colStatus')}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td>
-              <td>{row.status}</td>
-              <td>
-                <button
-                  onClick={async () => {
-                    setSelected(await apiRequest(`/api/v1/contracts/${row.id}`));
-                  }}
-                >
-                  {t('contracts.open')}
-                </button>
-                <button
-                  onClick={async () => {
-                    await apiRequest(`/api/v1/contracts/${row.id}/activate`, {
-                      method: 'POST',
-                    });
-                    await refresh();
-                  }}
-                >
-                  {t('contracts.activate')}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <Page title={t('contracts.title')}>
+      <Section title={t('contracts.new')}>
+        <form
+          className="mip-form-grid"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await apiRequest(`/api/v1/applications/${applicationId}/contracts`, {
+              method: 'POST',
+            });
+            await refresh();
+          }}
+        >
+          <FormField label={t('contracts.applicationId')} htmlFor="contract-app" required>
+            <Input
+              id="contract-app"
+              value={applicationId}
+              onChange={(e) => setApplicationId(e.target.value)}
+            />
+          </FormField>
+          <div className="mip-form-actions">
+            <Button type="submit" variant="primary">
+              {t('contracts.create')}
+            </Button>
+          </div>
+        </form>
+      </Section>
+      <Section title={t('contracts.list')}>
+        {loading ? (
+          <Spinner />
+        ) : rows.length === 0 ? (
+          <EmptyState>{t('contracts.empty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('contracts.colId')}</th>
+                <th>{t('contracts.colStatus')}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.id}</td>
+                  <td>{row.status}</td>
+                  <td>
+                    <div className="mip-inline-actions">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={async () => {
+                          setSelected(await apiRequest(`/api/v1/contracts/${row.id}`));
+                        }}
+                      >
+                        {t('contracts.open')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={async () => {
+                          await apiRequest(`/api/v1/contracts/${row.id}/activate`, {
+                            method: 'POST',
+                          });
+                          await refresh();
+                        }}
+                      >
+                        {t('contracts.activate')}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
       {selected ? (
-        <div className="card">
-          <h2>{t('contracts.detailTitle', { id: selected.id })}</h2>
+        <Section title={t('contracts.detailTitle', { id: selected.id })}>
           <p>{t('contracts.status', { status: selected.status })}</p>
-          <table>
+          <Table>
             <thead>
               <tr>
                 <th>{t('contracts.colSeq')}</th>
@@ -605,8 +759,9 @@ function ContractsPage({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
           <form
+            className="mip-form-grid"
             onSubmit={async (event) => {
               event.preventDefault();
               const intent = await apiRequest<{ qrPayload: unknown }>(
@@ -620,17 +775,22 @@ function ContractsPage({
               setQr(intent.qrPayload);
             }}
           >
-            <input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder={t('contracts.amount')}
-              aria-label={t('contracts.amount')}
-            />
-            <button className="primary">{t('contracts.createIntent')}</button>
+            <FormField label={t('contracts.amount')} htmlFor="pay-amount" required>
+              <Input
+                id="pay-amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </FormField>
+            <div className="mip-form-actions">
+              <Button type="submit" variant="primary">
+                {t('contracts.createIntent')}
+              </Button>
+            </div>
           </form>
-          {qr ? <pre>{JSON.stringify(qr, null, 2)}</pre> : null}
-        </div>
+          {qr ? <pre className="mip-pre">{JSON.stringify(qr, null, 2)}</pre> : null}
+        </Section>
       ) : null}
-    </div>
+    </Page>
   );
 }
