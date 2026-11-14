@@ -12,6 +12,7 @@ const th: Record<string, string> = {
   'nav.contracts': 'สัญญา',
   'nav.enroll': 'ลงทะเบียนเครื่อง',
   'nav.logout': 'ออกจากระบบ',
+  'nav.menu': 'เมนู',
   'nav.langTh': 'ไทย',
   'nav.langEn': 'EN',
 
@@ -149,6 +150,7 @@ const en: Record<string, string> = {
   'nav.contracts': 'Contracts',
   'nav.enroll': 'Enroll device',
   'nav.logout': 'Log out',
+  'nav.menu': 'Menu',
   'nav.langTh': 'ไทย',
   'nav.langEn': 'EN',
 

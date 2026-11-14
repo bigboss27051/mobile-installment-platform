@@ -8,6 +8,7 @@ import {
 } from './api';
 import { EnrollPage } from './enroll-page';
 import { LanguageSwitch, useI18n } from './i18n-context';
+import { Alert, Button } from './ui';
 
 type Page =
   | 'products'
@@ -37,6 +38,7 @@ export function App() {
   const [token, setToken] = useState<string | null>(getAccessToken());
   const [page, setPage] = useState<Page>('contracts');
   const [error, setError] = useState<string | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
 
   if (!token) {
     return (
@@ -50,16 +52,33 @@ export function App() {
   }
 
   return (
-    <div className="app-shell">
-      <nav>
-        <strong>{t('nav.brand')}</strong>
+    <div className={`app-shell${navOpen ? ' nav-open' : ''}`}>
+      {navOpen ? (
+        <button
+          type="button"
+          className="app-backdrop"
+          aria-label="Close menu"
+          onClick={() => setNavOpen(false)}
+        />
+      ) : null}
+      <nav className="app-sidebar" aria-label="Main">
+        <div className="app-sidebar__brand">{t('nav.brand')}</div>
         <LanguageSwitch />
         {PAGES.map((item) => (
-          <button key={item} onClick={() => setPage(item)}>
+          <button
+            key={item}
+            type="button"
+            className={page === item ? 'active' : undefined}
+            onClick={() => {
+              setPage(item);
+              setNavOpen(false);
+            }}
+          >
             {t(`nav.${item}`)}
           </button>
         ))}
         <button
+          type="button"
           onClick={() => {
             setAccessToken(null);
             setToken(null);
@@ -68,8 +87,13 @@ export function App() {
           {t('nav.logout')}
         </button>
       </nav>
-      <main>
-        {error ? <p className="error">{error}</p> : null}
+      <div className="app-main">
+        <div className="app-topbar">
+          <Button type="button" variant="secondary" onClick={() => setNavOpen(true)}>
+            {t('nav.menu')}
+          </Button>
+        </div>
+        {error ? <Alert tone="error">{error}</Alert> : null}
         {page === 'products' ? <ProductsPage onError={setError} apiError={apiError} /> : null}
         {page === 'inventory' ? <InventoryPage onError={setError} apiError={apiError} /> : null}
         {page === 'customers' ? <CustomersPage onError={setError} apiError={apiError} /> : null}
@@ -78,7 +102,7 @@ export function App() {
         ) : null}
         {page === 'contracts' ? <ContractsPage onError={setError} apiError={apiError} /> : null}
         {page === 'enroll' ? <EnrollPage onError={setError} apiError={apiError} /> : null}
-      </main>
+      </div>
     </div>
   );
 }
