@@ -1,8 +1,10 @@
 # iOS enrollment
 
-**Status:** Architecture **accepted (D-043)**. Production MDM **BLOCKED** until merchant ABM + vendor MDM lab ([DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md)).  
+**Status:** Architecture **accepted (D-043, D-056)**. Production MDM **BLOCKED** until merchant ABM + vendor MDM lab ([DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md)).  
 **Reference UX:** [REFERENCE-VIDEO-OBSERVATIONS.md](./REFERENCE-VIDEO-OBSERVATIONS.md).  
-**Ownership:** **Model B** (merchant Apple Business) + vendor MDM via `MdmProviderPort`. Retail path: **Configurator on iPhone**. Follow Apple rules (D-047).
+**Ownership:** **Model B** (merchant Apple Business) + vendor MDM via `MdmProviderPort`. Retail path: **Configurator on iPhone**. Follow Apple rules (D-047).  
+**Architecture index:** [../architecture/ios-mdm-architecture.md](../architecture/ios-mdm-architecture.md), [../architecture/ios-single-app-mode.md](../architecture/ios-single-app-mode.md), [../architecture/ios-enrollment-workflow.md](../architecture/ios-enrollment-workflow.md).  
+**UX:** Merchant-assisted. The customer must not complete MDM configuration; staff use Configurator / Apple Business before handover.
 
 ## What Apple actually requires (planning; verify in DM0)
 
@@ -68,7 +70,7 @@ Merchant wizard / staff
 iOS device ← Remote Management / profiles / commands
 ```
 
-Exact vendor SKU is still open. **Do not** build in-house MDM protocol in DM1–DM3.
+Exact vendor SKU is still open. **Do not** build in-house MDM protocol in DM1–DM3 or IOS-A/B. Sandbox `MdmProviderPort` only until a vendor trial exists.
 
 ## Shop code vs QR
 

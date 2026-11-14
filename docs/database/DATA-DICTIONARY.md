@@ -23,7 +23,7 @@
 | Allocation | transaction_id, schedule_item_id, amount | |
 | EnforcementPolicy | preset, levels_json | Merchant configurable |
 | Device | platform, identifiers, status, last_heartbeat_at | ANDROID/IOS; hashes for IMEI/UDID |
-| DeviceEnrollmentSession | platform, status, token_hash, expires_at | Short-lived; no raw token |
+| DeviceEnrollmentSession | platform, status (`NOT_STARTED`…`QR_GENERATED`…`RECOVERY_REQUIRED`), token_hash, expires_at | Short-lived; no raw token |
 | DeviceProvisioningProfile | platform, version, extras_json | No secrets |
 | DeviceActivation | device_id, session_id, customer_id | First registration |
 | DeviceContractBinding | device_id, contract_id, status | One ACTIVE per device/IMEI |

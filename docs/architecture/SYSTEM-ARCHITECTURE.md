@@ -15,7 +15,7 @@ Person(customer, "Customer")
 System(platform, "Mobile Installment SaaS")
 System_Ext(pay, "Payment Gateway")
 System_Ext(mdm, "iOS MDM / Apple Business")
-System_Ext(ae, "Android Enterprise / AMAPI")
+System_Ext(ae, "Android DPC / Enterprise QR")
 System_Ext(ocr, "OCR/KYC Vendor")
 System_Ext(esign, "E-Sign Provider")
 System_Ext(notify, "SMS/LINE/Email/Push")
@@ -24,7 +24,7 @@ Rel(merchantStaff, platform, "Web/Flutter")
 Rel(customer, platform, "Flutter")
 Rel(platform, pay, "API + Webhooks")
 Rel(platform, mdm, "MDM APIs")
-Rel(platform, ae, "Android Enterprise APIs")
+Rel(platform, ae, "DPC check-in / commands")
 Rel(platform, ocr, "Optional")
 Rel(platform, esign, "Optional")
 Rel(platform, notify, "Adapters")
@@ -116,7 +116,7 @@ Success of HTTP create ≠ device executed.
 ### Device Enrollment
 
 Staff wizard → Enrollment session (TTL token) → Android QR **or** iOS Configurator/ADE instructions → OS provisioning → Agent/MDM check-in → Verify identity → Activate → Bind contract → Level 1 policy.  
-Details: [../device-management/DEVICE-PROVISIONING-ENROLLMENT.md](../device-management/DEVICE-PROVISIONING-ENROLLMENT.md). AMAPI vs custom DPC and iOS Model A vs B are **pending DM0**.
+Details: [../device-management/DEVICE-PROVISIONING-ENROLLMENT.md](../device-management/DEVICE-PROVISIONING-ENROLLMENT.md). Android = custom DPC QR (D-057); iOS = Model B (D-043). Production claims remain evidence-gated.
 
 ## Cross-Cutting
 

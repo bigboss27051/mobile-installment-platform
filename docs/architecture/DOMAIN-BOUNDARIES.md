@@ -31,7 +31,7 @@
 | OCR | `OcrProviderPort` |
 | E-sign | `ESignProviderPort` |
 | iOS MDM | `MdmProviderPort` |
-| Android Enterprise / AMAPI | `AndroidEnterprisePort` (optional until DM0 chooses stack) |
+| Android DPC / QR provisioning | `AndroidProvisioningPort` (custom DPC). `AndroidEnterprisePort` optional/AMAPI-only |
 | SMS/LINE/Email/Push | `NotificationChannelPort` |
 
 Sandbox/mock implementations are first-class until production credentials exist.

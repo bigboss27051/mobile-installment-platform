@@ -1,7 +1,7 @@
 # Project Status
 
 **Updated:** 2026-11-14  
-**Current Phase:** R1f complete; DM1 session stub + DM2 activate/bind stub on API; DM0 hardware + **D-054 AMAPI ToS** still BLOCKED (human must submit Google form)  
+**Current Phase:** R1f complete; DM1/DM2 stubs; **architecture D-057** (custom DPC QR). Next software: Phase 1 Shared Enrollment Foundation. Hardware wipe still requires asking. Commercial Device Owner **BLOCKED**.  
 **Branch:** `develop`  
 **Codebase:** NestJS backend R0–R1e plus R1f customer OTP/`/me` portal, Merchant Web, Customer Android on `develop`; CI on push/PR
 
@@ -19,8 +19,8 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 ## In Progress
 
-- **Human:** DM0-006 Google AMAPI inquiry still unsent. Lab hardware (DM0-001) and ABM (DM0-002) still BLOCKED.
-- **Software:** DM2 activate/bind/unbind + Merchant Web enroll wizard (stub QR). No AMAPI policy/command.
+- **Human:** Authorized Android lab device (ask before factory reset). ABM + MDM vendor still BLOCKED for iOS. AMAPI Google form is optional/historical, not the lock path.
+- **Software next:** Phase 1 enrollment foundation (`QR_GENERATED`, dashboard fields). Phase 2 custom DPC QR. No kiosk yet.
 
 ## Follow-ups (R0 / early Phase 3)
 
@@ -38,9 +38,10 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 ## Next Session Entry Point
 
-1. `docs/device-management/OPERATOR-PACKET.md` — submit AMAPI form + buy/borrow lab phones  
-2. `docs/roadmap/CURRENT-PHASE.md`  
-3. `docs/project-management/MASTER-EXECUTION-PLAN.md`  
+1. `docs/roadmap/CURRENT-PHASE.md`  
+2. `docs/project-management/MASTER-EXECUTION-PLAN.md`  
+3. `docs/superpowers/plans/2026-11-14-phase1-shared-enrollment-foundation.md` — after docs acceptance  
+4. Lab phones only with explicit wipe approval  
 4. `docs/superpowers/specs/2026-11-12-r1f-merchant-web-customer-android-design.md` — R1f reference  
 5. `docs/superpowers/plans/2026-11-12-r1f-merchant-web-customer-android.md`
 

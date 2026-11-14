@@ -49,11 +49,11 @@
 
 Staff wizard (Merchant Web or Merchant Mobile). Details: [../device-management/DEVICE-PROVISIONING-ENROLLMENT.md](../device-management/DEVICE-PROVISIONING-ENROLLMENT.md).
 
-**Android (target):** consent → session → QR (no secrets) → factory-reset/new device → 6-tap scan → Wi-Fi on device → Enterprise/DO provision → verify IMEI → activate → bind. **Do not** require Play Protect off.
+**Android (target):** consent → session → QR (no secrets) → factory-reset/new device → 6-tap scan → Wi-Fi on device → custom DPC Device Owner provision → verify IMEI → activate → bind. **Do not** require Play Protect off. No PC for normal enrollment.
 
-**iOS (target):** ABM/MDM prerequisites → session + instructions (optional shop code) → Configurator (iPhone or Mac) or ADE → Remote Management → standard Setup Assistant (passcode/Apple ID/location not force-skipped) → MDM check-in → activate → bind.
+**iOS (target):** ABM/MDM prerequisites → session + instructions (optional shop code) → merchant Configurator (iPhone or Mac) or ADE → Remote Management → standard Setup Assistant (passcode/Apple ID/location not force-skipped) → MDM check-in → activate → bind. Customer does not perform MDM configuration.
 
-Session states: Not Started, Waiting for Device, Provisioning, Enrolling, Verifying, Activating, Completed, Failed, Expired, Cancelled, Recovery Required.
+Session states: Not Started, Waiting for Device, QR Generated, Provisioning, Enrolling, Verifying, Activating, Completed, Failed, Expired, Cancelled, Recovery Required.
 
 **Mandatory (D-050):** customer does not leave with the phone until enrollment `COMPLETED`. Unsupported Android SKU → cannot sell installment (D-052). Wireframes: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md).
 

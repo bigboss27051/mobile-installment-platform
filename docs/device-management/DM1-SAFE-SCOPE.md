@@ -34,6 +34,8 @@ Merchant Web **enroll** page creates a session and shows stub QR from the API (s
 - Disclose **30-day leave Remote Management** for Configurator-added devices (R-022). Draft copy: [LEGAL-COPY-D-051-DRAFT.md](./LEGAL-COPY-D-051-DRAFT.md) (counsel must review).  
 - No MDM vendor code until a vendor is chosen; `MdmProviderPort` sandbox only.
 
-## If Google says AMAPI EMI lock is prohibited
+## Android implementation path (D-057)
 
-Keep D-042 for **enrollment** only if Google allows that slice; otherwise new ADR for a non-AMAPI Android path. Do not silently revert to custom DPC as EMM without a Decision Log row.
+Custom DPC + QR is the **implementation** ADR. Do **not** implement AMAPI overdue lock. Do **not** claim shop Device Owner from ADB. **Ask before factory-resetting physical devices.**
+
+AMAPI inquiry (D-054) is optional history; it does not gate Phase 1–3 DPC work.

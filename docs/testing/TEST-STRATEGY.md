@@ -7,7 +7,7 @@
 3. **API** — contract tests from OpenAPI  
 4. **E2E** — critical journeys (apply → approve → contract → pay)  
 5. **Mobile** — Bloc tests + widget tests  
-6. **DPC / MDM** — instrumented tests where possible; device farm/manual for DO, QR enroll, Configurator/ADE; never claim pass without hardware notes  
+6. **DPC / MDM** — JVM/unit for QR extras and command mapping; instrumented for Device Owner; manual 6-tap QR and Configurator/ADE; never claim pass without hardware notes; ask before wiping devices  
 7. **Load** — payment webhook and auth endpoints before production  
 
 ## Mandatory gates
@@ -18,6 +18,8 @@
 - Unauthorized device command denied  
 - Enrollment token expiry / reuse / cross-tenant bind denied  
 - Device webhook/event replay does not duplicate devices  
+- Restrictive command without reason/authz denied  
+- Desired presentation vs platform state not collapsed in API assertions  
 
 ## Evidence
 

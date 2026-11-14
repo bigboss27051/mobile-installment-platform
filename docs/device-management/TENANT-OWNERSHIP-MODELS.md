@@ -21,7 +21,7 @@ Critical requirement: many independent phone retailers on one SaaS, with **tenan
 | **G3. Custom DPC, platform-signed** | No Google EMM; QR installs our DPC as Device Owner | QR 6-tap like the reference video | Fast prototype; Play Protect / sideload / OEM risk | Matches Phase 0 assumption; Play Protect disable must **not** be required |
 | **G4. Third-party EMM** | Vendor tenants | Vendor console + our adapter | Fast if vendor has multi-tenant EMM | Extra cost; capability mapping |
 
-**Chosen (D-042, D-053):** **G1 — platform EMM via AMAPI**, prefer one AMAPI enterprise per tenant. G3 custom DPC is not the EMM. Companion status app is allowed. G2 only if Google forbids platform-hosted multi-enterprise (new ADR required).
+**Chosen for implementation (D-057):** **G3 — custom DPC, platform-signed**, QR 6-tap Device Owner. Isolation is our `tenant_id` + hashed enrollment tokens (not Google enterprises). G1 AMAPI remains an evaluated alternative and is **not** the payment-lock engine (D-054). G2 only if a future ADR requires per-merchant Android Enterprise. Play Protect disable is still forbidden (D-044).
 
 ---
 

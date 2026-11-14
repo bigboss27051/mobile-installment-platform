@@ -1,5 +1,14 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ScheduleItemStatus } from '@prisma/client';
+import {
+  DeviceBindingStatus,
+  Prisma,
+  ScheduleItemStatus,
+} from '@prisma/client';
+import {
+  daysOverdue,
+  desiredPresentationFromOverdue,
+  remainingBalance,
+} from '../devices/lock-presentation';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -113,6 +122,109 @@ export class PortalService {
   getPaymentIntent(ctx: TenantContext, intentId: string) {
     this.requireCustomer(ctx);
     return this.payments.getById(ctx, intentId);
+  }
+
+  async getLockStatus(ctx: TenantContext) {
+    const { tenantId, customerId } = this.requireCustomer(ctx);
+    const tenant = await this.prisma.tenant.findFirst({
+      where: { id: tenantId },
+    });
+    const merchantName = tenant?.name ?? 'Shop';
+
+    const contract = await this.prisma.contract.findFirst({
+      where: { tenantId, customerId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!contract) {
+      return this.emptyLockStatus(merchantName);
+    }
+
+    const [scheduleItems, paymentIntents, binding, session] = await Promise.all([
+      this.prisma.paymentScheduleItem.findMany({
+        where: { tenantId, contractId: contract.id },
+        orderBy: { seq: 'asc' },
+      }),
+      this.prisma.paymentIntent.findMany({
+        where: { tenantId, contractId: contract.id },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      }),
+      this.prisma.deviceContractBinding.findFirst({
+        where: {
+          tenantId,
+          contractId: contract.id,
+          status: DeviceBindingStatus.ACTIVE,
+        },
+        include: { device: true },
+      }),
+      this.prisma.deviceEnrollmentSession.findFirst({
+        where: { tenantId, contractId: contract.id },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const now = new Date();
+    let outstanding = new Prisma.Decimal('0.00');
+    let maxOverdueDays: number | null = null;
+    for (const item of scheduleItems) {
+      const leftover = remainingBalance(item.totalDue, item.amountPaid);
+      outstanding = outstanding.plus(leftover);
+      if (leftover.gt(0)) {
+        const overdue = daysOverdue(item.dueDate, now);
+        if (overdue > 0 && (maxOverdueDays === null || overdue > maxOverdueDays)) {
+          maxOverdueDays = overdue;
+        }
+      }
+    }
+
+    const desiredPresentation = desiredPresentationFromOverdue({
+      outstanding,
+      maxOverdueDays,
+    });
+    const latest = paymentIntents[0];
+    const osEnforcement = 'NONE' as const;
+    const phoneLockedByMdm = false;
+
+    return {
+      contractId: contract.id,
+      deviceId: binding?.deviceId ?? null,
+      platform: binding?.device.platform ?? session?.platform ?? null,
+      enrollmentStatus: session?.status ?? 'NOT_ENROLLED',
+      desiredPresentation,
+      osEnforcement,
+      phoneLockedByMdm,
+      outstandingBalance: outstanding.toFixed(2),
+      currency: contract.currency,
+      merchantName,
+      latestIntent: latest
+        ? {
+            id: latest.id,
+            status: latest.status,
+            qrPayload: latest.qrPayloadJson,
+          }
+        : null,
+      disclaimer:
+        desiredPresentation === 'LOCK'
+          ? 'This is the installment lock app screen. The iPhone is not in Single App Mode until MDM confirms it.'
+          : 'Device OS enforcement is not active. This screen is app UI only.',
+    };
+  }
+
+  private emptyLockStatus(merchantName: string) {
+    return {
+      contractId: null,
+      deviceId: null,
+      platform: null,
+      enrollmentStatus: 'NOT_ENROLLED',
+      desiredPresentation: 'NONE' as const,
+      osEnforcement: 'NONE' as const,
+      phoneLockedByMdm: false,
+      outstandingBalance: '0.00',
+      currency: 'THB',
+      merchantName,
+      latestIntent: null,
+      disclaimer: 'Device OS enforcement is not active. This screen is app UI only.',
+    };
   }
 
   private requireCustomer(ctx: TenantContext): {

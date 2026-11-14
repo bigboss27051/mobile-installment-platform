@@ -98,7 +98,7 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 | AD-06 | Offline queue / retry | R2 / DM3 |
 | AD-07 | Recovery / unlock path | R2 / DM4 |
 | AD-08 | Audit events upload | R2 / DM3 |
-| AD-09 | AMAPI vs custom DPC evaluation | DM0 — **AMAPI chosen (D-042)**; lab remaining |
+| AD-09 | AMAPI vs custom DPC evaluation | **D-057 custom DPC chosen for implementation**; AMAPI remains D-054 inquiry |
 
 ### Level Mapping (Android)
 
@@ -107,7 +107,7 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 | 1 | Normal | Baseline policies only |
 | 2 | Warning | Notify; no hard restriction |
 | 3 | App limit | Restrict entertainment/social packages; allow phone/chat/banking allowlist |
-| 4 | Screen lock | Lock task / lock screen with call-shop affordance |
+| 4 | Screen lock (LOCK) | Lock Task Mode + Mango Lock UI — not `lockNow()` |
 | 5 | Suspend | Maximum restriction short of blocking emergency dial |
 
 ## 7. iOS MDM Integration

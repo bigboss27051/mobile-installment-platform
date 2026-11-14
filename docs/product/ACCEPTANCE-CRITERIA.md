@@ -45,19 +45,19 @@ Phase 0 is accepted when the checklist above is complete and reviewers approve m
 R2 is accepted only when **DM0–DM5** exit criteria below are met for in-scope platforms. Production DO/MDM remains unclaimed without evidence.
 
 ### DM0
-- Written feasibility report: AMAPI vs custom DPC; QR modes; Zero-touch; ABM; Configurator; MDM architecture; Model A vs B  
+- Written feasibility report: custom DPC QR vs AMAPI; QR modes; Zero-touch; ABM; Configurator; MDM architecture; Model A vs B; factory-reset re-enroll  
 - Compatibility notes from real devices (unsupported SKUs listed)  
 - ADRs in Decision Log; open questions explicit  
 - No production feasibility claim without tests  
 
 ### DM1–DM2
 - Enrollment sessions with TTL, hashed tokens, cancel/expire/retry  
-- Android QR generation without secrets; iOS instruction + prereq gating  
+- Android QR generation without secrets (`QR_GENERATED`); iOS instruction + prereq gating  
 - Activate + bind; duplicate IMEI/device rejected; tenant isolation tests  
 - Merchant wizard states including Failed/Expired/Recovery Required  
 
 ### DM3–DM5
-- Android device enrolls via supported Device Owner / AMAPI flow on test hardware  
+- Android device enrolls via supported Device Owner **QR (custom DPC)** on test hardware  
 - iOS adapter enrolls in test env; unsupported commands handled explicitly  
 - Levels 1–5 map to policies; emergency dial preserved  
 - Merchant can configure presets + custom thresholds  

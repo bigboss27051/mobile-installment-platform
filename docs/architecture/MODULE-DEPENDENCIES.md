@@ -18,7 +18,7 @@ Audit (write-only sink from all)
 
 1. Controllers depend on application services, not Prisma directly.  
 2. Inventory must not import Payment.  
-3. Device must not verify webhooks; it consumes verified domain events.  
+3. Device must not verify **payment** webhooks; it consumes verified domain events. Payment-to-Unlock lives in Device and only sees those events. Android DPM code must not live in the Apple adapter (or vice versa).  
 4. Subscription/SaaS billing must not share ledger tables with installment payments.  
 5. Circular imports between domain modules are forbidden; extract shared kernel types to `packages/shared-types` when needed.  
 

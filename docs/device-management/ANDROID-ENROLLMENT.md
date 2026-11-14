@@ -1,71 +1,88 @@
-# Android enrollment
+# Android enrollment (QR Device Owner)
 
-**Status:** Architecture **accepted (D-042, D-049, D-052)**. Production enroll **BLOCKED** until lab evidence ([DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md)).  
-**Reference UX:** [REFERENCE-VIDEO-OBSERVATIONS.md](./REFERENCE-VIDEO-OBSERVATIONS.md) (competitor 6-tap QR + Device Owner consent).  
-**Product after enroll:** [CAPABILITY-MATRIX.md](./CAPABILITY-MATRIX.md).
+**Status:** Implementation architecture **accepted (D-057)**. Production enroll and financing lock **BLOCKED** until hardware + policy evidence ([PRODUCTION-FEASIBILITY.md](./PRODUCTION-FEASIBILITY.md), [DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md)).  
+**Reference UX:** [REFERENCE-VIDEO-OBSERVATIONS.md](./REFERENCE-VIDEO-OBSERVATIONS.md) (6-tap QR + Device Owner consent).  
+**Payload spec:** [../architecture/android-qr-provisioning.md](../architecture/android-qr-provisioning.md)  
+**DPC:** [../architecture/android-dpc-architecture.md](../architecture/android-dpc-architecture.md)  
+**After enroll:** [CAPABILITY-MATRIX.md](./CAPABILITY-MATRIX.md)
 
-## Official provisioning (planning summary)
+## Official provisioning (not equivalent)
 
-Google documents several **Android Enterprise** enrollment paths. They are **not** equivalent, and **not** all retail SKUs support all paths.
+| Mode | Typical trigger | Device state | Pilot role |
+|------|-----------------|--------------|------------|
+| **QR code** | Welcome **6 taps** (or OEM equivalent) → camera | New / factory reset | **Default shop path** — custom DPC extras (D-057) |
+| **Custom DPC + Device Owner** | QR download + checksum, or lab ADB | New / reset / lab | **Prototype + intended commercial stack** |
+| **Android Management API QR** | Same 6-tap; Google DPC | New / reset | **Evaluated alternative only.** EMI lock forbidden without Google exception (D-054) |
+| **Zero-touch** | First boot, IMEI/serial pre-registered | New from participating reseller | **When reseller registered the unit** (D-049 still applies). Unregistered walk-in uses QR |
+| **NFC** | Bump | New / reset | Out of pilot |
+| **Work profile** | BYOD | Personal | **Out of scope** — need fully managed Device Owner |
 
-| Mode | Typical trigger | Device state | Notes |
-|------|-----------------|--------------|--------|
-| **QR code** | Tap Welcome **6 times** (or equivalent OEM gesture) → camera | New / factory reset | Widely used at retail. QR is JSON extras, not a login URL. |
-| **Zero-touch** | First boot, pre-registered IMEI/serial via reseller | New from participating reseller | **In scope when the unit is pre-registered** (stakeholder: reseller exists). Walk-in unregistered stock uses QR. |
-| **NFC** | Bump provisioning NFC | New / reset | Rare at Thai counters. |
-| **DPC identifier extra** | QR/`afw#` style | New / reset | Depends on chosen DPC. |
-| **Android Management API QR** | Same 6-tap camera | New / reset | QR points at Google’s AMAPI DPC + enrollment token. |
-| **Work profile** | BYOD | Personal device | **Out of scope** for installment collateral; we need **fully managed / Device Owner**. |
+**Target:** fully managed **Device Owner**. Profile Owner will not meet RESTRICT/LOCK.
 
-**Target for shop installment:** **fully managed device (Device Owner)**. Profile Owner / BYOD will not meet levels 3–5.
+Not every OS version or OEM supports the same 6-tap QR behavior. Unsupported SKUs cannot be sold on installment (D-052).
 
-### QR payload rules (accepted)
+## Chosen stack (D-057)
 
-- Generate QR from an **enrollment session**.  
-- Allowed: enrollment token id, server/DPC identifiers that Google/AMAPI already require, package name, signature checksum, locale.  
-- **Forbidden:** Wi-Fi passwords, admin passwords, TLS private keys, JWT refresh tokens, Google service-account JSON, customer national IDs.  
-- If Wi-Fi is needed during setup, staff enter it on the device (the iOS competitor video even types a Wi-Fi password on-device — we still must not put it in QR).  
-- Tokens: high entropy, hashed at rest, TTL (default 30–120 minutes, configurable, max 24h), single-device consume unless `allowRetry` on the same session.
+Native **Kotlin DPC** + **DevicePolicyManager** + **DeviceAdminReceiver**. QR extras name **our** DPC component, HTTPS download location, package checksum, and a short-lived enrollment token. Play Protect disable is **not** a required step (D-044).
 
-Do **not** require **disabling Play Protect**. Prefer AMAPI or a Play-distributed DPC. If a specific OEM still flags the DPC, record it in the compatibility matrix as a **device defect**, not a merchant SOP.
+D-042 (AMAPI as primary EMM) is **superseded for implementation**. Keep AMAPI docs as feasibility history and as a possible enrollment-only path if Google later allows it — **not** as the payment-lock engine.
 
-## Chosen stack (D-042)
+## Target customer / merchant flow
 
-**Android Management API** is the EMM. Platform creates/manages enterprises (prefer **one per tenant**, D-053). Policies map from levels 1–5 onto AMAPI `Policy`. Commands go through AMAPI and are mirrored in `device_commands`. Heartbeat via AMAPI + optional companion app for **customer-visible status only**.
+1. Staff: customer + **ACTIVE** contract + Android + consent.  
+2. Backend: `enrollment_sessions` + hashed token; wizard shows QR (`QR_GENERATED`).  
+3. Customer: power on new/reset phone → Welcome → 6 taps → scan.  
+4. Wi-Fi **on the device**.  
+5. Setup Wizard downloads DPC (checksum verified) → Device Owner provisioning.  
+6. DPC: owner init → check-in (`ENROLLING`) → staff verify IMEI (`VERIFYING`) → activate → bind (`COMPLETED`).  
+7. Heartbeat starts. Restrictive policy is **not** applied at handover (desired `NONE`).
 
-Custom Kotlin DPC is **not** the enrollment/EMM path. Do not revive it without a new Decision Log row. If AMAPI cannot express lock-task (levels 4–5), add UX on top of AMAPI — not a second Device Owner APK as EMM.
+UI states: [DEVICE-PROVISIONING-ENROLLMENT.md](./DEVICE-PROVISIONING-ENROLLMENT.md). No computer is required for **normal** customer enrollment. ADB owner is **lab-only**.
 
-Do **not** require disabling Play Protect.
+## QR payload rules (accepted)
 
-## Target merchant flow (our product)
+Allowed: DPC component name, HTTPS download URL, package/signature checksum, locale, `enrollmentSessionId`, short-lived `enrollmentToken`, enrollment HTTPS endpoint.
 
-1. Staff: customer + **ACTIVE** contract + Android + consent recorded.  
-2. Backend: `enrollment_sessions` row, token, **AMAPI QR** (or Zero-touch if the IMEI is already in the reseller portal).  
-3. Merchant Web / Merchant Mobile wizard shows QR + **factory-reset / 6-tap** instructions ([ENROLLMENT-WIZARD-MOCKUP.md](./ENROLLMENT-WIZARD-MOCKUP.md)).  
-4. Device: Welcome → 6 taps → scan → Wi-Fi on device → AMAPI fully managed provisioning.  
-5. Device agent authenticates with enrollment token → activation.  
-6. Staff confirms identity (IMEI/serial vs inventory unit).  
-7. Bind contract; level 1 policy applied.  
-8. Heartbeat starts.
+**Forbidden:** Wi-Fi passwords, admin passwords, TLS private keys, refresh tokens, cloud JSON keys, customer national IDs, permanent backend secrets.
 
-UI states: see [DEVICE-PROVISIONING-ENROLLMENT.md](./DEVICE-PROVISIONING-ENROLLMENT.md).
+Tokens: CSPRNG, SHA-256 at rest, TTL 30–120 min (max 24h), bound to merchant session, single-consume on check-in, rotate on retry, expire unused sessions, cancel/recovery supported.
 
-## Compatibility (to be filled in DM0)
+## Compatibility (to be filled in lab)
 
 | Dimension | Planning target | Evidence required |
 |-----------|-----------------|-------------------|
-| OS | Android 8.0+ fully managed; 10/12/14 must pass | Lab |
-| Enrollment gesture | 6-tap QR on AOSP-like setup; Samsung/Xiaomi equivalents | Lab |
-| SKUs | GMS units the merchant sells; **not** every Android device. Fail = cannot sell installment (D-052) | Matrix |
-| Google Mobile Services | Required for Play/FCM/AMAPI | Non-GMS devices out of pilot |
-| Tablet vs phone | Phone primary; tablet (e.g. Galaxy Tab A11 in the reference) optional | Lab |
+| OS | Fully managed; **pilot Android 10+** (8+ may enroll but suspend/lock-task vary) | Lab |
+| Enrollment gesture | 6-tap on AOSP-like setup; Samsung/Xiaomi/OPPO/vivo | Lab |
+| SKUs | GMS units the merchant sells; fail = cannot sell installment | Matrix |
+| GMS | Required for Play/FCM | Non-GMS out of pilot |
+| Tablet vs phone | Phone primary | Lab |
 
-The reference video’s Galaxy Tab A11 **is not** a certified device for *this* product.
+The reference Galaxy Tab A11 is **not** a certified SKU for this product.
 
-## Factory reset
+## Factory reset and re-enrollment (explicit)
 
-QR Device Owner enrollment **requires** a new or factory-reset device. Staff SOP must include wipe **before** enrollment if the unit was a display/demo device. Reset is **not** a collections action (capability matrix).
+Distinguish these events; they are not the same:
+
+| Event | Typical Device Owner result | Product response |
+|-------|-----------------------------|------------------|
+| **Device restart** | DO **survives** | Recovery Handler re-applies last authorized policy; heartbeat resumes |
+| **Customer uninstall of companion UI** | DO **survives** if DPC is owner; UI may be reinstalled by policy | Treat as policy compliance event, not unenroll |
+| **DPC removal** | Not possible for a normal user while DO is intact | If owner lost, session `RECOVERY_REQUIRED` |
+| **Factory reset** | DO **does not survive** ordinary wipe | Device is unmanaged. Staff must run a **new enrollment** (new QR) unless a below path applies |
+| **Factory Reset Protection** | Google account FRP may block reuse | Document per SKU; not a substitute for enrollment |
+| **Enterprise re-enrollment** | Zero-touch / OEM / FRP+enterprise | Optional; **unverified** for this pilot |
+
+**Do not claim** that scanning a QR once makes the device permanently managed after every factory reset.
+
+**Supported re-enroll options to evaluate (not claimed working):**
+
+- Android Zero-touch (reseller IMEI in portal) — auto-provision on first boot after wipe  
+- OEM-supported enrollment (Samsung Knox, etc.) — per-SKU  
+- FRP as theft friction only  
+- Merchant-assisted QR again (default after wipe)
+
+Factory reset is **not** a collections action.
 
 ## Zero-touch
 
-**Accepted (D-049):** reseller path exists. Use Zero-touch when the IMEI/serial is pre-registered. Unregistered walk-in units **must** use AMAPI QR. Wizard should tell staff which path applies (inventory flag / reseller sync), not assume every box is Zero-touch.
+Use when the IMEI/serial is pre-registered (D-049). Wizard must tell staff QR vs Zero-touch from inventory flags. Walk-in unregistered stock uses QR.

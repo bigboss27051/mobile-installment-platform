@@ -1,7 +1,7 @@
 # Enrollment wizard mockup (Merchant Web / Merchant Mobile)
 
-**Status:** Merchant Web enroll wizard has session + stub QR, Thai/EN, consent, iOS steps, cancel/refresh, and expired/failed chips. Not production AMAPI. Legal copy still draft (D-051).  
-**Rules:** Device management is **mandatory** (D-050). Android = AMAPI QR (D-042, D-049). iOS = Model B + Configurator iPhone (D-043).
+**Status:** Merchant Web enroll wizard has session + stub QR, Thai/EN, consent, iOS steps, cancel/refresh, and expired/failed chips. Stub QR currently still names Google Cloud DPC extras in code; **target** is custom DPC extras (D-057). Legal copy still draft (D-051).  
+**Rules:** Device management is **mandatory** (D-050). Android = custom DPC QR (D-057, D-049). iOS = Model B + Configurator iPhone (D-043).
 
 Sale cannot be marked **handed over** while enrollment is not `COMPLETED`. Staff may have an `ACTIVE` contract (R1) but the phone stays in-store until this wizard finishes.
 
@@ -31,7 +31,8 @@ Consent checkbox placeholder: `[ ] Customer agreed to device management (wording
 
 | State | Screen | Primary |
 |-------|--------|---------|
-| WAITING_FOR_DEVICE | QR or iOS steps | Cancel / Refresh |
+| WAITING_FOR_DEVICE | Choose generate QR / start iOS | Cancel |
+| QR_GENERATED | QR or iOS steps | Cancel / Refresh |
 | PROVISIONING / ENROLLING | Progress, do not leave | — |
 | VERIFYING | IMEI/serial vs stock | Confirm identity |
 | ACTIVATING | Binding | — |
@@ -57,14 +58,14 @@ Do NOT turn off Play Protect.
 
 ```text
 ┌─────────────┐
-│  AMAPI QR   │
+│  DPC QR     │
 └─────────────┘
 Expires 21:10    Session …    [ Regenerate QR ]
 
 Status: Waiting for device …
 ```
 
-QR contains enrollment token / AMAPI extras only (D-045).
+QR contains DPC component, checksum, download URL, and short-lived enrollment token only (D-045).
 
 ### C. Verify
 
@@ -77,8 +78,8 @@ OS  …   Enterprise id  …
 ### D. Done
 
 ```text
-Enrolled with Android Management API
-Policy level 1
+Enrolled with Android Device Owner (custom DPC)
+Desired lock: NONE  |  Platform: NONE
 Handover unlocked — customer may leave with the phone
 ```
 

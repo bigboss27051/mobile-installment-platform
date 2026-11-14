@@ -33,14 +33,14 @@ flowchart LR
 
 ## Android Device Channel
 
-- Enrollment: **AMAPI QR** (6-tap) default; **Zero-touch** when reseller pre-registered the IMEI (D-049); NFC out of pilot  
-- Management: **Android Management API** (D-042). Custom DPC is not the EMM  
-- AMAPI agent authenticates after consuming a short-lived enrollment token  
+- Enrollment: **custom DPC Enterprise QR** (6-tap) default (D-057); **Zero-touch** when reseller pre-registered the IMEI (D-049); NFC out of pilot  
+- Management: native Kotlin DPC + `DevicePolicyManager` (Device Owner). AMAPI is not the lock engine (D-054)  
+- DPC authenticates with a short-lived enrollment token, then a device JWT  
 - Heartbeat + command poll/push (FCM)  
 - WorkManager for offline sync  
 - QR extras must not include Wi-Fi passwords or private keys  
 - Play Protect disable is **not** an integration requirement  
-- Status: **BLOCKED for production** until DM0 hardware evidence  
+- Status: **BLOCKED for production** until Phase 2–7 evidence  
 
 ## iOS MDM
 
@@ -50,6 +50,8 @@ flowchart LR
 - APNs for wake; check-in protocol behind adapter  
 - Capability matrix gates commands  
 - Do not require skipping Apple ID / passcode / Location Services  
+- Financing lock mechanism: supervised **Single App Mode** (D-056), not Lost Mode and not DeviceLock-as-collections  
+- Customer Flutter app is UI + payment status only until MDM ack updates `osEnforcement`  
 - Status: **BLOCKED for production** until MDM test environment **and** Apple program eligibility evidence   
 
 ## Notifications

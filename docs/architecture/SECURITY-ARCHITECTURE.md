@@ -51,7 +51,7 @@
 - Enrollment tokens: CSPRNG, hashed at rest, TTL, single-consume/retry rules; staff QR view is authorized and audited  
 - No Wi-Fi passwords, private keys, or MDM credentials in QR / client binaries  
 - Bind requires consent record + matching tenant/contract/IMEI; shop codes are not admin credentials  
-- AMAPI/MDM webhooks: signature + idempotency; never lock from unverified events  
+- MDM webhooks: signature + idempotency; DPC check-in uses hashed enrollment tokens; never lock from unverified events  
 - No stealth telemetry (no silent mic/camera/keylog); heartbeat is inventory/compliance/connectivity only  
 
 ## AppSec Baseline

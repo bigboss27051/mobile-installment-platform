@@ -15,12 +15,15 @@
 | R-011 | Secret leakage in repo/logs | High | Medium | .env.example only; redaction; scanning | Open |
 | R-012 | Collection UX harms emergency calling | Critical | Low | Explicit Level 5 constraint + tests | Open |
 | R-013 | Apple rejects platform or merchant ABM for installment-sold consumer devices | High | High | DM0 legal/Apple review; iOS device mgmt may stay limited or opt-in | Open |
-| R-014 | AMAPI cannot express lock-task levels 4–5 | High | Medium | Hybrid companion DPC; document iOS/Android gaps | Open |
+| R-014 | AMAPI cannot express lock-task / is ToS-blocked for EMI | High | High | **Mitigated for prototype by D-057 custom DPC**; AMAPI lock still forbidden | Open |
 | R-015 | OEM QR/6-tap fragmentation (incl. non-GMS) | High | High | Compatibility matrix; unsupported SKUs | Open |
 | R-016 | Secrets leaked via QR / Configurator / logs | Critical | Medium | D-045; hashed tokens; secret_ref only | Open |
 | R-017 | Unauthorized bind (shop code stuffing, stolen QR) | High | Medium | Short TTL, staff confirm, rate limits, IMEI match | Open |
 | R-018 | Merchant offboarding leaves MDM access | High | Medium | Revoke accounts; unenroll SOP | Open |
 | R-019 | Zero-touch unavailable for same-day walk-in stock | Medium | High | Default to QR/Configurator; ZT optional | Open |
-| R-020 | Copying competitor Play Protect / skip-Apple-ID SOP causes security or review failure | High | Medium | D-044, D-047; Play-distributed or AMAPI agent | Open |
-| R-021 | Google AMAPI Permissible Usage forbids EMI/payment-based device control | Critical | High | D-054 inquiry; do not implement AMAPI overdue lock until exception or new stack | Open |
+| R-020 | Copying competitor Play Protect / skip-Apple-ID SOP causes security or review failure | High | Medium | D-044, D-047; do not require Protect-off | Open |
+| R-021 | Google AMAPI Permissible Usage forbids EMI/payment-based device control | Critical | High | Do not implement AMAPI overdue lock. Custom DPC path (D-057) still needs **separate** Google/Play/OEM policy review for commercial financing | Open |
+| R-023 | Custom DPC sideload / checksum / OEM Setup Wizard rejects QR extras | High | High | Compatibility matrix; Play-hosted DPC as production gate; lab on real SKUs | Open |
+| R-024 | Staff believe one QR scan survives every factory reset | High | High | Document re-enroll; Zero-touch optional; wizard copy after wipe | Open |
+| R-025 | Mixing Android DPM and Apple MDM in one service causes wrong commands | High | Medium | Separate adapters; shared policy engine only | Open |
 | R-022 | Configurator-added iOS devices have a 30-day user release from RM/MDM | High | High | Disclose; prefer ADE when serials in ABM; legal review | Open |

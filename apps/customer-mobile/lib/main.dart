@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'api.dart';
+import 'lock/lock_models.dart';
+import 'lock/lock_repository.dart';
+import 'lock/lock_screens.dart';
 import 'payment_status.dart';
 
 void main() {
@@ -16,6 +19,22 @@ class CustomerApp extends StatelessWidget {
       title: 'MIP Customer',
       theme: ThemeData(colorSchemeSeed: const Color(0xFF2CB1BC), useMaterial3: true),
       home: const LoginPage(),
+      onGenerateRoute: (settings) {
+        final uri = Uri.tryParse(settings.name ?? '');
+        if (uri == null) {
+          return null;
+        }
+        final screen = screenFromLockDeepLink(uri);
+        if (screen == null) {
+          return null;
+        }
+        return MaterialPageRoute<void>(
+          builder: (_) => LockShell(
+            repository: PreviewLockRepository(previewFixture(DesiredPresentation.lock)),
+            forcedScreen: screen,
+          ),
+        );
+      },
     );
   }
 }
@@ -52,6 +71,16 @@ class _LoginPageState extends State<LoginPage> {
               TextField(controller: code, decoration: const InputDecoration(labelText: 'OTP')),
             if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 12),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LockPreviewGallery(),
+                  ),
+                );
+              },
+              child: const Text('Lock screens (preview)'),
+            ),
             FilledButton(
               onPressed: () async {
                 try {
@@ -110,7 +139,21 @@ class _ContractsPageState extends State<ContractsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My contracts')),
+      appBar: AppBar(
+        title: const Text('My contracts'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => LockShell(repository: ApiLockRepository(widget.api)),
+                ),
+              );
+            },
+            child: const Text('Lock status'),
+          ),
+        ],
+      ),
       body: FutureBuilder(
         future: future,
         builder: (context, snapshot) {

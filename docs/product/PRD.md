@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 
 **Product:** Mobile Installment SaaS Platform  
-**Version:** 0.2 (Phase 0 + R2 enrollment expansion 2026-11-14)  
+**Version:** 0.3 (R2 QR custom DPC + merchant-assisted iOS, 2026-11-14)  
 **Market:** Thailand  
 **Status:** Active planning; R1 delivered, R2 gated on DM0  
 

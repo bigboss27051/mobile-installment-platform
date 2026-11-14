@@ -1,6 +1,6 @@
 # AMAPI policy mapping (desk lab)
 
-Maps product levels 1–5 onto [AMAPI Policy](https://developers.google.com/android/management/reference/rest/v1/enterprises.policies). **Not applied to a device.** Emergency calling: never set `outgoingCallsDisabled: true`.
+**Historical / alternative only (D-042 superseded by D-057).** Maps product levels 1–5 onto [AMAPI Policy](https://developers.google.com/android/management/reference/rest/v1/enterprises.policies). **Not applied to a device. Not the lock adapter.** Emergency calling: never set `outgoingCallsDisabled: true`. Production lock path is custom DPC Lock Task Mode ([../architecture/android-kiosk-locking.md](../architecture/android-kiosk-locking.md)).
 
 **ToS warning:** payment-triggered use of these policies may violate [AMAPI Permissible Usage](https://developers.google.com/android/management/permissible-usage). Mapping is technical only.
 

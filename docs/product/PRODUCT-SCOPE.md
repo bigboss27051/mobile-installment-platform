@@ -39,7 +39,7 @@ Auth, tenants, branches, RBAC, project skeleton, Docker Compose infra, health ch
 Merchant/inventory/IMEI, customer/KYC, installment application, scorecard, approve/reject, contracts, schedules (flat/reducing), PromptPay sandbox path, Merchant Web + Customer App (Android) critical flows.
 
 ### R2 — Device Management (Provisioning & Enrollment Platform)
-Split internally as **DM0–DM5**. Android **AMAPI** (QR + reseller Zero-touch); iOS **merchant ABM + vendor MDM + Configurator iPhone**; enrollment **mandatory** before handover; activation, bind, 5-level policies, commands, heartbeat, recovery. See [../project-management/MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md).
+Split internally as **Phases 1–7** (legacy DM0–DM5 ids still appear in older notes). Android **custom DPC + Device Owner QR** (Zero-touch when reseller-registered); iOS **merchant ABM + vendor MDM + Configurator iPhone**; enrollment **mandatory** before handover; activation, bind, shared lock policy, commands, heartbeat, recovery. See [../project-management/MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md).
 
 ### R3 — SaaS Operations
 Super Admin complete, subscription billing separate from installment money, notification channels, advanced reporting, production hardening.
@@ -53,7 +53,7 @@ Super Admin complete, subscription billing separate from installment money, noti
 | Merchant Web | shell | core ops | device/collection | advanced reports/settings |
 | Merchant Mobile | shell | sell/collect | device status actions | polish |
 | Customer Mobile | shell | contracts/pay | device status | support/notify |
-| Android DPC / AMAPI companion | — | — | AMAPI primary | harden |
+| Android DPC | — | — | Custom DPC QR + Device Owner | production gates |
 | iOS MDM adapter | — | — | adapter + sandbox | expand capabilities |
 
 ## Blocked Until External Dependency
@@ -63,6 +63,6 @@ Super Admin complete, subscription billing separate from installment money, noti
 | Live PromptPay settle | Licensed gateway credentials |
 | E-signature production | Provider account + legal templates |
 | OCR KYC automation | OCR vendor (manual KYC remains available) |
-| Android Device Owner / AMAPI proof | Physical devices + QR/Zero-touch evaluation (DM0) |
+| Android Device Owner / QR proof | Physical devices + QR/Zero-touch evaluation (Phase 2 / 7) |
 | iOS MDM | Apple Business eligibility + MDM provider / APNs + Configurator/ADE (DM0) |
 | LINE / SMS production | Provider accounts + consent templates |

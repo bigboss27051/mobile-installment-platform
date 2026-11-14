@@ -4,6 +4,15 @@
 
 ### Added
 
+- D-057 custom DPC + QR Device Owner as Android implementation; D-058 `QR_GENERATED` + business vs platform lock
+- Architecture: `docs/architecture/android-dpc-architecture.md`, `android-qr-provisioning.md`, `android-kiosk-locking.md`, `device-lock-state-machine.md`, `payment-to-unlock.md`
+- `docs/device-management/PRODUCTION-FEASIBILITY.md`, `MERCHANT-DEVICE-DASHBOARD.md`
+- R2 Phases 1–7 with recalculated estimates in Master Execution Plan
+
+### Added (earlier)
+
+- IOS-A architecture: vendor MDM (not self-hosted protocol), Model B, Single App Mode lock (D-056); docs under `docs/architecture/ios-*.md`, setup, and iOS lock test plan
+- IOS-B Mango Lock customer UI in `apps/customer-mobile` (preview + `GET /api/v1/me/lock-status`); sandbox `MdmProviderPort` (commands never auto-ack as locked)
 - Phase 3a RBAC: permission codes + `PermissionsGuard` on application decide, contract activate, device enroll/activate/bind/unbind (OWNER has unbind; STAFF does not)
 - Operator packet for human AMAPI submit + hardware shopping list (`docs/device-management/OPERATOR-PACKET.md`); live form URL `https://services.google.com/fb/forms/AMAPIUsageInquiry/`
 - Merchant Web enterprise form UI: local `apps/merchant-web/src/ui/` primitives, dark left sidebar shell, stacked form+table pages (login, products, inventory, customers, applications, contracts, enroll)

@@ -67,6 +67,30 @@ class CustomerApi {
     return body['data'] as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getLockStatus() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/v1/me/lock-status'),
+      headers: _authHeaders(),
+    );
+    if (response.statusCode >= 400) {
+      throw Exception('Failed to load lock status');
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getPaymentIntent(String id) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/v1/me/payment-intents/$id'),
+      headers: _authHeaders(),
+    );
+    if (response.statusCode >= 400) {
+      throw Exception('Failed to load payment intent');
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['data'] as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> createIntent({
     required String contractId,
     required String amount,

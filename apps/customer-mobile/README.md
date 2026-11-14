@@ -1,17 +1,9 @@
-# customer_mobile
+# Customer mobile (Flutter)
 
-A new Flutter project.
+R1f: OTP login, contracts, sandbox PromptPay.
 
-## Getting Started
+IOS-B: Mango Lock screens (activation, enrollment, overdue, restricted, locked, balance, QR, pending, unlock, recovery). Open **Lock screens (preview)** on login to exercise UI without MDM.
 
-This project is a starting point for a Flutter application.
+This app does **not** enroll Apple MDM or enable Single App Mode. Copy must not claim the iPhone is OS-locked unless `osEnforcement` is confirmed.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+iOS target: `com.mip.customer_mobile`. Deep link: `mipcustomer://lock?screen=locked` (no secrets).

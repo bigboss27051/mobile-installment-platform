@@ -64,8 +64,8 @@ erDiagram
 ## Domain Model Notes
 
 - `ENFORCEMENT_POLICY` stores preset reference + per-level thresholds and approval flags.  
-- `DEVICE_POLICY_STATE.level` ∈ {1..5}.  
-- `DEVICE_ENROLLMENT_SESSION.status` follows the enrollment state machine in device-management docs.  
+- `DEVICE_POLICY_STATE.level` ∈ {1..5}; also `desired_presentation` and `platform_state` (D-058).  
+- `DEVICE_ENROLLMENT_SESSION.status` includes `QR_GENERATED` (see device-management spec).  
 - At most one `DEVICE_CONTRACT_BINDING` with status `ACTIVE` per device and per IMEI.  
 - `DEVICE_MANAGEMENT_ACCOUNT.secret_ref` points at a secret store; not the credential.  
 - `INSTALLMENT_PLAN.interest_method` ∈ {`FLAT`,`REDUCING`}.  

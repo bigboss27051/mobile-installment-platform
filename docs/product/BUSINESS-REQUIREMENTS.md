@@ -57,8 +57,9 @@
 
 ## BR-8 Device Management
 
-- BR-8.1 Android uses **Android Management API** (fully managed). Custom DPC is not the EMM (D-042).  
-- BR-8.2 Enforcement levels: (1) normal (2) warn (3) app limit (4) screen lock (5) suspend.  
+- BR-8.1 Android uses a **native Kotlin custom DPC** as Device Owner via Enterprise QR (D-057). AMAPI is not the lock engine (D-054). Factory reset removes ordinary Device Owner unless Zero-touch/OEM re-enrollment is proven.  
+- BR-8.2 Enforcement levels: (1) normal (2) warn (3) app limit (4) screen lock (5) suspend — presented as NONE / REMINDER / RESTRICT / LOCK (D-058). Platform state is stored separately.  
+- BR-8.2a iOS cannot match Android package suspend or Device Owner kiosk; use supervised Single App Mode for LOCK (D-056).  
 - BR-8.3 Merchants choose presets and customize overdue days / human approval gates.  
 - BR-8.4 Restrictive commands require reason, actor, tenant, expiry, and result tracking.  
 - BR-8.5 API acceptance ≠ device execution success.  

@@ -1,5 +1,5 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { ContractStatus, Prisma } from '@prisma/client';
+import { ContractStatus, DevicePlatform, Prisma } from '@prisma/client';
 import { PortalService } from './portal.service';
 
 describe('PortalService', () => {
@@ -7,6 +7,9 @@ describe('PortalService', () => {
     contract: { findMany: jest.fn(), findFirst: jest.fn() },
     paymentScheduleItem: { findMany: jest.fn() },
     paymentIntent: { findMany: jest.fn() },
+    tenant: { findFirst: jest.fn() },
+    deviceContractBinding: { findFirst: jest.fn() },
+    deviceEnrollmentSession: { findFirst: jest.fn() },
   };
   const payments = {
     createIntent: jest.fn(),
@@ -54,6 +57,42 @@ describe('PortalService', () => {
     await expect(service.getContract(customerCtx, 'other')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('returns lock presentation without claiming MDM Single App Mode', async () => {
+    prisma.tenant.findFirst.mockResolvedValue({ name: 'Anaheim Shop' });
+    prisma.contract.findFirst.mockResolvedValue({
+      id: 'c1',
+      currency: 'THB',
+    });
+    prisma.paymentScheduleItem.findMany.mockResolvedValue([
+      {
+        totalDue: new Prisma.Decimal('1000.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+        dueDate: new Date('2026-10-01T00:00:00.000Z'),
+      },
+    ]);
+    prisma.paymentIntent.findMany.mockResolvedValue([]);
+    prisma.deviceContractBinding.findFirst.mockResolvedValue({
+      deviceId: 'dev-1',
+      device: { platform: DevicePlatform.IOS },
+    });
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      status: 'COMPLETED',
+      platform: DevicePlatform.IOS,
+    });
+
+    const result = await service.getLockStatus(customerCtx);
+
+    expect(prisma.contract.findFirst).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-a', customerId: 'cust-1' },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(result.desiredPresentation).toBe('LOCK');
+    expect(result.osEnforcement).toBe('NONE');
+    expect(result.phoneLockedByMdm).toBe(false);
+    expect(result.merchantName).toBe('Anaheim Shop');
+    expect(result.disclaimer).toMatch(/not in Single App Mode/i);
   });
 
   it('rejects staff context', async () => {

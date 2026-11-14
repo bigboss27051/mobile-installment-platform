@@ -5,7 +5,7 @@
 **Auth:** `Authorization: Bearer` with audience `merchant-web` | `merchant-mobile` | `device-agent` | `super-admin` as noted.  
 **Tenant:** from token only.  
 **DM1 stub (2026-11-14):** session create/get/cancel + Android QR JSON **without Google HTTP and without Wi-Fi secrets**.  
-**DM2 stub (2026-11-14):** staff `activate` / `bind-contract` / `unbind-contract` persist local device + audit rows only. Production AMAPI enroll/lock remains BLOCKED (D-054).
+**DM2 stub (2026-11-14):** staff `activate` / `bind-contract` / `unbind-contract` persist local device + audit rows only. Production DPC QR / Device Owner / AMAPI lock remain BLOCKED until Phase 2+ evidence (D-054, D-057).
 
 Idempotency: `Idempotency-Key` required on session create, activate, bind, unbind, command create.
 
@@ -35,6 +35,7 @@ Request:
 Validation: contract `ACTIVE`; IMEI available or already reserved to this contract; consent current; `ttlSeconds` ≤ 86400; platform enabled for tenant.
 
 Response `201`: `{ "data": { "id", "status": "WAITING_FOR_DEVICE", "platform", "expiresAt", "shopCode": "optional" } }`  
+Statuses: `NOT_STARTED` \| `WAITING_FOR_DEVICE` \| `QR_GENERATED` \| `PROVISIONING` \| `ENROLLING` \| `VERIFYING` \| `ACTIVATING` \| `COMPLETED` \| `FAILED` \| `EXPIRED` \| `CANCELLED` \| `RECOVERY_REQUIRED`.  
 Do **not** return raw token in list views; return `enrollmentToken` **once** on create (or via QR endpoint).
 
 Errors: `422 CONTRACT_NOT_ACTIVE`, `409 IMEI_BOUND`, `403 BRANCH_DENIED`, `409 SESSION_OPEN` (optional: one open session per contract), `422 IOS_PREREQ_UNMET`.
@@ -52,7 +53,9 @@ Staff. Same tenant. Returns status, timestamps, deviceId if any, lastError. Neve
 **iOS:** returns `400 QR_NOT_APPLICABLE` with `instructions` document id instead.
 
 Response: `{ "data": { "format": "ANDROID_ENTERPRISE_QR", "payloadFingerprint", "svgOrPngRef", "expiresAt" } }`  
-`payloadFingerprint` is a hash for audit; **payload JSON is returned only to authorized staff** and must exclude Wi-Fi passwords and secrets (token is an opaque enrollment credential only).
+Successful QR issue moves the session to `QR_GENERATED`.  
+`payloadFingerprint` is a hash for audit; **payload JSON is returned only to authorized staff** and must exclude Wi-Fi passwords and secrets (token is an opaque enrollment credential only).  
+QR JSON names the **custom DPC** component, HTTPS download URL, package checksum, and `PROVISIONING_ADMIN_EXTRAS_BUNDLE` (session id, token, check-in URL). Not an AMAPI Google DPC token.
 
 ### POST `/devices/enrollment-sessions/:id/verify`
 
@@ -74,9 +77,9 @@ Invalidates old token, issues new, resets to `WAITING_FOR_DEVICE` if recovery al
 ### POST `/devices/enroll/check-in`
 
 **Auth:** enrollment token (`Authorization: Bearer enc_<token>` or header `X-Enrollment-Token`) **or** MDM adapter service credential.  
-**Purpose:** First contact from DPC/AMAPI/MDM that the device exists.
+**Purpose:** First contact from custom DPC or MDM adapter that the device exists.
 
-Request: platform identifiers (Android: IMEI hashed/plain per PDPA rules, serial, `enterpriseSpecificId`; iOS: UDID/serial via MDM — store hashed if required), `sessionId` if known.
+Request: platform identifiers (Android: IMEI hashed/plain per PDPA rules, serial, `isDeviceOwner`, package name; iOS: UDID/serial via MDM — store hashed if required), `sessionId` if known.
 
 Tenant derived from token. Creates/updates `devices` row; session → `ENROLLING`.
 
@@ -84,7 +87,7 @@ Idempotent on `(tenant_id, platform, hardware_fingerprint)`.
 
 ### POST `/webhooks/device-management/:provider`
 
-Signed vendor webhooks (AMAPI Pub/Sub proxy, MDM). Verify signature; idempotent `provider_event_id`. Never trust unsigned body for commands.
+Signed vendor webhooks (MDM; AMAPI only if that adapter is enabled). Verify signature; idempotent `provider_event_id`. Never trust unsigned body for commands.
 
 ---
 
@@ -131,7 +134,7 @@ Staff. Filters: `platform`, `status`, `contractId`, `branchId`. Masked identifie
 
 ### GET `/devices/:id`
 
-Staff. Detail including policy level, last heartbeat, enrollment.
+Staff. Detail including merchant/customer/contract, brand/model, platform, identifiers (masked), enrollment status, activation, **desiredPresentation**, **platformState**, last heartbeat, last command result, outstanding balance.
 
 ### GET `/devices/:id/events`
 
@@ -143,8 +146,8 @@ Staff. Last heartbeat + freshness. `410` if never seen.
 
 ### POST `/devices/:id/commands`
 
-Staff with **device restrict** permission for levels ≥4.  
-Body: `{ "type", "level?", "reason", "expiresAt" }`  
+Staff with **device restrict** permission for RESTRICT/LOCK (levels ≥3).  
+Body: `{ "type", "presentation?": "REMINDER|RESTRICT|LOCK|UNLOCK", "level?", "reason", "expiresAt" }`  
 `Idempotency-Key` required.  
 Creates `QUEUED` command; HTTP 201 ≠ executed.  
 iOS unsupported type → `422 UNSUPPORTED_CAPABILITY` (no silent no-op success).
@@ -181,4 +184,23 @@ Types: `REENROLL`, `REPLACE`, `UNENROLL`, `RELEASE`, `CONTRACT_CLOSE`. Reason re
 | `DEVICE_COMMAND_DENIED` | 403 |
 | `PLAYLOAD_SECRET_FORBIDDEN` | 400 (server-side generation guard) |
 
-Customer APIs remain read-only device status under `/api/v1/me/...` in a later slice — not enrollment.
+### GET `/me/lock-status`
+
+**Auth:** Customer JWT. Tenant + customer from token.  
+**Purpose:** Read-only lock **presentation** for the customer app (IOS-B). Does not enroll, bind, or send MDM commands.
+
+Response `data`:
+
+- `contractId` (nullable if none)
+- `deviceId` (nullable)
+- `platform` (`IOS` \| `ANDROID` \| null)
+- `enrollmentStatus` (session status or `NOT_ENROLLED`)
+- `desiredPresentation`: `NONE` \| `REMINDER` \| `RESTRICT` \| `LOCK` (from overdue schedule; **not** OS lock)
+- `osEnforcement`: `NONE` \| `PENDING` \| `PACKAGES_SUSPENDED` \| `LOCK_TASK` \| `SINGLE_APP_MODE` \| `DEVICE_LOCK` — **`NONE` until DPC/MDM ack exists**
+- `phoneLockedByMdm`: boolean (must be false unless `osEnforcement` is confirmed)
+- `outstandingBalance`, `currency`
+- `merchantName`
+- `latestIntent` optional (`id`, `status`, `qrPayload`)
+- `disclaimer`: string the app must show when desired is LOCK but OS is not
+
+Cross-tenant/customer: 404/empty, never another tenant’s device.

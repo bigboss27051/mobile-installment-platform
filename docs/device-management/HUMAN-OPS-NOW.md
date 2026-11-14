@@ -2,11 +2,17 @@
 
 **Date:** 2026-11-14  
 **Owner:** stakeholder / ops, not the engineering agent  
-**Rule:** without a written Google **allow** and a physical lab pass, **do not claim** Device Owner / MDM works in a shop.
+**Rule:** without a physical lab pass and production gates, **do not claim** Device Owner / MDM / financing lock works in a shop. **Ask before factory-resetting any phone.**
 
-This list can run **in parallel with DM2 software** (activate/bind, no AMAPI HTTP).
+Implementation path is **custom DPC QR (D-057)**. AMAPI inquiry is **optional** (D-054 history), not the lock engine.
 
-## 1. Submit AMAPI permissible-usage inquiry (DM0-006) — first
+This list can run **in parallel with Phase 1 software**.
+
+## 0. Lab Android (required for Phase 2)
+
+Dedicated GMS test phone. Do not wipe a personal device. Confirm wipe approval in chat before any factory reset.
+
+## 1. Submit AMAPI permissible-usage inquiry (DM0-006) — optional
 
 Printable steps + shopping list: [OPERATOR-PACKET.md](./OPERATOR-PACKET.md).  
 Copy-paste English: [GOOGLE-AMAPI-USAGE-INQUIRY.md](./GOOGLE-AMAPI-USAGE-INQUIRY.md).  

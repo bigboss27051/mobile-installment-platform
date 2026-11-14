@@ -65,17 +65,17 @@ All tenant-owned tables: `tenant_id UUID NOT NULL`, FK to `tenants`, composite i
 **Purpose:** Auditable, expiring enrollment attempt for one contract + platform.  
 **PK:** `id` UUID. **FKs:** `tenant_id`, `branch_id`, `contract_id`, `imei_unit_id`, `consent_id`, `created_by_user_id`, `device_id` nullable.  
 **Uniques:** at most one `OPEN` session per `(tenant_id, contract_id, platform)` (partial unique index).  
-**Status:** `NOT_STARTED` … `RECOVERY_REQUIRED` (see device-management spec).  
+**Status:** `NOT_STARTED` \| `WAITING_FOR_DEVICE` \| `QR_GENERATED` \| `PROVISIONING` \| `ENROLLING` \| `VERIFYING` \| `ACTIVATING` \| `COMPLETED` \| `FAILED` \| `EXPIRED` \| `CANCELLED` \| `RECOVERY_REQUIRED`.  
 **Security:** `token_hash` only; raw token never persisted; TTL required.
 
-Important columns: `platform`, `status`, `shop_code` nullable, `qr_fingerprint` nullable, `expires_at`, `last_error_code`, `provider` (`AMAPI|CUSTOM_DPC|MDM_VENDOR|UNKNOWN`).
+Important columns: `platform`, `status`, `shop_code` nullable, `qr_fingerprint` nullable, `expires_at`, `last_error_code`, `provider` (`CUSTOM_DPC|AMAPI|MDM_VENDOR|UNKNOWN`). Default Android provider `CUSTOM_DPC` (D-057).
 
 ### `device_provisioning_profiles`
 
 **Purpose:** Versioned Android extras / iOS instruction templates **without secrets**.  
 **PK:** `id`. **FKs:** `tenant_id` nullable for platform defaults.  
 **Uniques:** `(tenant_id, platform, name, version)`.  
-**Security:** no private keys; DPC download URL must be HTTPS Play/AMAPI — not an unsigned APK with embedded admin password.
+**Security:** no private keys; DPC download URL must be HTTPS; include package checksum in QR extras — not an unsigned APK with embedded admin password. Play-hosted DPC is a **production** gate.
 
 ### `devices`
 
@@ -83,7 +83,7 @@ Important columns: `platform`, `status`, `shop_code` nullable, `qr_fingerprint` 
 **PK:** `id`. **FKs:** `tenant_id`, `branch_id`, `management_account_id` nullable.  
 **Uniques:** `(tenant_id, hardware_fingerprint)`; `(tenant_id, imei)` where imei present (align with inventory).  
 **Status:** `PENDING_ENROLL|ENROLLED|ACTIVE|LOCKED_LEVEL|UNENROLLED|LOST|REPLACED` — lock *level* still lives in `device_policy_states`.  
-**Identifiers:** `platform`, `os_version`, `serial_hash`, `imei`, `imei_hash`, `android_enterprise_id`, `ios_udid_hash`, `vendor_device_id`.  
+**Identifiers:** `platform`, `os_version`, `brand`, `model`, `serial_hash`, `imei`, `imei_hash`, `is_device_owner`, `dpc_package_name`, `android_enterprise_id` (nullable; AMAPI only), `ios_udid_hash`, `vendor_device_id`.  
 **Security:** mask IMEI in lists; hashes for lookup.
 
 ### `device_activations`
@@ -103,7 +103,7 @@ Important columns: `platform`, `status`, `shop_code` nullable, `qr_fingerprint` 
 
 ### `device_management_accounts`
 
-**Purpose:** Per-tenant or platform AMAPI/MDM configuration **references**.  
+**Purpose:** Per-tenant or platform MDM / optional AMAPI configuration **references**. Custom DPC path may have a platform-level HTTPS APK URL in provisioning profiles instead of this table.  
 **PK:** `id`. **FKs:** `tenant_id` nullable (platform Model A).  
 **Uniques:** `(tenant_id, provider, environment)`.  
 **Columns:** `provider`, `scope` (`PLATFORM|TENANT`), `status` (`PENDING|CONNECTED|ERROR|REVOKED`), `secret_ref` (KMS/secret manager id — **not** the secret), `external_org_name`, `display_name`.  
@@ -112,7 +112,7 @@ Important columns: `platform`, `status`, `shop_code` nullable, `qr_fingerprint` 
 ### Existing / remaining device tables
 
 - `enforcement_policies` — merchant level thresholds (already in dictionary).  
-- `device_policy_states` — current level + policy version on a device.  
+- `device_policy_states` — `level` (1–5), `desired_presentation` (`NONE|REMINDER|RESTRICT|LOCK`), `platform_state` (`NONE|PACKAGES_SUSPENDED|LOCK_TASK|SINGLE_APP_MODE|UNSUPPORTED|…`), `policy_version`. Never collapse these into one boolean.  
 - `device_policy_assignments` — **optional**; skip until a device can have multiple profiles. Use `device_policy_states.policy_version` + `enforcement_policies`.  
 - `device_commands`, `device_events` — as Phase 0.  
 - `device_recovery_requests` — `type`, `status`, `reason`, `from_device_id`, `to_device_id` nullable, `contract_id`.

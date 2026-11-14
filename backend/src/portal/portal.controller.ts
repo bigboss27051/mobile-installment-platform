@@ -62,4 +62,10 @@ export class PortalController {
     const intent = await this.portal.getPaymentIntent(user, id);
     return { data: intent };
   }
+
+  @Get('lock-status')
+  async lockStatus(@CurrentUser() user: TenantContext) {
+    const status = await this.portal.getLockStatus(user);
+    return { data: status };
+  }
 }
