@@ -1,5 +1,6 @@
 .mip-page {
   max-width: var(--mip-page-max);
+  margin-inline: auto;
 }
 .mip-page__header {
   display: flex;
@@ -19,7 +20,7 @@
   border: 1px solid var(--mip-border);
   border-radius: var(--mip-radius);
   padding: var(--mip-space-4);
-  margin-bottom: var(--mip-space-5);
+  margin-bottom: var(--mip-space-6);
 }
 .mip-section__title {
   margin: 0 0 var(--mip-space-4);
@@ -55,7 +56,7 @@
   width: 100%;
   box-sizing: border-box;
   min-height: var(--mip-input-height);
-  padding: 0 12px;
+  padding: 0 var(--mip-space-3);
   border: 1px solid var(--mip-border);
   border-radius: var(--mip-radius);
   font-size: var(--mip-input-size);
@@ -65,7 +66,7 @@
 }
 .mip-textarea {
   min-height: 88px;
-  padding: 10px 12px;
+  padding: var(--mip-space-2) var(--mip-space-3);
   resize: vertical;
 }
 .mip-input:focus,
@@ -78,11 +79,18 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--mip-space-4);
+  max-width: var(--mip-form-max);
+}
+.mip-form-grid .mip-form-grid {
+  max-width: none;
 }
 @media (min-width: 768px) {
   .mip-form-grid--2 {
     grid-template-columns: 1fr 1fr;
   }
+}
+.mip-form-grid__span {
+  grid-column: 1 / -1;
 }
 .mip-form-actions {
   display: flex;
@@ -90,13 +98,26 @@
   gap: var(--mip-space-2);
   margin-top: var(--mip-space-4);
 }
+.mip-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mip-space-2);
+}
+@media (max-width: 767px) {
+  .mip-form-actions:has(.mip-btn:nth-child(2)) {
+    flex-direction: column;
+  }
+  .mip-form-actions:has(.mip-btn:nth-child(2)) .mip-btn {
+    width: 100%;
+  }
+}
 .mip-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--mip-space-2);
   min-height: var(--mip-input-height);
-  padding: 0 16px;
+  padding: 0 var(--mip-space-4);
   border-radius: var(--mip-radius);
   border: 1px solid transparent;
   font-size: var(--mip-label-size);
@@ -137,7 +158,7 @@
 .mip-table th,
 .mip-table td {
   text-align: left;
-  padding: 10px 12px;
+  padding: var(--mip-space-2) var(--mip-space-3);
   border-bottom: 1px solid var(--mip-border);
   font-size: 14px;
   color: var(--mip-text);
@@ -199,4 +220,5 @@
   border-radius: var(--mip-radius);
   font-size: 12px;
   overflow-x: auto;
+  max-width: var(--mip-form-max);
 }

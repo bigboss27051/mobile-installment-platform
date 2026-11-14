@@ -221,7 +221,7 @@ export function EnrollPage({
               <option value="IOS">{t('enroll.ios')}</option>
             </Select>
           </FormField>
-          <div style={{ gridColumn: '1 / -1' }}>
+          <div className="mip-form-grid__span">
             <label className="check-row">
               <input
                 type="checkbox"
@@ -231,7 +231,7 @@ export function EnrollPage({
               {t('enroll.consent')}
             </label>
           </div>
-          <div className="mip-form-actions" style={{ gridColumn: '1 / -1' }}>
+          <div className="mip-form-actions mip-form-grid__span">
             <Button type="submit" variant="primary">
               {t('enroll.createSession')}
             </Button>

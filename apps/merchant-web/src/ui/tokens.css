@@ -8,14 +8,19 @@
   --mip-error: #dc2626;
   --mip-success: #16a34a;
   --mip-sidebar: #1e293b;
+  /* Component exceptions (not spacing scale): 44px touch target, 6px radius */
   --mip-radius: 6px;
   --mip-input-height: 44px;
-  --mip-page-max: 960px;
+  --mip-page-max: 1200px;
+  --mip-form-max: 720px;
+  --mip-login-max: 420px;
   --mip-space-1: 4px;
   --mip-space-2: 8px;
   --mip-space-3: 12px;
   --mip-space-4: 16px;
   --mip-space-5: 24px;
+  --mip-space-6: 32px;
+  --mip-space-7: 48px;
   --mip-font: Inter, Sarabun, system-ui, sans-serif;
   --mip-title-size: 24px;
   --mip-section-size: 18px;

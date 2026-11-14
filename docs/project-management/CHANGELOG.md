@@ -22,7 +22,8 @@
 
 ### Changed
 
-- Decisions **UI-001…UI-006**: full Merchant Web restyle; dark sidebar; shared UI without RHF/Zod this pass; stacked pages; local `src/ui/` (not `@mip/ui` yet)
+- Merchant Web spacing: page max 1200px, form grid 720px, login 420px; `--mip-space-1…7`; 768px-only breakpoint; section padding 16px
+- Decisions **UI-001…UI-007**: full Merchant Web restyle; dark sidebar; shared UI without RHF/Zod this pass; stacked pages; local `src/ui/` (not `@mip/ui` yet); layout tokens locked 2026-11-14
 - R2 Device expanded from “DPC + MDM adapter” to a provisioning & enrollment platform sliced **DM0–DM5**
 - Current phase: next work is **DM0 feasibility**, not enrollment implementation
 - Decisions D-041..D-048; risks R-013..R-020

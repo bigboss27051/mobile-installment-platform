@@ -10,6 +10,7 @@ describe('Page', () => {
       </Page>,
     );
     expect(html).toContain('Customers');
+    expect(html).toContain('mip-page');
     expect(html).toContain('mip-page__title');
     expect(html).toContain('body');
   });

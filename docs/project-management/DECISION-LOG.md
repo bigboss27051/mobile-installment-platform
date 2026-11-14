@@ -60,5 +60,6 @@
 | UI-002 | 2026-11-14 | App shell is a **left sidebar** (desktop) with off-canvas drawer on narrow viewports | Matches enterprise admin navigation; keeps page content stacked and scannable | Accepted |
 | UI-003 | 2026-11-14 | Forms use **shared UI primitives only**; keep existing `useState` submit (no React Hook Form + Zod in this pass) | Avoids dual form stacks while restyling; frontend RHF/Zod standard remains later | Accepted |
 | UI-004 | 2026-11-14 | Sidebar visual is **dark** (`#1E293B`) with primary (`#1D4ED8`) active state | Contrast for nav vs content; tokens from approved enterprise form design | Accepted |
-| UI-005 | 2026-11-14 | Create + list pages are **stacked sections** (form card, then table card) | One pattern for all list/create screens; 44px inputs; max-width 960px pages | Accepted |
+| UI-005 | 2026-11-14 | Create + list pages are **stacked sections** (form card, then table card) | One pattern for all list/create screens; 44px inputs; page max 1200px; form grid max 720px | Accepted |
 | UI-006 | 2026-11-14 | Design system lives **locally** at `apps/merchant-web/src/ui/` (not a monorepo `@mip/ui` package yet) | One-app increment; extract a shared package only if a second web app needs the same primitives | Accepted |
+| UI-007 | 2026-11-14 | Merchant Web spacing: 8-point `--mip-space-1…7` (4–48px, no 64px); page 1200 / form 720 / login 420; gutter 16/24; section pad 16; breakpoint 768 only; 2-col opt-in; table overflow-x | Grill lock 2026-11-14; amends UI-005 960px page max; Flutter/super-admin out of scope | Accepted |

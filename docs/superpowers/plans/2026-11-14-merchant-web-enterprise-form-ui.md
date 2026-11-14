@@ -20,7 +20,7 @@
 | `apps/merchant-web/src/ui/tokens.css` | Color, type, spacing, radius CSS variables |
 | `apps/merchant-web/src/ui/FormField.tsx` | Label above, helper/error below |
 | `apps/merchant-web/src/ui/FormField.spec.tsx` | Required marker + error text |
-| `apps/merchant-web/src/ui/Page.tsx` | Max-width 960px + title |
+| `apps/merchant-web/src/ui/Page.tsx` | Max-width 1200px + title |
 | `apps/merchant-web/src/ui/Page.spec.tsx` | Title render |
 | `apps/merchant-web/src/ui/Section.tsx` | Surface card + optional title |
 | `apps/merchant-web/src/ui/Input.tsx` | 44px styled input |

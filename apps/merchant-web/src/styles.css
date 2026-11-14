@@ -45,7 +45,8 @@ body {
   border: 0;
   text-align: left;
   cursor: pointer;
-  padding: 10px 12px;
+  min-height: var(--mip-input-height);
+  padding: var(--mip-space-2) var(--mip-space-3);
   border-radius: var(--mip-radius);
   font-family: inherit;
   font-size: 14px;
@@ -57,7 +58,7 @@ body {
 }
 
 .app-main {
-  padding: var(--mip-space-5);
+  padding: var(--mip-space-4);
   background: var(--mip-bg);
   min-width: 0;
 }
@@ -81,7 +82,8 @@ body {
 
 .lang-switch button {
   width: auto;
-  padding: 4px 10px;
+  min-height: var(--mip-input-height);
+  padding: 0 var(--mip-space-3);
   border: 1px solid rgb(255 255 255 / 35%);
   border-radius: var(--mip-radius);
   font-size: 12px;
@@ -97,13 +99,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--mip-space-5);
+  padding: var(--mip-space-4);
   background: var(--mip-bg);
 }
 
 .login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: var(--mip-login-max);
   background: var(--mip-surface);
   border: 1px solid var(--mip-border);
   border-radius: var(--mip-radius);
@@ -157,6 +159,15 @@ body {
 }
 .check-row input {
   margin-top: 3px;
+}
+
+@media (min-width: 768px) {
+  .app-main {
+    padding: var(--mip-space-5);
+  }
+  .login-screen {
+    padding: var(--mip-space-5);
+  }
 }
 
 @media (max-width: 767px) {

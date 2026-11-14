@@ -220,7 +220,7 @@ function ProductsPage({
           <FormField label={t('products.brand')} htmlFor="product-brand" required>
             <Input id="product-brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
           </FormField>
-          <div className="mip-form-actions" style={{ gridColumn: '1 / -1' }}>
+          <div className="mip-form-actions mip-form-grid__span">
             <Button type="submit" variant="primary">
               {t('products.create')}
             </Button>
@@ -323,7 +323,7 @@ function InventoryPage({
           <FormField label={t('inventory.imei')} htmlFor="inventory-imei" required>
             <Input id="inventory-imei" value={imei} onChange={(e) => setImei(e.target.value)} />
           </FormField>
-          <div className="mip-form-actions" style={{ gridColumn: '1 / -1' }}>
+          <div className="mip-form-actions mip-form-grid__span">
             <Button type="submit" variant="primary">
               {t('inventory.receive')}
             </Button>
@@ -417,7 +417,7 @@ function CustomersPage({
           <FormField label={t('customers.phone')} htmlFor="customer-phone" required>
             <Input id="customer-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </FormField>
-          <div style={{ gridColumn: '1 / -1' }}>
+          <div className="mip-form-grid__span">
             <FormField
               label={t('customers.nationalId')}
               htmlFor="customer-nid"
@@ -431,7 +431,7 @@ function CustomersPage({
               />
             </FormField>
           </div>
-          <div className="mip-form-actions" style={{ gridColumn: '1 / -1' }}>
+          <div className="mip-form-actions mip-form-grid__span">
             <Button type="submit" variant="primary">
               {t('customers.create')}
             </Button>
@@ -584,34 +584,36 @@ function ApplicationsPage({
                   <td>{row.id}</td>
                   <td>{row.status}</td>
                   <td>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={async () => {
-                        await apiRequest(`/api/v1/applications/${row.id}/submit`, {
-                          method: 'POST',
-                        });
-                        await refresh();
-                      }}
-                    >
-                      {t('applications.submit')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="primary"
-                      onClick={async () => {
-                        await apiRequest(`/api/v1/applications/${row.id}/decision`, {
-                          method: 'POST',
-                          body: JSON.stringify({
-                            decision: 'APPROVE',
-                            reason: t('applications.approveReason'),
-                          }),
-                        });
-                        await refresh();
-                      }}
-                    >
-                      {t('applications.approve')}
-                    </Button>
+                    <div className="mip-inline-actions">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={async () => {
+                          await apiRequest(`/api/v1/applications/${row.id}/submit`, {
+                            method: 'POST',
+                          });
+                          await refresh();
+                        }}
+                      >
+                        {t('applications.submit')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={async () => {
+                          await apiRequest(`/api/v1/applications/${row.id}/decision`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                              decision: 'APPROVE',
+                              reason: t('applications.approveReason'),
+                            }),
+                          });
+                          await refresh();
+                        }}
+                      >
+                        {t('applications.approve')}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -705,27 +707,29 @@ function ContractsPage({
                   <td>{row.id}</td>
                   <td>{row.status}</td>
                   <td>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={async () => {
-                        setSelected(await apiRequest(`/api/v1/contracts/${row.id}`));
-                      }}
-                    >
-                      {t('contracts.open')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="primary"
-                      onClick={async () => {
-                        await apiRequest(`/api/v1/contracts/${row.id}/activate`, {
-                          method: 'POST',
-                        });
-                        await refresh();
-                      }}
-                    >
-                      {t('contracts.activate')}
-                    </Button>
+                    <div className="mip-inline-actions">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={async () => {
+                          setSelected(await apiRequest(`/api/v1/contracts/${row.id}`));
+                        }}
+                      >
+                        {t('contracts.open')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={async () => {
+                          await apiRequest(`/api/v1/contracts/${row.id}/activate`, {
+                            method: 'POST',
+                          });
+                          await refresh();
+                        }}
+                      >
+                        {t('contracts.activate')}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
