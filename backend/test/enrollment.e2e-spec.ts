@@ -328,6 +328,12 @@ describe('Device enrollment sessions (e2e)', () => {
     expect(JSON.stringify(qr.body.data.payload)).not.toMatch(/WIFI_PASSWORD/i);
     expect(qr.body.data.payloadFingerprint).toMatch(/^[a-f0-9]{64}$/);
 
+    const afterQr = await request(app.getHttpServer())
+      .get(`/api/v1/devices/enrollment-sessions/${sessionId}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(afterQr.body.data.status).toBe('QR_GENERATED');
+
     const iosSession = await request(app.getHttpServer())
       .post('/api/v1/devices/enrollment-sessions')
       .set('Authorization', `Bearer ${tokenA}`)
@@ -553,6 +559,21 @@ describe('Device enrollment sessions (e2e)', () => {
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200);
     expect(activation.body.data.reason).toBe('staff confirmed desk activation');
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/devices/${deviceId}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(404);
+
+    const dashboard = await request(app.getHttpServer())
+      .get(`/api/v1/devices/${deviceId}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(dashboard.body.data.desiredPresentation).toBe('NONE');
+    expect(dashboard.body.data.platformState).toBe('NONE');
+    expect(dashboard.body.data.enrollmentStatus).toBeDefined();
+    expect(dashboard.body.data.outstandingBalance).toBeNull();
+    expect(JSON.stringify(dashboard.body.data)).not.toMatch(/\d{15}/);
 
     const bound = await request(app.getHttpServer())
       .post(`/api/v1/devices/${deviceId}/bind-contract`)

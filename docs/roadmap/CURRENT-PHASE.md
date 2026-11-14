@@ -1,4 +1,4 @@
-# Current Phase: R1 complete — **Phase 1 Shared Enrollment Foundation** next
+# Current Phase: **Phase 1 enrollment statuses shipped** — Phase 2 QR DPC next
 
 **Previous:** R1f Merchant Web + Customer Android critical paths — **COMPLETE** on `develop`
 
@@ -14,7 +14,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Architecture (D-057):** Android **custom DPC + Device Owner + QR** (no PC for normal customer enroll). iOS **Model B + vendor MDM + Configurator iPhone**. Device management **mandatory**. AMAPI is not the lock engine (D-054). Prototype ≠ commercial approval.
 
-**Next software:** Phase 1 — expand enrollment foundation (`QR_GENERATED`, identity, wizard/dashboard). Then Phase 2 — Android QR DPC on **authorized** lab devices. **Ask before factory-resetting any phone.**
+**Phase 1 software (done):** `NOT_STARTED` / `QR_GENERATED` on sessions; Android QR sets `QR_GENERATED`; `GET /api/v1/devices/:id` returns desired presentation `NONE`, platform state `NONE`, enrollment status, masked IMEI, `outstandingBalance: null` (no lock engine). Merchant Web still shows the QR after that status.
+
+**Next software:** Phase 2 — replace Google Cloud DPC QR extras with the project DPC. **Ask before factory-resetting any phone.**
 
 **Do not** implement Phases 3–7 in the same change. **Do not** claim production Device Owner.
 

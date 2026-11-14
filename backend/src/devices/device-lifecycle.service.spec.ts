@@ -73,6 +73,32 @@ describe('DeviceLifecycleService', () => {
     );
   });
 
+  it('returns dashboard fields and 404 for another tenant', async () => {
+    prisma.device.findFirst.mockResolvedValueOnce({
+      id: 'd1',
+      platform: 'ANDROID',
+      status: DeviceLifecycleStatus.ACTIVE,
+      enrollmentSession: { status: EnrollmentSessionStatus.QR_GENERATED },
+      imeiUnit: { imei: '359999999999999' },
+    });
+    const view = await service.getDashboard(tenantCtx, 'd1');
+    expect(view).toEqual(
+      expect.objectContaining({
+        id: 'd1',
+        desiredPresentation: 'NONE',
+        platformState: 'NONE',
+        enrollmentStatus: 'QR_GENERATED',
+        outstandingBalance: null,
+      }),
+    );
+    expect(JSON.stringify(view)).not.toContain('359999999999999');
+
+    prisma.device.findFirst.mockResolvedValueOnce(null);
+    await expect(service.getDashboard(tenantCtx, 'other')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
   it('rejects activate without tenant', async () => {
     await expect(
       service.activate(

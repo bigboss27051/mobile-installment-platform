@@ -29,7 +29,7 @@
 - Modify: `backend/prisma/schema.prisma` (`EnrollmentSessionStatus`)
 - Test: `backend/src/devices/enrollment.service.spec.ts`
 
-- [ ] **Step 1: Write the failing unit expectation**
+- [x] **Step 1: Write the failing unit expectation**
 
 In `enrollment.service.spec.ts`, add that `materializeQr` persists `status: 'QR_GENERATED'` (it currently only updates `qrFingerprint`). Run:
 
@@ -39,7 +39,7 @@ cd backend && npx jest src/devices/enrollment.service.spec.ts -t "QR_GENERATED"
 
 Expected: FAIL (no such test / status never set).
 
-- [ ] **Step 2: Add Prisma enum values**
+- [x] **Step 2: Add Prisma enum values**
 
 In `enum EnrollmentSessionStatus` add `NOT_STARTED` and `QR_GENERATED` (keep existing values). Create session still defaults to `WAITING_FOR_DEVICE`.
 
@@ -62,11 +62,11 @@ enum EnrollmentSessionStatus {
 
 Run: `npx prisma migrate dev --name enrollment_qr_generated_status`
 
-- [ ] **Step 3: Include new statuses in OPEN_STATUSES**
+- [x] **Step 3: Include new statuses in OPEN_STATUSES**
 
 `backend/src/devices/enrollment.service.ts` and `device-lifecycle.service.ts` must treat `QR_GENERATED` and `NOT_STARTED` as open (cancel/expire/retry).
 
-- [ ] **Step 4: Set status on QR materialize**
+- [x] **Step 4: Set status on QR materialize**
 
 In `materializeQr`, after computing `payloadFingerprint`:
 
@@ -79,7 +79,7 @@ data: {
 
 iOS must still return `QR_NOT_APPLICABLE`. Optional follow-up: iOS “start instructions” endpoint sets `QR_GENERATED` with instruction fingerprint — only if a test exists; otherwise leave iOS on `WAITING_FOR_DEVICE` until Phase 5.
 
-- [ ] **Step 5: E2E**
+- [x] **Step 5: E2E**
 
 In `backend/test/enrollment.e2e-spec.ts` after POST `.../qr`:
 
@@ -96,7 +96,7 @@ Run: `cd backend && npx jest test/enrollment.e2e-spec.ts --runInBand`
 
 Expected: PASS. Tenant B still 404.
 
-- [ ] **Step 6: Merchant Web open statuses**
+- [x] **Step 6: Merchant Web open statuses**
 
 Add `'QR_GENERATED'` and `'NOT_STARTED'` to `OPEN_STATUSES` in `apps/merchant-web/src/enroll-status.ts`. Add i18n keys `enroll.state.QR_GENERATED`. Extend `enroll-status.spec.ts`.
 
@@ -114,21 +114,21 @@ Do not commit unless requested.
 - Modify device detail serializer (search `GET /devices/:id` under `backend/src/devices/`)
 - Test: existing device e2e if present, else unit on mapper
 
-- [ ] **Step 1: Failing test** — detail JSON includes `desiredPresentation`, `platformState`, `enrollmentStatus`, `outstandingBalance` (balance may be `null` until a bind + ledger read exists).
+- [x] **Step 1: Failing test** — detail JSON includes `desiredPresentation`, `platformState`, `enrollmentStatus`, `outstandingBalance` (balance may be `null` until a bind + ledger read exists).
 
-- [ ] **Step 2: Minimal mapper** — read `device_policy_states` if the table exists; otherwise return `desiredPresentation: 'NONE'`, `platformState: 'NONE'` without inventing a lock engine.
+- [x] **Step 2: Minimal mapper** — read `device_policy_states` if the table exists; otherwise return `desiredPresentation: 'NONE'`, `platformState: 'NONE'` without inventing a lock engine.
 
-- [ ] **Step 3: Mask IMEI in list endpoints** (already required). Assert list does not include raw national IDs.
+- [x] **Step 3: Mask IMEI in list endpoints** (already required). Assert list does not include raw national IDs.
 
-- [ ] **Step 4: Run tenant isolation** on GET `/devices/:id` with token B → 404.
+- [x] **Step 4: Run tenant isolation** on GET `/devices/:id` with token B → 404.
 
 ---
 
 ### Task 3: Phase 1 exit (no hardware)
 
-- [ ] Backend unit + enrollment e2e green  
-- [ ] Merchant Web enroll-status tests green  
-- [ ] Document in CURRENT-PHASE that Phase 1 software is done only after those commands  
+- [x] Backend unit + enrollment e2e green  
+- [x] Merchant Web enroll-status tests green  
+- [x] Document in CURRENT-PHASE that Phase 1 software is done only after those commands  
 - [ ] **Stop.** Phase 2 is a separate plan: replace `ANDROID_CLOUD_DPC_*` in `enrollment-qr.ts` with `com.mip.dpc` component + checksum + HTTPS URL; DPC check-in; **ask before wiping** any phone  
 
 ---

@@ -5,6 +5,7 @@ import {
   canStaffCancel,
   isTerminalEnrollment,
   resolveEnrollmentStatus,
+  showsAndroidQr,
   statusTone,
 } from './enroll-status';
 import { useI18n } from './i18n-context';
@@ -269,7 +270,7 @@ export function EnrollPage({
         </Section>
       ) : null}
 
-      {session?.platform === 'ANDROID' && qr && viewStatus === 'WAITING_FOR_DEVICE' ? (
+      {session?.platform === 'ANDROID' && qr && viewStatus && showsAndroidQr(viewStatus) ? (
         <Section>
           <p>{qr.format}</p>
           <p>{t('enroll.fingerprint', { hash: qr.payloadFingerprint })}</p>

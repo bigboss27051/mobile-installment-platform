@@ -144,7 +144,9 @@ enum DevicePlatform {
 }
 
 enum EnrollmentSessionStatus {
+  NOT_STARTED
   WAITING_FOR_DEVICE
+  QR_GENERATED
   PROVISIONING
   ENROLLING
   VERIFYING

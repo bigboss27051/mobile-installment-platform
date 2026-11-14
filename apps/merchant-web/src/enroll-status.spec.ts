@@ -4,6 +4,7 @@ import {
   canStaffCancel,
   isTerminalEnrollment,
   resolveEnrollmentStatus,
+  showsAndroidQr,
 } from './enroll-status';
 
 describe('enrollment wizard status', () => {
@@ -38,5 +39,15 @@ describe('enrollment wizard status', () => {
     expect(canStaffActivate('CANCELLED')).toBe(false);
     expect(isTerminalEnrollment('FAILED')).toBe(true);
     expect(isTerminalEnrollment('WAITING_FOR_DEVICE')).toBe(false);
+    expect(canStaffCancel('QR_GENERATED')).toBe(true);
+    expect(canStaffCancel('NOT_STARTED')).toBe(true);
+    expect(showsAndroidQr('QR_GENERATED')).toBe(true);
+    expect(showsAndroidQr('ENROLLING')).toBe(false);
+  });
+
+  it('expires a generated QR after TTL', () => {
+    expect(
+      resolveEnrollmentStatus({ status: 'QR_GENERATED', expiresAt: past }),
+    ).toBe('EXPIRED');
   });
 });

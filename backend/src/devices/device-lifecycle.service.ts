@@ -19,7 +19,9 @@ import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 
 const ACTIVATABLE_SESSION_STATUSES: EnrollmentSessionStatus[] = [
+  EnrollmentSessionStatus.NOT_STARTED,
   EnrollmentSessionStatus.WAITING_FOR_DEVICE,
+  EnrollmentSessionStatus.QR_GENERATED,
   EnrollmentSessionStatus.PROVISIONING,
   EnrollmentSessionStatus.ENROLLING,
   EnrollmentSessionStatus.VERIFYING,
@@ -157,6 +159,30 @@ export class DeviceLifecycleService {
       },
       false,
     );
+  }
+
+  async getDashboard(ctx: TenantContext, deviceId: string) {
+    const tenantId = this.requireTenant(ctx);
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, tenantId },
+      include: { enrollmentSession: true, imeiUnit: true },
+    });
+    if (!device) {
+      throw new NotFoundException('Device not found.');
+    }
+    const imei = device.imeiUnit?.imei;
+    const maskedImei =
+      imei && imei.length > 4 ? `••••${imei.slice(-4)}` : null;
+    return {
+      id: device.id,
+      platform: device.platform,
+      status: device.status,
+      enrollmentStatus: device.enrollmentSession?.status ?? 'NOT_ENROLLED',
+      desiredPresentation: 'NONE' as const,
+      platformState: 'NONE' as const,
+      outstandingBalance: null as string | null,
+      maskedImei,
+    };
   }
 
   async getActivation(ctx: TenantContext, deviceId: string) {

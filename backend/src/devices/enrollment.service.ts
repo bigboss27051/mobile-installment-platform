@@ -17,7 +17,9 @@ import { buildAndroidEnrollmentQrPayload } from './enrollment-qr';
 import { issueEnrollmentToken } from './enrollment-token';
 
 const OPEN_STATUSES: EnrollmentSessionStatus[] = [
+  EnrollmentSessionStatus.NOT_STARTED,
   EnrollmentSessionStatus.WAITING_FOR_DEVICE,
+  EnrollmentSessionStatus.QR_GENERATED,
   EnrollmentSessionStatus.PROVISIONING,
   EnrollmentSessionStatus.ENROLLING,
   EnrollmentSessionStatus.VERIFYING,
@@ -153,7 +155,10 @@ export class EnrollmentService {
       .digest('hex');
     await this.prisma.deviceEnrollmentSession.update({
       where: { id: session.id },
-      data: { qrFingerprint: payloadFingerprint },
+      data: {
+        qrFingerprint: payloadFingerprint,
+        status: EnrollmentSessionStatus.QR_GENERATED,
+      },
     });
     return {
       format: 'ANDROID_ENTERPRISE_QR' as const,

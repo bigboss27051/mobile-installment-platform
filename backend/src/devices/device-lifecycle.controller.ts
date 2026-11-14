@@ -37,6 +37,15 @@ export class DeviceLifecycleController {
     return { data: activation };
   }
 
+  @Get(':id')
+  async getDashboard(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const device = await this.lifecycle.getDashboard(user, id);
+    return { data: device };
+  }
+
   @Get(':id/activation')
   async getActivation(
     @Param('id', new ParseUUIDPipe()) id: string,

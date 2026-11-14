@@ -1,5 +1,7 @@
 const OPEN_STATUSES = new Set([
+  'NOT_STARTED',
   'WAITING_FOR_DEVICE',
+  'QR_GENERATED',
   'PROVISIONING',
   'ENROLLING',
   'VERIFYING',
@@ -26,6 +28,10 @@ export function resolveEnrollmentStatus(
 
 export function isTerminalEnrollment(status: string): boolean {
   return TERMINAL_STATUSES.has(status);
+}
+
+export function showsAndroidQr(status: string): boolean {
+  return status === 'WAITING_FOR_DEVICE' || status === 'QR_GENERATED';
 }
 
 export function canStaffCancel(status: string): boolean {

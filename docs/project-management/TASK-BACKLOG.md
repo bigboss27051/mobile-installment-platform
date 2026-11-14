@@ -40,6 +40,6 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | DM1-001 | Enrollment sessions API + token lifecycle (after DM0) | P0 | Backend | DONE (stub; no AMAPI) |
 | DM2-001 | Activation + contract bind + isolation tests | P0 | Backend | DONE (stub; no AMAPI/Apple HTTP) |
 | DM2-002 | Merchant Web enroll wizard session + stub QR | P1 | Frontend | DONE (stub QR; not production DO) |
-| R2-P1-001 | Shared enrollment foundation: `QR_GENERATED` + `NOT_STARTED`, policy presentation fields, dashboard GET | P0 | Backend/Web | READY |
+| R2-P1-001 | Shared enrollment foundation: `QR_GENERATED` + `NOT_STARTED`, policy presentation fields, dashboard GET | P0 | Backend/Web | DONE |
 | R2-P2-001 | Custom DPC QR extras (replace Cloud DPC stub) + Device Owner check-in on authorized lab phone | P0 | Android/Backend | BACKLOG (after P1; ask before wipe) |
 | P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |

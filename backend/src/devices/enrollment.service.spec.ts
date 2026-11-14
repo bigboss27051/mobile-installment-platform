@@ -117,6 +117,35 @@ describe('EnrollmentService', () => {
     expect(created.status).toBe('WAITING_FOR_DEVICE');
   });
 
+  it('sets QR_GENERATED when Android QR is materialized', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      id: 's1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      status: 'WAITING_FOR_DEVICE',
+      expiresAt: new Date(Date.now() + 60_000),
+      tokenHash: 'aa'.repeat(32),
+    });
+    prisma.deviceEnrollmentSession.update.mockImplementation(async (args: {
+      data: Record<string, unknown>;
+    }) => ({
+      id: 's1',
+      status: args.data.status,
+      qrFingerprint: args.data.qrFingerprint,
+    }));
+
+    await service.materializeQr(tenantCtx, 's1');
+
+    expect(prisma.deviceEnrollmentSession.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'QR_GENERATED',
+          qrFingerprint: expect.stringMatching(/^[a-f0-9]{64}$/),
+        }),
+      }),
+    );
+  });
+
   it('refuses iOS QR materialization', async () => {
     prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
       id: 's1',
