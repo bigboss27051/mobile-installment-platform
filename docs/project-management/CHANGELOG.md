@@ -4,6 +4,8 @@
 
 ### Added
 
+- Merchant Web enterprise form UI: local `apps/merchant-web/src/ui/` primitives, dark left sidebar shell, stacked form+table pages (login, products, inventory, customers, applications, contracts, enroll)
+- Design spec `docs/superpowers/specs/2026-11-14-merchant-web-enterprise-form-ui-design.md` and plan `docs/superpowers/plans/2026-11-14-merchant-web-enterprise-form-ui.md`
 - Human-ops pack: `HUMAN-OPS-NOW.md`, MDM vendor shortlist, D-051 legal draft (incl. 30-day leave Remote Management)
 - DM2 stub: activate / bind-contract / unbind-contract APIs (tenant isolation, IMEI match, idempotency, audit+reason; no AMAPI/Apple HTTP)
 - Merchant Web enroll page: create session + show stub QR from API
@@ -20,6 +22,7 @@
 
 ### Changed
 
+- Decisions **UI-001…UI-006**: full Merchant Web restyle; dark sidebar; shared UI without RHF/Zod this pass; stacked pages; local `src/ui/` (not `@mip/ui` yet)
 - R2 Device expanded from “DPC + MDM adapter” to a provisioning & enrollment platform sliced **DM0–DM5**
 - Current phase: next work is **DM0 feasibility**, not enrollment implementation
 - Decisions D-041..D-048; risks R-013..R-020
