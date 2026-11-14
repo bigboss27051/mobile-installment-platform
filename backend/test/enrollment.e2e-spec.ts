@@ -1,5 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { PlatformRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
@@ -575,6 +577,31 @@ describe('Device enrollment sessions (e2e)', () => {
       .set('Idempotency-Key', `bind-cross-${now}`)
       .send({ contractId, reason: 'cross tenant' })
       .expect(404);
+
+    const staffEmail = `bind-staff-a-${now}@test.local`;
+    const staff = await prisma.user.create({
+      data: {
+        tenantId: tenantAId,
+        email: staffEmail,
+        passwordHash: await bcrypt.hash('Password1!', 10),
+        fullName: 'Bind Staff A',
+        role: PlatformRole.MERCHANT_STAFF,
+      },
+    });
+    createdUserIds.push(staff.id);
+
+    const staffLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: staffEmail, password: 'Password1!' })
+      .expect(201);
+    const staffToken = staffLogin.body.data.accessToken as string;
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/devices/${deviceId}/unbind-contract`)
+      .set('Authorization', `Bearer ${staffToken}`)
+      .set('Idempotency-Key', `unbind-staff-${now}`)
+      .send({ reason: 'staff should not unbind' })
+      .expect(403);
 
     const unbound = await request(app.getHttpServer())
       .post(`/api/v1/devices/${deviceId}/unbind-contract`)

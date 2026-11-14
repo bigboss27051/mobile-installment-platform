@@ -10,6 +10,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../common/authz/permissions.guard';
+import { RequirePermissions } from '../common/authz/require-permissions.decorator';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { DeviceLifecycleService } from './device-lifecycle.service';
@@ -17,11 +19,12 @@ import { ActivateDeviceDto } from './dto/activate-device.dto';
 import { BindContractDto, UnbindContractDto } from './dto/bind-contract.dto';
 
 @Controller('devices')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class DeviceLifecycleController {
   constructor(private readonly lifecycle: DeviceLifecycleService) {}
 
   @Post('activate')
+  @RequirePermissions('devices.activate')
   async activate(
     @Body() dto: ActivateDeviceDto,
     @Headers('idempotency-key') idempotencyKey: string | undefined,
@@ -44,6 +47,7 @@ export class DeviceLifecycleController {
   }
 
   @Post(':id/bind-contract')
+  @RequirePermissions('devices.bind')
   async bind(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: BindContractDto,
@@ -58,6 +62,7 @@ export class DeviceLifecycleController {
   }
 
   @Post(':id/unbind-contract')
+  @RequirePermissions('devices.unbind')
   async unbind(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UnbindContractDto,

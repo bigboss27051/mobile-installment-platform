@@ -1,11 +1,13 @@
 import { Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../common/authz/permissions.guard';
+import { RequirePermissions } from '../common/authz/require-permissions.decorator';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { ContractsService } from './contracts.service';
 
 @Controller()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ContractsController {
   constructor(private readonly contracts: ContractsService) {}
 
@@ -31,6 +33,7 @@ export class ContractsController {
   }
 
   @Post('contracts/:id/activate')
+  @RequirePermissions('contracts.activate')
   async activate(@Param('id', new ParseUUIDPipe()) id: string, @CurrentUser() user: TenantContext) {
     const contract = await this.contracts.activate(user, id);
     return { data: contract };

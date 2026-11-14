@@ -56,3 +56,4 @@
 | D-052 | 2026-11-14 | Android “all models” means **GMS devices the merchant sells that pass the compatibility matrix**, not every Android SKU on earth. Unsupported units cannot be sold on installment | OEM fragmentation (R-002/R-015) | Accepted |
 | D-053 | 2026-11-14 | Prefer **one AMAPI enterprise per tenant**; confirm Google quotas in lab | Isolation + offboarding | Accepted (provisional) |
 | D-054 | 2026-11-14 | AMAPI **Permissible Usage** (2026-03-30) forbids device financing / EMI-based restriction. Production AMAPI lock-on-overdue requires Google written exception or a different stack | DM0 desk lab | **Pending** Google inquiry; do not implement lock via AMAPI until answered |
+| D-055 | 2026-11-14 | Phase 3a RBAC: explicit permission codes + guard on critical mutating routes; OWNER/STAFF/SUPER_ADMIN bundles only; no new roles and no `UserBranch` yet | Incremental authz without blocking DM0 | Accepted |

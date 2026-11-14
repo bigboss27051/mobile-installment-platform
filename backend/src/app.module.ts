@@ -10,6 +10,7 @@ import { CustomersModule } from './customers/customers.module';
 import { HealthModule } from './health/health.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { KycModule } from './kyc/kyc.module';
+import { AuthzModule } from './common/authz/authz.module';
 import { OcrModule } from './common/ocr/ocr.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PortalModule } from './portal/portal.module';
@@ -25,6 +26,7 @@ import { TenantsModule } from './tenants/tenants.module';
       envFilePath: ['../.env', '.env'],
       validationSchema: envValidationSchema,
     }),
+    AuthzModule,
     HealthModule,
     PrismaModule,
     TenantsModule,

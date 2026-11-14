@@ -10,17 +10,20 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../common/authz/permissions.guard';
+import { RequirePermissions } from '../common/authz/require-permissions.decorator';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { CreateEnrollmentSessionDto } from './dto/create-enrollment-session.dto';
 import { EnrollmentService } from './enrollment.service';
 
 @Controller('devices/enrollment-sessions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class EnrollmentController {
   constructor(private readonly enrollment: EnrollmentService) {}
 
   @Post()
+  @RequirePermissions('devices.enroll')
   async create(
     @Body() dto: CreateEnrollmentSessionDto,
     @Headers('idempotency-key') idempotencyKey: string | undefined,
@@ -43,6 +46,7 @@ export class EnrollmentController {
   }
 
   @Post(':id/qr')
+  @RequirePermissions('devices.enroll')
   async qr(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: TenantContext,
@@ -52,6 +56,7 @@ export class EnrollmentController {
   }
 
   @Post(':id/cancel')
+  @RequirePermissions('devices.enroll')
   async cancel(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() user: TenantContext,

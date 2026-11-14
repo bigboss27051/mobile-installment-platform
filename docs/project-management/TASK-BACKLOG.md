@@ -40,3 +40,4 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | DM1-001 | Enrollment sessions API + token lifecycle (after DM0) | P0 | Backend | DONE (stub; no AMAPI) |
 | DM2-001 | Activation + contract bind + isolation tests | P0 | Backend | DONE (stub; no AMAPI/Apple HTTP) |
 | DM2-002 | Merchant Web enroll wizard session + stub QR | P1 | Frontend | DONE (stub QR; not production DO) |
+| P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |

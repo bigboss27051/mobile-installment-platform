@@ -7,7 +7,7 @@
 
 ## Summary
 
-R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `slug`, sandbox customer OTP JWT (`typ=customer`), customer-scoped contract/payment APIs, Merchant Web critical ops, and Customer Android OTP/contract/QR pay. Staff sandbox payments from R1e remain. **Phase 3 full RBAC is not complete.** Omise live adapter, SMS OTP, refunds, and MDM are not claimed complete.
+R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `slug`, sandbox customer OTP JWT (`typ=customer`), customer-scoped contract/payment APIs, Merchant Web critical ops, and Customer Android OTP/contract/QR pay. Staff sandbox payments from R1e remain. **Phase 3a RBAC** (permission codes + guard on decide/activate/enroll/bind/unbind) is in place; full role matrix + branch scope are not. Omise live adapter, SMS OTP, refunds, and MDM are not claimed complete.
 
 ## Completed
 
@@ -24,7 +24,7 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 ## Follow-ups (R0 / early Phase 3)
 
-- Full RBAC permission matrix and branch-scoped staff rules
+- Expand RBAC beyond Phase 3a (new roles from USER-ROLES.md, branch-scoped staff rules)
 - Swagger polish on `/api/v1` endpoints
 - BullMQ worker wiring and job definitions
 - Production Omise/Opn adapter (BLOCKED on credentials)

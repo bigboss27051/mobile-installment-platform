@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../common/authz/permissions.guard';
+import { RequirePermissions } from '../common/authz/require-permissions.decorator';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { ApplicationDecisionDto } from './dto/application-decision.dto';
@@ -7,7 +9,7 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationsService } from './applications.service';
 
 @Controller('applications')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class ApplicationsController {
   constructor(private readonly applications: ApplicationsService) {}
 
@@ -42,6 +44,7 @@ export class ApplicationsController {
   }
 
   @Post(':id/decision')
+  @RequirePermissions('applications.decide')
   async decision(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() input: ApplicationDecisionDto,
