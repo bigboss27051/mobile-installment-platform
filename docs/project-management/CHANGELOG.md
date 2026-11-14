@@ -4,6 +4,8 @@
 
 ### Added
 
+- Google AMAPI usage inquiry draft (`docs/device-management/GOOGLE-AMAPI-USAGE-INQUIRY.md`)
+- DM1 safe-scope freeze (`docs/device-management/DM1-SAFE-SCOPE.md`)
 - Master Execution Plan index (`docs/project-management/MASTER-EXECUTION-PLAN.md`)
 - Device Provisioning & Enrollment documentation under `docs/device-management/` (workflows, Android/iOS, tenancy models, open decisions, video observations)
 - Device Enrollment API draft (`docs/api/DEVICE-ENROLLMENT-API.md`)
