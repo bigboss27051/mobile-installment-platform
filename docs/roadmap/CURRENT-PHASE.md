@@ -12,7 +12,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is now specified as a *
 
 **Architecture (stakeholder):** AMAPI; iOS Model B + vendor MDM + Configurator iPhone; QR + reseller Zero-touch; device management **mandatory**. See D-042–D-053.
 
-**Next:** run **DM0 lab** ([../device-management/DM0-LAB-PROTOCOL.md](../device-management/DM0-LAB-PROTOCOL.md)). Do **not** implement enrollment schema/APIs (DM1) until lab notes exist.
+**DM0 desk lab (2026-11-14):** API/ToS research in [../device-management/DM0-FEASIBILITY-REPORT.md](../device-management/DM0-FEASIBILITY-REPORT.md). **CRITICAL:** AMAPI Permissible Usage forbids EMI/payment-based device restriction (**D-054**). Hardware enroll **not run**.
+
+**Next:** (1) Google permissible-usage inquiry (2) physical lab per [../device-management/PHYSICAL-LAB-RUNBOOK.md](../device-management/PHYSICAL-LAB-RUNBOOK.md). Do **not** implement AMAPI lock-on-overdue. Do **not** claim DM0 exited.
 
 Hardware/Apple/Google **production** proof remains BLOCKED.
 

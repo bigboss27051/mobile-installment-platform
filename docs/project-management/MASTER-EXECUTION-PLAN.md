@@ -96,7 +96,7 @@ Architecture choices **D-042 / D-043 / D-049 / D-050** are accepted. Remaining: 
 
 ## 8. Next implementation phase
 
-**Finish DM0 lab** (hardware + vendor trial) per the lab protocol. **Do not start DM1 schema/API** until lab notes exist. Wizard UX: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md).
+Desk lab 2026-11-14 is in [../device-management/DM0-FEASIBILITY-REPORT.md](../device-management/DM0-FEASIBILITY-REPORT.md). **D-054:** do not ship AMAPI lock-on-overdue without Google exception. Physical enroll still required. Wizard: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md).
 
 ## 9. Definition of Done for commercial pilot (Part 10)
 

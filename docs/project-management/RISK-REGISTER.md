@@ -22,3 +22,5 @@
 | R-018 | Merchant offboarding leaves MDM access | High | Medium | Revoke accounts; unenroll SOP | Open |
 | R-019 | Zero-touch unavailable for same-day walk-in stock | Medium | High | Default to QR/Configurator; ZT optional | Open |
 | R-020 | Copying competitor Play Protect / skip-Apple-ID SOP causes security or review failure | High | Medium | D-044, D-047; Play-distributed or AMAPI agent | Open |
+| R-021 | Google AMAPI Permissible Usage forbids EMI/payment-based device control | Critical | High | D-054 inquiry; do not implement AMAPI overdue lock until exception or new stack | Open |
+| R-022 | Configurator-added iOS devices have a 30-day user release from RM/MDM | High | High | Disclose; prefer ADE when serials in ABM; legal review | Open |

@@ -22,6 +22,7 @@
 - iOS: Model A vs B pending; do not require skipping Apple ID/passcode/location
 - **2026-11-14 later:** D-042 AMAPI; D-043 Model B + vendor MDM + Configurator iPhone; D-049 QR + reseller Zero-touch; D-050 enroll mandatory; D-051 legal copy after mockups; D-052 GMS/matrix SKUs only
 - Wizard mockup + DM0 lab protocol added
+- DM0 desk lab: feasibility report, AMAPI policy map, empty hardware matrix, physical runbook; **D-054** AMAPI ToS vs EMI lock
 
 ### Unchanged
 
@@ -29,7 +30,7 @@
 
 ### Pending
 
-- MDM vendor SKU; AMAPI quotas; compatibility matrix; legal copy (D-051); production hardware proof
+- D-054 Google AMAPI exception; hardware SKU lab; MDM vendor SKU; legal copy (D-051)
 
 ### Notes
 

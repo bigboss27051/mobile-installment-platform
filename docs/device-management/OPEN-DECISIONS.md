@@ -25,8 +25,9 @@ Legend: **Accepted** (implement against) · **Pending** (lab, vendor, or legal c
 
 | Topic | Why |
 |-------|-----|
+| **D-054 AMAPI ToS vs EMI lock** | Google forbids payment-based device restriction on AMAPI unless they grant an exception |
 | Exact MDM vendor (Jamf, Mosyle, SimpleMDM, …) | Adapter exists; vendor SKU not chosen |
-| AMAPI multi-enterprise quotas / Google Cloud org | D-053 lab |
+| AMAPI device quota (often 0 until partner form) | D-053 / usage page |
 | Levels 4–5 mapping onto AMAPI `Policy` (lock-task) | May need UX companion, not a second EMM |
 | Compatibility matrix rows (Samsung/Xiaomi/OPPO/vivo + iOS versions) | Hardware lab — [DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md) |
 | Per-merchant ABM signup success in Thailand | Ops, not architecture |

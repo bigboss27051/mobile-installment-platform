@@ -32,4 +32,4 @@ Record Configurator iOS version and target iOS version.
 
 ## Exit (documentation)
 
-Fill `docs/device-management/COMPATIBILITY-MATRIX-RESULTS.md` when lab runs (file not created until there is data). Then DM1 may start.
+Fill [COMPATIBILITY-MATRIX-RESULTS.md](./COMPATIBILITY-MATRIX-RESULTS.md) (created with NOT RUN rows). Desk report: [DM0-FEASIBILITY-REPORT.md](./DM0-FEASIBILITY-REPORT.md). **DM0 is not complete** until physical rows + D-054. Do not start AMAPI lock APIs.
