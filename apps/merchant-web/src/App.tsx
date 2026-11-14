@@ -372,13 +372,17 @@ function CustomersPage({
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [nationalId, setNationalId] = useState('');
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
+    setLoading(true);
     try {
       setRows(await apiRequest('/api/v1/customers'));
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('customers.loadFailed'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -387,57 +391,80 @@ function CustomersPage({
   }, []);
 
   return (
-    <div>
-      <h1>{t('customers.title')}</h1>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await apiRequest('/api/v1/customers', {
-            method: 'POST',
-            body: JSON.stringify({ fullName, phone, nationalId }),
-          });
-          await refresh();
-        }}
-      >
-        <input
-          placeholder={t('customers.fullName')}
-          aria-label={t('customers.fullName')}
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-        />
-        <input
-          placeholder={t('customers.phone')}
-          aria-label={t('customers.phone')}
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
-        <input
-          placeholder={t('customers.nationalId')}
-          aria-label={t('customers.nationalId')}
-          value={nationalId}
-          onChange={(e) => setNationalId(e.target.value)}
-        />
-        <button className="primary">{t('customers.create')}</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>{t('customers.colName')}</th>
-            <th>{t('customers.colPhone')}</th>
-            <th>{t('customers.colNationalId')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.fullName}</td>
-              <td>{row.phone}</td>
-              <td>{row.nationalIdMasked}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Page title={t('customers.title')}>
+      <Section title={t('customers.new')}>
+        <form
+          className="mip-form-grid mip-form-grid--2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await apiRequest('/api/v1/customers', {
+              method: 'POST',
+              body: JSON.stringify({ fullName, phone, nationalId }),
+            });
+            setFullName('');
+            setPhone('');
+            setNationalId('');
+            await refresh();
+          }}
+        >
+          <FormField label={t('customers.fullName')} htmlFor="customer-name" required>
+            <Input
+              id="customer-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+            />
+          </FormField>
+          <FormField label={t('customers.phone')} htmlFor="customer-phone" required>
+            <Input id="customer-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </FormField>
+          <div style={{ gridColumn: '1 / -1' }}>
+            <FormField
+              label={t('customers.nationalId')}
+              htmlFor="customer-nid"
+              required
+              helperText={t('customers.nationalIdHelper')}
+            >
+              <Input
+                id="customer-nid"
+                value={nationalId}
+                onChange={(e) => setNationalId(e.target.value)}
+              />
+            </FormField>
+          </div>
+          <div className="mip-form-actions" style={{ gridColumn: '1 / -1' }}>
+            <Button type="submit" variant="primary">
+              {t('customers.create')}
+            </Button>
+          </div>
+        </form>
+      </Section>
+      <Section title={t('customers.title')}>
+        {loading ? (
+          <Spinner />
+        ) : rows.length === 0 ? (
+          <EmptyState>{t('customers.empty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('customers.colName')}</th>
+                <th>{t('customers.colPhone')}</th>
+                <th>{t('customers.colNationalId')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.fullName}</td>
+                  <td>{row.phone}</td>
+                  <td>{row.nationalIdMasked}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
+    </Page>
   );
 }
 
@@ -455,8 +482,10 @@ function ApplicationsPage({
   const [planId, setPlanId] = useState('');
   const [principal, setPrincipal] = useState('12000.00');
   const [downPayment, setDownPayment] = useState('2000.00');
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
+    setLoading(true);
     try {
       const [apps, plans] = await Promise.all([
         apiRequest<{ id: string; status: string }[]>('/api/v1/applications'),
@@ -469,6 +498,8 @@ function ApplicationsPage({
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('applications.loadFailed'));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -477,94 +508,118 @@ function ApplicationsPage({
   }, []);
 
   return (
-    <div>
-      <h1>{t('applications.title')}</h1>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await apiRequest('/api/v1/applications', {
-            method: 'POST',
-            body: JSON.stringify({
-              customerId,
-              imeiUnitId,
-              planId,
-              principal,
-              downPayment,
-            }),
-          });
-          await refresh();
-        }}
-      >
-        <input
-          placeholder={t('applications.customerId')}
-          aria-label={t('applications.customerId')}
-          value={customerId}
-          onChange={(e) => setCustomerId(e.target.value)}
-        />
-        <input
-          placeholder={t('applications.imeiUnitId')}
-          aria-label={t('applications.imeiUnitId')}
-          value={imeiUnitId}
-          onChange={(e) => setImeiUnitId(e.target.value)}
-        />
-        <input
-          value={principal}
-          onChange={(e) => setPrincipal(e.target.value)}
-          placeholder={t('applications.principal')}
-          aria-label={t('applications.principal')}
-        />
-        <input
-          value={downPayment}
-          onChange={(e) => setDownPayment(e.target.value)}
-          placeholder={t('applications.downPayment')}
-          aria-label={t('applications.downPayment')}
-        />
-        <button className="primary">{t('applications.create')}</button>
-      </form>
-      <table>
-        <thead>
-          <tr>
-            <th>{t('applications.colId')}</th>
-            <th>{t('applications.colStatus')}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td>
-              <td>{row.status}</td>
-              <td>
-                <button
-                  onClick={async () => {
-                    await apiRequest(`/api/v1/applications/${row.id}/submit`, {
-                      method: 'POST',
-                    });
-                    await refresh();
-                  }}
-                >
-                  {t('applications.submit')}
-                </button>
-                <button
-                  onClick={async () => {
-                    await apiRequest(`/api/v1/applications/${row.id}/decision`, {
-                      method: 'POST',
-                      body: JSON.stringify({
-                        decision: 'APPROVE',
-                        reason: t('applications.approveReason'),
-                      }),
-                    });
-                    await refresh();
-                  }}
-                >
-                  {t('applications.approve')}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Page title={t('applications.title')}>
+      <Section title={t('applications.new')}>
+        <form
+          className="mip-form-grid"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            await apiRequest('/api/v1/applications', {
+              method: 'POST',
+              body: JSON.stringify({
+                customerId,
+                imeiUnitId,
+                planId,
+                principal,
+                downPayment,
+              }),
+            });
+            await refresh();
+          }}
+        >
+          <FormField label={t('applications.customerId')} htmlFor="app-customer" required>
+            <Input
+              id="app-customer"
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+            />
+          </FormField>
+          <FormField label={t('applications.imeiUnitId')} htmlFor="app-imei" required>
+            <Input
+              id="app-imei"
+              value={imeiUnitId}
+              onChange={(e) => setImeiUnitId(e.target.value)}
+            />
+          </FormField>
+          <div className="mip-form-grid mip-form-grid--2">
+            <FormField label={t('applications.principal')} htmlFor="app-principal" required>
+              <Input
+                id="app-principal"
+                value={principal}
+                onChange={(e) => setPrincipal(e.target.value)}
+              />
+            </FormField>
+            <FormField label={t('applications.downPayment')} htmlFor="app-down" required>
+              <Input
+                id="app-down"
+                value={downPayment}
+                onChange={(e) => setDownPayment(e.target.value)}
+              />
+            </FormField>
+          </div>
+          <div className="mip-form-actions">
+            <Button type="submit" variant="primary">
+              {t('applications.create')}
+            </Button>
+          </div>
+        </form>
+      </Section>
+      <Section title={t('applications.title')}>
+        {loading ? (
+          <Spinner />
+        ) : rows.length === 0 ? (
+          <EmptyState>{t('applications.empty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('applications.colId')}</th>
+                <th>{t('applications.colStatus')}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.id}</td>
+                  <td>{row.status}</td>
+                  <td>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={async () => {
+                        await apiRequest(`/api/v1/applications/${row.id}/submit`, {
+                          method: 'POST',
+                        });
+                        await refresh();
+                      }}
+                    >
+                      {t('applications.submit')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={async () => {
+                        await apiRequest(`/api/v1/applications/${row.id}/decision`, {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            decision: 'APPROVE',
+                            reason: t('applications.approveReason'),
+                          }),
+                        });
+                        await refresh();
+                      }}
+                    >
+                      {t('applications.approve')}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </Section>
+    </Page>
   );
 }
 
