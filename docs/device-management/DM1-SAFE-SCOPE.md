@@ -2,11 +2,13 @@
 
 DM0 is **not exited**. This freeze prevents building the forbidden path by accident.
 
-## Allowed now (optional, small)
+## Shipped in DM1 stub
 
-- Enrollment **session** domain in Nest/Prisma: tenant-scoped rows, hashed tokens, TTL, states, cancel/expire — **no Google/Apple HTTP**.  
-- Merchant Web **wizard UI against mocks** (QR image can be a stub).  
-- Tests: tenant isolation, expired token, no secrets in QR JSON fixtures.
+- `device_enrollment_sessions` + `POST/GET /api/v1/devices/enrollment-sessions`, `.../qr`, `.../cancel`  
+- Hashed tokens, Idempotency-Key, tenant isolation e2e, QR JSON without Wi-Fi passwords  
+- **No** Google/Apple HTTP; QR extras are a local stub (`session:{id}`), not a live AMAPI token  
+
+Merchant Web wizard still mock-only.
 
 ## Forbidden until Google writes “allow” for payment-triggered control
 

@@ -37,5 +37,5 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | DM0-004 | Architecture ADRs D-042–D-053 | P0 | Architect | DONE |
 | DM0-005 | Desk feasibility report + AMAPI ToS (D-054) | P0 | Architect | DONE |
 | DM0-006 | Submit Google AMAPI permissible-usage inquiry | P0 | Stakeholder | READY (draft in GOOGLE-AMAPI-USAGE-INQUIRY.md) |
-| DM1-001 | Enrollment sessions API + token lifecycle (after DM0) | P0 | Backend | BACKLOG |
+| DM1-001 | Enrollment sessions API + token lifecycle (after DM0) | P0 | Backend | DONE (stub; no AMAPI) |
 | DM2-001 | Activation + contract bind + isolation tests | P0 | Backend | BACKLOG |

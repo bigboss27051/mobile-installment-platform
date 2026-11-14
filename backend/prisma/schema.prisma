@@ -138,6 +138,24 @@ enum LedgerDomain {
   SAAS
 }
 
+enum DevicePlatform {
+  ANDROID
+  IOS
+}
+
+enum EnrollmentSessionStatus {
+  WAITING_FOR_DEVICE
+  PROVISIONING
+  ENROLLING
+  VERIFYING
+  ACTIVATING
+  COMPLETED
+  FAILED
+  EXPIRED
+  CANCELLED
+  RECOVERY_REQUIRED
+}
+
 model Tenant {
   id        String       @id @default(uuid()) @db.Uuid
   name      String
@@ -168,6 +186,7 @@ model Tenant {
   allocations         Allocation[]
   ledgerEntries       LedgerEntry[]
   customerOtpChallenges CustomerOtpChallenge[]
+  deviceEnrollmentSessions DeviceEnrollmentSession[]
 
   @@map("tenants")
 }
@@ -204,6 +223,7 @@ model User {
   kycReviewActions     KycReviewAction[]
   approvalActions      ApprovalAction[]
   createdPaymentIntents PaymentIntent[]
+  enrollmentSessionsCreated DeviceEnrollmentSession[]
 
   @@index([tenantId])
   @@map("users")
@@ -515,6 +535,7 @@ model Contract {
   versions       ContractVersion[]
   scheduleItems  PaymentScheduleItem[]
   paymentIntents PaymentIntent[]
+  enrollmentSessions DeviceEnrollmentSession[]
 
   @@index([tenantId, status])
   @@index([tenantId, applicationId])
@@ -636,4 +657,29 @@ model LedgerEntry {
 
   @@index([tenantId, paymentTransactionId])
   @@map("ledger_entries")
+}
+
+model DeviceEnrollmentSession {
+  id              String                   @id @default(uuid()) @db.Uuid
+  tenantId        String                   @map("tenant_id") @db.Uuid
+  contractId      String                   @map("contract_id") @db.Uuid
+  imeiUnitId      String                   @map("imei_unit_id") @db.Uuid
+  platform        DevicePlatform
+  status          EnrollmentSessionStatus  @default(WAITING_FOR_DEVICE)
+  tokenHash       String                   @unique @map("token_hash")
+  idempotencyKey  String                   @map("idempotency_key")
+  expiresAt       DateTime                 @map("expires_at")
+  qrFingerprint   String?                  @map("qr_fingerprint")
+  createdByUserId String                   @map("created_by_user_id") @db.Uuid
+  lastErrorCode   String?                  @map("last_error_code")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+  tenant          Tenant                   @relation(fields: [tenantId], references: [id])
+  contract        Contract                 @relation(fields: [contractId], references: [id])
+  createdBy       User                     @relation(fields: [createdByUserId], references: [id])
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, contractId, status])
+  @@index([tenantId, status, expiresAt])
+  @@map("device_enrollment_sessions")
 }

@@ -1,7 +1,7 @@
 # Project Status
 
 **Updated:** 2026-11-14  
-**Current Phase:** R1f complete; DM0 architecture accepted; **desk lab done**; hardware + **D-054 AMAPI ToS** still BLOCKED  
+**Current Phase:** R1f complete; DM1 **session stub** on API; DM0 hardware + **D-054 AMAPI ToS** still BLOCKED  
 **Branch:** `develop`  
 **Codebase:** NestJS backend R0–R1e plus R1f customer OTP/`/me` portal, Merchant Web, Customer Android on `develop`; CI on push/PR
 

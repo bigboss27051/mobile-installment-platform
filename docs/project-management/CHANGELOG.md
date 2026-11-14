@@ -6,6 +6,7 @@
 
 - Google AMAPI usage inquiry draft (`docs/device-management/GOOGLE-AMAPI-USAGE-INQUIRY.md`)
 - DM1 safe-scope freeze (`docs/device-management/DM1-SAFE-SCOPE.md`)
+- DM1 stub: `device_enrollment_sessions` + staff enrollment session APIs (hashed tokens, QR without Wi-Fi secrets, tenant isolation tests; no AMAPI)
 - Master Execution Plan index (`docs/project-management/MASTER-EXECUTION-PLAN.md`)
 - Device Provisioning & Enrollment documentation under `docs/device-management/` (workflows, Android/iOS, tenancy models, open decisions, video observations)
 - Device Enrollment API draft (`docs/api/DEVICE-ENROLLMENT-API.md`)
