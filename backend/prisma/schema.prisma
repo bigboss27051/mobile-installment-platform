@@ -156,6 +156,25 @@ enum EnrollmentSessionStatus {
   RECOVERY_REQUIRED
 }
 
+enum DeviceLifecycleStatus {
+  PENDING_ENROLL
+  ENROLLED
+  ACTIVE
+  UNENROLLED
+}
+
+enum DeviceBindingStatus {
+  ACTIVE
+  UNBOUND
+  REPLACED
+}
+
+enum DeviceAuditAction {
+  ACTIVATE
+  BIND
+  UNBIND
+}
+
 model Tenant {
   id        String       @id @default(uuid()) @db.Uuid
   name      String
@@ -187,6 +206,10 @@ model Tenant {
   ledgerEntries       LedgerEntry[]
   customerOtpChallenges CustomerOtpChallenge[]
   deviceEnrollmentSessions DeviceEnrollmentSession[]
+  devices                 Device[]
+  deviceActivations       DeviceActivation[]
+  deviceContractBindings  DeviceContractBinding[]
+  deviceAuditEvents       DeviceAuditEvent[]
 
   @@map("tenants")
 }
@@ -224,6 +247,9 @@ model User {
   approvalActions      ApprovalAction[]
   createdPaymentIntents PaymentIntent[]
   enrollmentSessionsCreated DeviceEnrollmentSession[]
+  deviceActivations         DeviceActivation[]
+  deviceContractBindings    DeviceContractBinding[]
+  deviceAuditEvents         DeviceAuditEvent[]
 
   @@index([tenantId])
   @@map("users")
@@ -247,6 +273,7 @@ model Customer {
   contracts           Contract[]
   createdPaymentIntents PaymentIntent[]
   otpChallenges         CustomerOtpChallenge[]
+  deviceActivations     DeviceActivation[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, nationalIdHash])
@@ -402,6 +429,8 @@ model ImeiUnit {
   movements StockMovement[]
   applications Application[]
   contracts    Contract[]
+  devices      Device[]
+  deviceContractBindings DeviceContractBinding[]
 
   @@unique([tenantId, imei])
   @@index([tenantId, branchId])
@@ -536,6 +565,8 @@ model Contract {
   scheduleItems  PaymentScheduleItem[]
   paymentIntents PaymentIntent[]
   enrollmentSessions DeviceEnrollmentSession[]
+  deviceActivations DeviceActivation[]
+  deviceContractBindings DeviceContractBinding[]
 
   @@index([tenantId, status])
   @@index([tenantId, applicationId])
@@ -672,14 +703,107 @@ model DeviceEnrollmentSession {
   qrFingerprint   String?                  @map("qr_fingerprint")
   createdByUserId String                   @map("created_by_user_id") @db.Uuid
   lastErrorCode   String?                  @map("last_error_code")
+  deviceId        String?                  @unique @map("device_id") @db.Uuid
   createdAt       DateTime                 @default(now()) @map("created_at")
   updatedAt       DateTime                 @updatedAt @map("updated_at")
   tenant          Tenant                   @relation(fields: [tenantId], references: [id])
   contract        Contract                 @relation(fields: [contractId], references: [id])
   createdBy       User                     @relation(fields: [createdByUserId], references: [id])
+  device          Device?                  @relation(fields: [deviceId], references: [id])
+  activation      DeviceActivation?
 
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId, contractId, status])
   @@index([tenantId, status, expiresAt])
   @@map("device_enrollment_sessions")
+}
+
+model Device {
+  id                   String                @id @default(uuid()) @db.Uuid
+  tenantId             String                @map("tenant_id") @db.Uuid
+  imeiUnitId           String                @map("imei_unit_id") @db.Uuid
+  platform             DevicePlatform
+  status               DeviceLifecycleStatus @default(PENDING_ENROLL)
+  hardwareFingerprint  String                @map("hardware_fingerprint")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  tenant               Tenant                @relation(fields: [tenantId], references: [id])
+  imeiUnit             ImeiUnit              @relation(fields: [imeiUnitId], references: [id])
+  enrollmentSession    DeviceEnrollmentSession?
+  activation           DeviceActivation?
+  bindings             DeviceContractBinding[]
+  auditEvents          DeviceAuditEvent[]
+
+  @@unique([tenantId, hardwareFingerprint])
+  @@unique([tenantId, imeiUnitId])
+  @@index([tenantId, status])
+  @@map("devices")
+}
+
+model DeviceActivation {
+  id                   String                   @id @default(uuid()) @db.Uuid
+  tenantId             String                   @map("tenant_id") @db.Uuid
+  deviceId             String                   @unique @map("device_id") @db.Uuid
+  enrollmentSessionId  String                   @unique @map("enrollment_session_id") @db.Uuid
+  customerId           String                   @map("customer_id") @db.Uuid
+  contractId           String                   @map("contract_id") @db.Uuid
+  actorUserId          String                   @map("actor_user_id") @db.Uuid
+  reason               String
+  shopCode             String?                  @map("shop_code")
+  idempotencyKey       String                   @map("idempotency_key")
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  tenant               Tenant                   @relation(fields: [tenantId], references: [id])
+  device               Device                   @relation(fields: [deviceId], references: [id])
+  enrollmentSession    DeviceEnrollmentSession  @relation(fields: [enrollmentSessionId], references: [id])
+  customer             Customer                 @relation(fields: [customerId], references: [id])
+  contract             Contract                 @relation(fields: [contractId], references: [id])
+  actor                User                     @relation(fields: [actorUserId], references: [id])
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, contractId])
+  @@map("device_activations")
+}
+
+model DeviceContractBinding {
+  id                    String              @id @default(uuid()) @db.Uuid
+  tenantId              String              @map("tenant_id") @db.Uuid
+  deviceId              String              @map("device_id") @db.Uuid
+  contractId            String              @map("contract_id") @db.Uuid
+  imeiUnitId            String              @map("imei_unit_id") @db.Uuid
+  status                DeviceBindingStatus @default(ACTIVE)
+  reason                String
+  actorUserId           String              @map("actor_user_id") @db.Uuid
+  bindIdempotencyKey    String              @map("bind_idempotency_key")
+  unbindReason          String?             @map("unbind_reason")
+  unbindActorUserId     String?             @map("unbind_actor_user_id") @db.Uuid
+  unbindIdempotencyKey  String?             @map("unbind_idempotency_key")
+  boundAt               DateTime            @default(now()) @map("bound_at")
+  unboundAt             DateTime?           @map("unbound_at")
+  tenant                Tenant              @relation(fields: [tenantId], references: [id])
+  device                Device              @relation(fields: [deviceId], references: [id])
+  contract              Contract            @relation(fields: [contractId], references: [id])
+  imeiUnit              ImeiUnit            @relation(fields: [imeiUnitId], references: [id])
+  actor                 User                @relation(fields: [actorUserId], references: [id])
+
+  @@unique([tenantId, bindIdempotencyKey])
+  @@index([tenantId, deviceId, status])
+  @@index([tenantId, contractId, status])
+  @@index([tenantId, imeiUnitId, status])
+  @@map("device_contract_bindings")
+}
+
+model DeviceAuditEvent {
+  id          String            @id @default(uuid()) @db.Uuid
+  tenantId    String            @map("tenant_id") @db.Uuid
+  deviceId    String            @map("device_id") @db.Uuid
+  actorUserId String            @map("actor_user_id") @db.Uuid
+  action      DeviceAuditAction
+  reason      String
+  createdAt   DateTime          @default(now()) @map("created_at")
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  device      Device            @relation(fields: [deviceId], references: [id])
+  actor       User              @relation(fields: [actorUserId], references: [id])
+
+  @@index([tenantId, deviceId, createdAt])
+  @@map("device_audit_events")
 }

@@ -52,3 +52,9 @@ export function login(email: string, password: string) {
     body: JSON.stringify({ email, password }),
   });
 }
+
+export function withIdempotency(init: RequestInit = {}): RequestInit {
+  const headers = new Headers(init.headers);
+  headers.set('Idempotency-Key', crypto.randomUUID());
+  return { ...init, headers };
+}

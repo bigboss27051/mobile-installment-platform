@@ -1,6 +1,6 @@
 # Enrollment wizard mockup (Merchant Web / Merchant Mobile)
 
-**Status:** UX wireframe only. No application code. Legal copy TBD (D-051).  
+**Status:** UX wireframe. Merchant Web **enroll** page now creates a real session and shows **stub** QR JSON from the API. Not production AMAPI. Legal copy still draft (D-051).  
 **Rules:** Device management is **mandatory** (D-050). Android = AMAPI QR (D-042, D-049). iOS = Model B + Configurator iPhone (D-043).
 
 Sale cannot be marked **handed over** while enrollment is not `COMPLETED`. Staff may have an `ACTIVE` contract (R1) but the phone stays in-store until this wizard finishes.

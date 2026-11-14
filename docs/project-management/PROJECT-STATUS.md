@@ -1,7 +1,7 @@
 # Project Status
 
 **Updated:** 2026-11-14  
-**Current Phase:** R1f complete; DM1 **session stub** on API; DM0 hardware + **D-054 AMAPI ToS** still BLOCKED  
+**Current Phase:** R1f complete; DM1 session stub + DM2 activate/bind stub on API; DM0 hardware + **D-054 AMAPI ToS** still BLOCKED (human must submit Google form)  
 **Branch:** `develop`  
 **Codebase:** NestJS backend R0–R1e plus R1f customer OTP/`/me` portal, Merchant Web, Customer Android on `develop`; CI on push/PR
 
@@ -19,7 +19,8 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 ## In Progress
 
-- Documentation: R2 expanded to enrollment platform (2026-11-14). **DM0** is the next gated slice. Hardware/Apple/Google proof BLOCKED for production claims. No device application code in this update.
+- **Human:** DM0-006 Google AMAPI inquiry still unsent. Lab hardware (DM0-001) and ABM (DM0-002) still BLOCKED.
+- **Software:** DM2 activate/bind/unbind + Merchant Web enroll wizard (stub QR). No AMAPI policy/command.
 
 ## Follow-ups (R0 / early Phase 3)
 
@@ -37,9 +38,9 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 ## Next Session Entry Point
 
-1. `docs/roadmap/CURRENT-PHASE.md` — DM0  
-2. `docs/project-management/MASTER-EXECUTION-PLAN.md`  
-3. `docs/device-management/README.md`  
+1. `docs/device-management/HUMAN-OPS-NOW.md` — submit Google form + find lab devices  
+2. `docs/roadmap/CURRENT-PHASE.md`  
+3. `docs/project-management/MASTER-EXECUTION-PLAN.md`  
 4. `docs/superpowers/specs/2026-11-12-r1f-merchant-web-customer-android-design.md` — R1f reference  
 5. `docs/superpowers/plans/2026-11-12-r1f-merchant-web-customer-android.md`
 

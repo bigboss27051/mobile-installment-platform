@@ -32,7 +32,7 @@ Legend: **Accepted** (implement against) · **Pending** (lab, vendor, or legal c
 | Compatibility matrix rows (Samsung/Xiaomi/OPPO/vivo + iOS versions) | Hardware lab — [DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md) |
 | Per-merchant ABM signup success in Thailand | Ops, not architecture |
 | IMEI vs `enterpriseSpecificId` as bind key | Duplicate handling |
-| Contract disclosure / consent text | D-051 after mockups |
+| Contract disclosure / consent text | D-051 draft in LEGAL-COPY-D-051-DRAFT.md — counsel must review; not live copy |
 | Merchant offboarding unenroll SOP details | Model B: merchant ABM admin + our revoke `secret_ref` |
 
 Do not re-open D-042/D-043 without a new Decision Log row.

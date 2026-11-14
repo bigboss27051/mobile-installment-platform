@@ -1,10 +1,20 @@
 # Google AMAPI permissible-usage inquiry (D-054)
 
-**Status:** Draft for a human to submit. Do not paste secrets.  
+**Status:** Ready for a **human** to submit. Engineering cannot send this form.  
+**Task:** DM0-006. This is the **first** device gate — not lock-device code.  
 **Form:** [Android Management API Permissible Usage](https://developers.google.com/android/management/permissible-usage) (inquiry / quota forms linked from that page).  
 **Why:** Published policy forbids “device financing / EMI” control. Our product includes **graduated restriction after overdue**, so we must not call AMAPI for that until Google answers.
 
 Fill Cloud project ID, legal entity, and contact email at submit time. Do not invent Google credentials.
+
+| Field | Value |
+|-------|--------|
+| Submitted at | `_not submitted_` |
+| Google ticket / email ID | `_not submitted_` |
+| Cloud project ID | `_fill at submit_` |
+| Legal entity | `_fill at submit_` |
+| Contact email | `_fill at submit_` |
+| Written Google answer filed | `_no_` |
 
 ---
 

@@ -55,7 +55,7 @@ Preserve these decisions. DM0 lab validates adapters (AMAPI, MDM vendor) without
 |-------|--------|--------|
 | **R0** Foundation | Auth, tenants, branches, Compose, CI | Delivered |
 | **R1** Installment core | Inventory → KYC → application → contract → sandbox PromptPay + Merchant Web / Customer Android | Delivered (R1a–R1f) |
-| **R2** Device | Provisioning, enrollment, bind, policy, commands, recovery | **Not started**. Split into DM0–DM5 |
+| **R2** Device | Provisioning, enrollment, bind, policy, commands, recovery | **In progress (stubs).** DM0 desk done; hardware/ToS BLOCKED. DM1 session + DM2 activate/bind stubs on API (no AMAPI). DM3–DM5 not started |
 | **R3** SaaS operations | Super Admin billing, notifications, reporting, hardening | Unchanged; can proceed in parallel with DM0–DM2 for non-device work |
 
 R2 is no longer a single “Android DPC 5 levels + iOS adapter” implementation burst. It is a **provisioning and enrollment platform** plus later policy automation. Enforcement levels 1–5 remain the *management* target after enrollment is proven.

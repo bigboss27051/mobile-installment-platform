@@ -4,7 +4,8 @@
 **Conventions:** [API-STANDARDS.md](./API-STANDARDS.md)  
 **Auth:** `Authorization: Bearer` with audience `merchant-web` | `merchant-mobile` | `device-agent` | `super-admin` as noted.  
 **Tenant:** from token only.  
-**DM1 stub (2026-11-14):** session create/get/cancel + Android QR JSON **without Google HTTP and without Wi-Fi secrets**. Production AMAPI enroll/lock remains BLOCKED (D-054).
+**DM1 stub (2026-11-14):** session create/get/cancel + Android QR JSON **without Google HTTP and without Wi-Fi secrets**.  
+**DM2 stub (2026-11-14):** staff `activate` / `bind-contract` / `unbind-contract` persist local device + audit rows only. Production AMAPI enroll/lock remains BLOCKED (D-054).
 
 Idempotency: `Idempotency-Key` required on session create, activate, bind, unbind, command create.
 

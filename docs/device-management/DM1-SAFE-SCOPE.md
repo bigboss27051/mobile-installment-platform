@@ -8,7 +8,14 @@ DM0 is **not exited**. This freeze prevents building the forbidden path by accid
 - Hashed tokens, Idempotency-Key, tenant isolation e2e, QR JSON without Wi-Fi passwords  
 - **No** Google/Apple HTTP; QR extras are a local stub (`session:{id}`), not a live AMAPI token  
 
-Merchant Web wizard still mock-only.
+Merchant Web **enroll** page creates a session and shows stub QR from the API (still not AMAPI).
+
+## Shipped in DM2 stub (no Google/Apple HTTP)
+
+- `POST /api/v1/devices/activate`, `GET /api/v1/devices/:id/activation`  
+- `POST /api/v1/devices/:id/bind-contract`, `POST /api/v1/devices/:id/unbind-contract`  
+- Tenant isolation, IMEI must match the contract unit, Idempotency-Key, audit event + reason  
+- Unbind is owner-elevated; history retained as `UNBOUND`
 
 ## Forbidden until Google writes “allow” for payment-triggered control
 
@@ -24,7 +31,7 @@ Merchant Web wizard still mock-only.
 ## iOS (independent of AMAPI ToS)
 
 - Still Model B + vendor MDM.  
-- Disclose **30-day leave Remote Management** for Configurator-added devices (R-022) in D-051 copy later.  
+- Disclose **30-day leave Remote Management** for Configurator-added devices (R-022). Draft copy: [LEGAL-COPY-D-051-DRAFT.md](./LEGAL-COPY-D-051-DRAFT.md) (counsel must review).  
 - No MDM vendor code until a vendor is chosen; `MdmProviderPort` sandbox only.
 
 ## If Google says AMAPI EMI lock is prohibited

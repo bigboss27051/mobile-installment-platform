@@ -36,6 +36,7 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | DM0-003 | Compatibility matrix + AMAPI policy gap note | P0 | QA/Architect | DONE (desk map; SKUs NOT RUN) |
 | DM0-004 | Architecture ADRs D-042–D-053 | P0 | Architect | DONE |
 | DM0-005 | Desk feasibility report + AMAPI ToS (D-054) | P0 | Architect | DONE |
-| DM0-006 | Submit Google AMAPI permissible-usage inquiry | P0 | Stakeholder | READY (draft in GOOGLE-AMAPI-USAGE-INQUIRY.md) |
+| DM0-006 | Submit Google AMAPI permissible-usage inquiry | P0 | Stakeholder | READY (human must send; draft in GOOGLE-AMAPI-USAGE-INQUIRY.md) |
 | DM1-001 | Enrollment sessions API + token lifecycle (after DM0) | P0 | Backend | DONE (stub; no AMAPI) |
-| DM2-001 | Activation + contract bind + isolation tests | P0 | Backend | BACKLOG |
+| DM2-001 | Activation + contract bind + isolation tests | P0 | Backend | DONE (stub; no AMAPI/Apple HTTP) |
+| DM2-002 | Merchant Web enroll wizard session + stub QR | P1 | Frontend | DONE (stub QR; not production DO) |

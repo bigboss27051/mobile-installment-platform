@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, system-ui, sans-serif;
+  font-family: "Noto Sans Thai", Inter, "Sarabun", system-ui, sans-serif;
   color: #102a43;
   background: #f5f7fa;
 }
@@ -78,4 +78,32 @@ pre {
   color: #f0f4f8;
   padding: 0.75rem;
   border-radius: 8px;
+}
+.lang-switch {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0.25rem;
+}
+.lang-switch button {
+  width: auto;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 35%);
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+.lang-switch button.active {
+  background: #2cb1bc;
+  border-color: #2cb1bc;
+}
+.login-card .lang-switch button {
+  color: #243b53;
+  border-color: #bcccdc;
+}
+.login-card .lang-switch button.active {
+  color: #fff;
+  background: #2cb1bc;
+  border-color: #2cb1bc;
+}
+input::placeholder {
+  color: #829ab1;
 }

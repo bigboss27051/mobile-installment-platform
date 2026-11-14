@@ -17,8 +17,11 @@ Canonical specs for the **Device Provisioning & Enrollment Platform** (R2 / DM0�
 | [AMAPI-POLICY-MAPPING.md](./AMAPI-POLICY-MAPPING.md) | Levels 1–5 → AMAPI fields |
 | [COMPATIBILITY-MATRIX-RESULTS.md](./COMPATIBILITY-MATRIX-RESULTS.md) | SKU rows (NOT RUN) |
 | [PHYSICAL-LAB-RUNBOOK.md](./PHYSICAL-LAB-RUNBOOK.md) | What humans must do on devices |
-| [GOOGLE-AMAPI-USAGE-INQUIRY.md](./GOOGLE-AMAPI-USAGE-INQUIRY.md) | D-054 form draft for Google |
-| [DM1-SAFE-SCOPE.md](./DM1-SAFE-SCOPE.md) | What code may start before ToS/hardware |
+| [GOOGLE-AMAPI-USAGE-INQUIRY.md](./GOOGLE-AMAPI-USAGE-INQUIRY.md) | D-054 form draft for Google — **human must submit** |
+| [HUMAN-OPS-NOW.md](./HUMAN-OPS-NOW.md) | Google form + lab hardware + ABM checklist |
+| [MDM-VENDOR-SHORTLIST.md](./MDM-VENDOR-SHORTLIST.md) | Vendor comparison; SKU still open |
+| [LEGAL-COPY-D-051-DRAFT.md](./LEGAL-COPY-D-051-DRAFT.md) | Draft shop/customer wording incl. 30-day leave-RM |
+| [DM1-SAFE-SCOPE.md](./DM1-SAFE-SCOPE.md) | What code may start before ToS/hardware (includes DM2 stub) |
 | [../api/DEVICE-ENROLLMENT-API.md](../api/DEVICE-ENROLLMENT-API.md) | REST enrollment/activation/management APIs |
 | [../database/DATABASE-DESIGN.md](../database/DATABASE-DESIGN.md) | Enrollment entities (canonical schema draft) |
 

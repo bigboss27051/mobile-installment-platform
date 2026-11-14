@@ -4,6 +4,9 @@
 
 ### Added
 
+- Human-ops pack: `HUMAN-OPS-NOW.md`, MDM vendor shortlist, D-051 legal draft (incl. 30-day leave Remote Management)
+- DM2 stub: activate / bind-contract / unbind-contract APIs (tenant isolation, IMEI match, idempotency, audit+reason; no AMAPI/Apple HTTP)
+- Merchant Web enroll page: create session + show stub QR from API
 - Google AMAPI usage inquiry draft (`docs/device-management/GOOGLE-AMAPI-USAGE-INQUIRY.md`)
 - DM1 safe-scope freeze (`docs/device-management/DM1-SAFE-SCOPE.md`)
 - DM1 stub: `device_enrollment_sessions` + staff enrollment session APIs (hashed tokens, QR without Wi-Fi secrets, tenant isolation tests; no AMAPI)
@@ -37,7 +40,7 @@
 
 ### Notes
 
-- Documentation and Cursor rules only. No application source, migrations, or APIs implemented.
+- DM1/DM2 application stubs exist. Production Device Owner / MDM / AMAPI lock remain unclaimed.
 
 ### Added (prior unreleased)
 
