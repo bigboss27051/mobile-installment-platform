@@ -10,9 +10,11 @@ Merchant Web (React) and Customer Android (Flutter) critical paths on real `/api
 
 R1 installment core (R1a–R1f) delivered. **R2 Device** is now specified as a **Device Provisioning & Enrollment Platform** (see [MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md)).
 
-**Next gated slice: DM0 — Feasibility & Platform Validation** (~2 weeks). Do not implement enrollment schema/APIs (DM1) or DPC/MDM production paths until DM0 records Android stack and iOS ownership recommendations.
+**Architecture (stakeholder):** AMAPI; iOS Model B + vendor MDM + Configurator iPhone; QR + reseller Zero-touch; device management **mandatory**. See D-042–D-053.
 
-Hardware/Apple/Google proof remains **BLOCKED** for production claims.
+**Next:** run **DM0 lab** ([../device-management/DM0-LAB-PROTOCOL.md](../device-management/DM0-LAB-PROTOCOL.md)). Do **not** implement enrollment schema/APIs (DM1) until lab notes exist.
+
+Hardware/Apple/Google **production** proof remains BLOCKED.
 
 ## Out of Scope (still)
 

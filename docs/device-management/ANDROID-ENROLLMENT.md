@@ -1,6 +1,6 @@
 # Android enrollment
 
-**Status:** Planning. Feasibility **BLOCKED** until DM0 hardware evidence.  
+**Status:** Architecture **accepted (D-042, D-049, D-052)**. Production enroll **BLOCKED** until lab evidence ([DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md)).  
 **Reference UX:** [REFERENCE-VIDEO-OBSERVATIONS.md](./REFERENCE-VIDEO-OBSERVATIONS.md) (competitor 6-tap QR + Device Owner consent).  
 **Product after enroll:** [CAPABILITY-MATRIX.md](./CAPABILITY-MATRIX.md).
 
@@ -11,7 +11,7 @@ Google documents several **Android Enterprise** enrollment paths. They are **not
 | Mode | Typical trigger | Device state | Notes |
 |------|-----------------|--------------|--------|
 | **QR code** | Tap Welcome **6 times** (or equivalent OEM gesture) → camera | New / factory reset | Widely used at retail. QR is JSON extras, not a login URL. |
-| **Zero-touch** | First boot, pre-registered IMEI/serial via reseller | New from participating reseller | Best scale; requires Zero-touch portal + reseller in Thailand (**unverified**). |
+| **Zero-touch** | First boot, pre-registered IMEI/serial via reseller | New from participating reseller | **In scope when the unit is pre-registered** (stakeholder: reseller exists). Walk-in unregistered stock uses QR. |
 | **NFC** | Bump provisioning NFC | New / reset | Rare at Thai counters. |
 | **DPC identifier extra** | QR/`afw#` style | New / reset | Depends on chosen DPC. |
 | **Android Management API QR** | Same 6-tap camera | New / reset | QR points at Google’s AMAPI DPC + enrollment token. |
@@ -29,38 +29,20 @@ Google documents several **Android Enterprise** enrollment paths. They are **not
 
 Do **not** require **disabling Play Protect**. Prefer AMAPI or a Play-distributed DPC. If a specific OEM still flags the DPC, record it in the compatibility matrix as a **device defect**, not a merchant SOP.
 
-## Stack options (DM0)
+## Chosen stack (D-042)
 
-### Option 1 — Android Management API (EMM)
+**Android Management API** is the EMM. Platform creates/manages enterprises (prefer **one per tenant**, D-053). Policies map from levels 1–5 onto AMAPI `Policy`. Commands go through AMAPI and are mirrored in `device_commands`. Heartbeat via AMAPI + optional companion app for **customer-visible status only**.
 
-- Platform is an EMM using AMAPI.  
-- Policies are AMAPI `Policy` resources mapped from our levels 1–5.  
-- Heartbeat/status via AMAPI enterprises.devices + Pub/Sub notifications.  
-- Commands via AMAPI (`issueCommand`, etc.), still mirrored in our `device_commands` for authz/audit.
+Custom Kotlin DPC is **not** the enrollment/EMM path. Do not revive it without a new Decision Log row. If AMAPI cannot express lock-task (levels 4–5), add UX on top of AMAPI — not a second Device Owner APK as EMM.
 
-**Pros:** No sideload DPC; Google maintains the agent; better Play Protect story.  
-**Cons:** Policy expressiveness for lock-task / allowlists may not match our UX; Google Cloud + enterprise quota; **SaaS multi-enterprise rules unverified**.
-
-### Option 2 — Custom Kotlin DPC (Phase 0 assumption)
-
-- Our APK is Device Owner via QR (`PROVISIONING_DEVICE_ADMIN_*` extras).  
-- Heartbeat/commands over our REST + FCM as already drafted.
-
-**Pros:** Full control of levels 4–5 UX (call-shop lock task).  
-**Cons:** OEM fragmentation (R-002); signing/Play; 6-tap QR hosting APK URL; competitor-style Play Protect workarounds are **rejected**.
-
-### Option 3 — Hybrid (recommended to prototype)
-
-- Enroll with AMAPI or DO.  
-- Companion Flutter/Kotlin app for customer-facing status.  
-- Lock-task only if AMAPI cannot; never a hidden DPC.
+Do **not** require disabling Play Protect.
 
 ## Target merchant flow (our product)
 
 1. Staff: customer + **ACTIVE** contract + Android + consent recorded.  
-2. Backend: `enrollment_sessions` row, token, QR (AMAPI or custom extras — DM0).  
-3. Merchant Web / Merchant Mobile wizard shows QR + **factory-reset / 6-tap** instructions.  
-4. Device: Welcome → 6 taps → scan → Wi-Fi on device → Enterprise provisioning → DPC/AMAPI agent.  
+2. Backend: `enrollment_sessions` row, token, **AMAPI QR** (or Zero-touch if the IMEI is already in the reseller portal).  
+3. Merchant Web / Merchant Mobile wizard shows QR + **factory-reset / 6-tap** instructions ([ENROLLMENT-WIZARD-MOCKUP.md](./ENROLLMENT-WIZARD-MOCKUP.md)).  
+4. Device: Welcome → 6 taps → scan → Wi-Fi on device → AMAPI fully managed provisioning.  
 5. Device agent authenticates with enrollment token → activation.  
 6. Staff confirms identity (IMEI/serial vs inventory unit).  
 7. Bind contract; level 1 policy applied.  
@@ -74,7 +56,7 @@ UI states: see [DEVICE-PROVISIONING-ENROLLMENT.md](./DEVICE-PROVISIONING-ENROLLM
 |-----------|-----------------|-------------------|
 | OS | Android 8.0+ fully managed; 10/12/14 must pass | Lab |
 | Enrollment gesture | 6-tap QR on AOSP-like setup; Samsung/Xiaomi equivalents | Lab |
-| SKUs | Common TH retail: Samsung, Xiaomi, OPPO, vivo, realme, etc. | Matrix; unsupported SKUs listed |
+| SKUs | GMS units the merchant sells; **not** every Android device. Fail = cannot sell installment (D-052) | Matrix |
 | Google Mobile Services | Required for Play/FCM/AMAPI | Non-GMS devices out of pilot |
 | Tablet vs phone | Phone primary; tablet (e.g. Galaxy Tab A11 in the reference) optional | Lab |
 
@@ -86,4 +68,4 @@ QR Device Owner enrollment **requires** a new or factory-reset device. Staff SOP
 
 ## Zero-touch
 
-Evaluate in DM0 only: Thai carrier/reseller enrollment, IMEI pre-registration SLA vs same-day walk-in sales. Walk-in shops likely **cannot** depend on Zero-touch for day-one SKUs. Keep QR as the default counter path.
+**Accepted (D-049):** reseller path exists. Use Zero-touch when the IMEI/serial is pre-registered. Unregistered walk-in units **must** use AMAPI QR. Wizard should tell staff which path applies (inventory flag / reseller sync), not assume every box is Zero-touch.

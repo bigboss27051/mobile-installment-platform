@@ -55,6 +55,8 @@ Staff wizard (Merchant Web or Merchant Mobile). Details: [../device-management/D
 
 Session states: Not Started, Waiting for Device, Provisioning, Enrolling, Verifying, Activating, Completed, Failed, Expired, Cancelled, Recovery Required.
 
+**Mandatory (D-050):** customer does not leave with the phone until enrollment `COMPLETED`. Unsupported Android SKU → cannot sell installment (D-052). Wireframes: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md).
+
 **Not shown in competitor videos:** overdue locking. That remains J6.
 
 ## J5 — Customer Payment (PromptPay)

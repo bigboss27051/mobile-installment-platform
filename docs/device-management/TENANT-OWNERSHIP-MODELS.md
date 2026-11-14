@@ -21,9 +21,7 @@ Critical requirement: many independent phone retailers on one SaaS, with **tenan
 | **G3. Custom DPC, platform-signed** | No Google EMM; QR installs our DPC as Device Owner | QR 6-tap like the reference video | Fast prototype; Play Protect / sideload / OEM risk | Matches Phase 0 assumption; Play Protect disable must **not** be required |
 | **G4. Third-party EMM** | Vendor tenants | Vendor console + our adapter | Fast if vendor has multi-tenant EMM | Extra cost; capability mapping |
 
-**Recommendation (not a decision):** **G1 or G3 for DM0 prototypes in parallel.** Pilot commercial path likely **G1 (AMAPI)** for maintainability, with a **companion app** if lock-task UX cannot be expressed in AMAPI. G3 remains the fallback for lock-task levels 4–5. G2 only if Google forbids platform-hosted multi-enterprise.
-
-**SaaS tenancy in G1:** prefer **one AMAPI enterprise per merchant tenant** (true isolation, offboarding = delete enterprise) over a single shared enterprise tagged in our DB.
+**Chosen (D-042, D-053):** **G1 — platform EMM via AMAPI**, prefer one AMAPI enterprise per tenant. G3 custom DPC is not the EMM. Companion status app is allowed. G2 only if Google forbids platform-hosted multi-enterprise (new ADR required).
 
 ---
 
@@ -74,9 +72,9 @@ A or B can sit behind Jamf/Mosyle/etc. We implement `MdmProviderPort` only. **Re
 | Tenant isolation | Per-enterprise if allowed | Our DB + DO | Shared ABM | Per-merchant ABM |
 | Consumer-sale legality | Review | Review | Review | Review |
 | Matches iOS video org name | N/A | N/A | Only if display name customizable | Yes |
-| Pilot recommendation | Prototype | Prototype | Only after Apple eligibility | Default planning assumption |
+| Pilot | **Chosen EMM** | Rejected as EMM | Not chosen | **Chosen** |
 
-**Planning assumption (not accepted as architecture):** design APIs and tables so **either iOS A or B** can be stored as `device_management_accounts` (platform-level vs tenant-level). Do not hard-code a single ABM org in application config.
+**Chosen iOS path: Model B.** Keep `device_management_accounts.scope=TENANT` for MDM tokens. Do not implement platform-wide ABM as the retail model. Schema may still allow `scope=PLATFORM` for Android AMAPI project credentials only.
 
 ## Merchant offboarding
 
@@ -90,7 +88,7 @@ A or B can sit behind Jamf/Mosyle/etc. We implement `MdmProviderPort` only. **Re
 
 Installment collateral does **not** automatically grant OS-level Device Owner / supervision rights. Enrollment must be:
 
-- Disclosed in the customer contract  
+- Disclosed in the customer contract (copy TBD, D-051; enrollment still mandatory, D-050)  
 - Performed on a **new or factory-reset** device at sale (observed pattern)  
 - Reversible on settlement / lawful termination  
 

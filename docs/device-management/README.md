@@ -11,9 +11,11 @@ Canonical specs for the **Device Provisioning & Enrollment Platform** (R2 / DM0�
 | [TENANT-OWNERSHIP-MODELS.md](./TENANT-OWNERSHIP-MODELS.md) | Multi-tenant Android & iOS ownership options |
 | [CAPABILITY-MATRIX.md](./CAPABILITY-MATRIX.md) | Post-enrollment controls (levels 1–5) |
 | [OPEN-DECISIONS.md](./OPEN-DECISIONS.md) | Pending vs accepted device decisions |
+| [ENROLLMENT-WIZARD-MOCKUP.md](./ENROLLMENT-WIZARD-MOCKUP.md) | Merchant wizard wireframes; handover gate |
+| [DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md) | Hardware/vendor evidence still required |
 | [../api/DEVICE-ENROLLMENT-API.md](../api/DEVICE-ENROLLMENT-API.md) | REST enrollment/activation/management APIs |
 | [../database/DATABASE-DESIGN.md](../database/DATABASE-DESIGN.md) | Enrollment entities (canonical schema draft) |
 
-**Status:** Planning. Integrations remain **BLOCKED** for production until DM0 validation.
+**Status:** Architecture accepted (D-042–D-053). Integrations remain **BLOCKED** for production until lab evidence.
 
 **Safety:** No stealth control, covert surveillance, destructive collection, or emergency-call blocking.

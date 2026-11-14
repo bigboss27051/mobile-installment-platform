@@ -43,10 +43,15 @@
 | D-039 | 2026-11-12 | Customers create sandbox intents for own ACTIVE contracts | Completes pay path from Android | Accepted |
 | D-040 | 2026-11-12 | Sandbox OTP env code; SMS BLOCKED | No SMS vendor in pilot | Accepted |
 | D-041 | 2026-11-14 | R2 is a Device Provisioning & Enrollment Platform (sessions → provision → verify → activate → bind → policy → heartbeat → recovery) | Competitor retail UX + SaaS auditability; enforcement still after enroll | Accepted (documentation) |
-| D-042 | 2026-11-14 | Android stack: AMAPI vs custom DPC vs hybrid | Need hardware + policy-expressiveness evidence | **Pending DM0** |
-| D-043 | 2026-11-14 | iOS Apple Business Model A (platform) vs Model B (merchant) vs vendor MDM host | Apple eligibility and consumer-sale legality unverified | **Pending DM0** |
+| D-042 | 2026-11-14 | Android management via **Android Management API** (platform EMM). Custom DPC is not the primary EMM. Companion app allowed for customer-facing status only | Stakeholder DM0 direction; Google-hosted agent; no Play Protect-off SOP | Accepted (product). Production still needs hardware evidence |
+| D-043 | 2026-11-14 | iOS **Model B**: merchant-owned Apple Business + **commercial MDM vendor** via `MdmProviderPort`. Retail enroll = **Apple Configurator on iPhone**. Follow Apple program rules (no skip passcode/Apple ID/Location; no Lost Mode collections) | Matches store ABM org name pattern; SaaS isolation; no in-house MDM protocol in R2 | Accepted (product). ABM eligibility per merchant still operational |
 | D-044 | 2026-11-14 | Do not require disabling Google Play Protect | Competitor SOP is unsafe and not an official Enterprise requirement | Accepted |
 | D-045 | 2026-11-14 | Enrollment QR/payloads contain no passwords, private keys, or integration secrets | Tokens hashed at rest; Wi-Fi entered on device | Accepted |
 | D-046 | 2026-11-14 | Deliver R2 as DM0–DM5; production DO/MDM claims stay BLOCKED until evidence | Avoid skipping feasibility; preserve R0/R1/R3 | Accepted |
 | D-047 | 2026-11-14 | Do not require skipping iOS passcode, Apple ID, or Location Services | Competitor “skip Apple ID” is not our product rule | Accepted |
 | D-048 | 2026-11-14 | Keep NestJS modular monolith, REST `/api/v1`, Flutter, Prisma/Postgres; add ports not new deployables for R2 | No strong reason to change stack | Accepted |
+| D-049 | 2026-11-14 | Android counter path = **AMAPI QR**. **Zero-touch** used when a reseller has pre-registered the unit. Walk-in stock without ZT registration still uses QR | Stakeholder: reseller exists; ZT cannot cover unregistered same-day SKUs | Accepted |
+| D-050 | 2026-11-14 | Device management is **mandatory** on installment device sales. Handover / “sale complete” is blocked until enrollment `COMPLETED` | Stakeholder: not an optional SKU | Accepted |
+| D-051 | 2026-11-14 | PDPA/contract disclosure copy deferred; **UX mockups first** | Stakeholder sequencing | Accepted |
+| D-052 | 2026-11-14 | Android “all models” means **GMS devices the merchant sells that pass the compatibility matrix**, not every Android SKU on earth. Unsupported units cannot be sold on installment | OEM fragmentation (R-002/R-015) | Accepted |
+| D-053 | 2026-11-14 | Prefer **one AMAPI enterprise per tenant**; confirm Google quotas in lab | Isolation + offboarding | Accepted (provisional) |

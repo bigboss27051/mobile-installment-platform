@@ -22,11 +22,11 @@ The platform does **not** fund customer credit. Merchants carry receivables.
 | Cache / jobs | Redis + BullMQ | Accepted |
 | Merchant / Super Admin web | React (Merchant Web exists as Vite in R1f; Next.js not required to replace it) | Accepted; no stack change |
 | Mobile | Flutter + Bloc/Cubit | Accepted |
-| Android | Kotlin DPC / Android Enterprise — **exact enrollment stack pending DM0** | Custom DPC assumed in Phase 0; AMAPI vs custom DPC is **open** |
-| iOS | Apple Business + MDM adapter — **ownership model pending DM0** | Adapter accepted; Model A vs B open |
+| Android | **Android Management API** (D-042); QR + Zero-touch when reseller-registered (D-049) | Custom DPC not primary EMM |
+| iOS | Merchant ABM (**Model B**) + vendor MDM (`MdmProviderPort`) + Configurator iPhone (D-043) | Follow Apple rules (D-047) |
 | Auth | JWT staff + customer OTP JWT | Accepted (D-037) |
 
-Preserve these decisions. DM0 may add adapters (Android Management API, MDM vendor) without replacing Nest/Postgres/Flutter.
+Preserve these decisions. DM0 lab validates adapters (AMAPI, MDM vendor) without replacing Nest/Postgres/Flutter.
 
 ## 3. Document map
 
@@ -90,18 +90,13 @@ Sessions must be **secure, expiring, retryable, and tenant-isolated**. Restricti
 
 See D-041+ in the Decision Log and [../device-management/OPEN-DECISIONS.md](../device-management/OPEN-DECISIONS.md).
 
-Highest blockers:
+Architecture choices **D-042 / D-043 / D-049 / D-050** are accepted. Remaining: MDM vendor SKU, AMAPI quotas, policy-level mapping, compatibility matrix, ABM onboarding ops, legal copy (D-051).
 
-1. Android: Android Management API vs custom DPC vs hybrid.  
-2. iOS: Platform-owned Apple Business (Model A) vs merchant-owned (Model B) vs MDM vendor hosting.  
-3. Which Android enrollment modes (QR / Zero-touch / NFC) are in the Thailand retail pilot.  
-4. Which MDM server (in-house protocol vs commercial MDM) Apple will accept for the chosen ownership model.
-
-**Do not claim Android Enterprise, Device Owner, Apple Business, or MDM production feasibility until DM0 evidence exists.**
+**Do not claim production Device Owner / MDM until lab evidence exists** ([../device-management/DM0-LAB-PROTOCOL.md](../device-management/DM0-LAB-PROTOCOL.md)).
 
 ## 8. Next implementation phase
 
-**DM0 — Feasibility & Platform Validation** (documentation + prototypes on hardware; still no production claims). Do not start DM1 schema/API implementation until DM0 records a recommended Android path and a recommended iOS ownership model (or an explicit time-boxed fallback).
+**Finish DM0 lab** (hardware + vendor trial) per the lab protocol. **Do not start DM1 schema/API** until lab notes exist. Wizard UX: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md).
 
 ## 9. Definition of Done for commercial pilot (Part 10)
 

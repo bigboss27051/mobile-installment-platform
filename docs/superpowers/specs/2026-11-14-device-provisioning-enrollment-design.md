@@ -13,8 +13,8 @@ This spec expands R2 into a **Device Provisioning & Enrollment Platform** while 
 
 ## Decisions in this package
 
-- Accepted: D-041, D-044, D-045, D-046 (see Decision Log).  
-- Pending: Android AMAPI vs custom DPC; iOS Model A vs B; MDM vendor (OPEN-DECISIONS.md).
+- Accepted: D-041–D-053 (AMAPI, iOS Model B + vendor MDM, mandatory enroll, QR+ZT, GMS/matrix SKUs).  
+- Pending: MDM vendor SKU, lab matrix, legal copy (OPEN-DECISIONS.md).
 
 ## Design
 

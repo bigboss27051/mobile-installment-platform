@@ -8,12 +8,12 @@ Related: [ANDROID-ENROLLMENT.md](./ANDROID-ENROLLMENT.md), [IOS-ENROLLMENT.md](.
 
 | Confirmed requirements | Assumptions / pending |
 |------------------------|----------------------|
-| Multi-tenant; server-derived `tenant_id` | AMAPI vs custom DPC |
-| Short-lived enrollment sessions; hashed tokens | iOS Model A vs B |
-| No secrets in QR | Exact MDM vendor |
-| Consent + contract authorization before bind | Min OS matrix |
-| One active contract binding per device/IMEI | Shop-code UX vs staff-only bind |
-| Audit all restrict / enroll / unenroll | Hardware proof |
+| AMAPI EMM; Model B iOS; mandatory enroll (D-042–D-050) | Exact MDM vendor |
+| Short-lived enrollment sessions; hashed tokens | AMAPI quotas (D-053) |
+| No secrets in QR; no Play Protect-off SOP | Min OS / SKU matrix (lab) |
+| Consent captured; legal **wording** later (D-051) | IMEI vs enterprise id bind key |
+| One active contract binding per device/IMEI | — |
+| Audit all restrict / enroll / unenroll | Hardware proof for production |
 | Emergency calling; no stealth; no Lost Mode collections | — |
 
 ## Logical modules (NestJS domains, not microservices)
@@ -31,7 +31,7 @@ Keep a single **Device** bounded context (`DEVICE_CONTROL`) with application ser
 | **Command Management** | Authorized commands, status, retry, expiry, execution events |
 | **Events & Heartbeat** | Check-in, connectivity, status, history |
 | **Recovery** | Failed enroll, reassignment, replacement, release, unenroll, termination |
-| **Platform Integrations** | Ports: `AndroidEnterprisePort`, `MdmProviderPort` (existing), future AMAPI adapter |
+| **Platform Integrations** | Ports: `AndroidEnterprisePort` (AMAPI), `MdmProviderPort` (vendor) |
 
 Payment still **must not** call these modules except via **verified domain events**.
 

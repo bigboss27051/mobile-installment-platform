@@ -29,10 +29,11 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | P7-001 | Payment adapters + webhook idempotency | P0 | Backend | BACKLOG |
 | P8-001 | Merchant/Super Admin web critical pages | P1 | Frontend | BACKLOG |
 | P9-001 | Flutter merchant/customer apps | P1 | Flutter | BACKLOG |
-| P10-001 | Android DPC Device Owner PoC | P0 | Android | BACKLOG |
-| P11-001 | iOS MDM adapter skeleton | P1 | Backend/Android | BACKLOG |
-| DM0-001 | Android Enterprise / AMAPI vs DPC / QR / Zero-touch lab | P0 | Architect/Android | BACKLOG |
-| DM0-002 | Apple Business + Configurator + MDM architecture & Model A/B | P0 | Architect | BACKLOG |
-| DM0-003 | Compatibility matrix + cost/risk note | P0 | QA/Architect | BACKLOG |
+| P10-001 | AMAPI QR enroll lab (not custom DPC EMM) | P0 | Android | BACKLOG |
+| P11-001 | iOS MDM vendor adapter skeleton | P1 | Backend | BACKLOG |
+| DM0-001 | AMAPI QR + Zero-touch lab on 3+ GMS SKUs | P0 | Architect/Android | BACKLOG |
+| DM0-002 | Model B ABM + Configurator iPhone + vendor MDM lab | P0 | Architect | BACKLOG |
+| DM0-003 | Compatibility matrix + AMAPI policy gap note | P0 | QA/Architect | BACKLOG |
+| DM0-004 | Architecture ADRs D-042–D-053 | P0 | Architect | DONE |
 | DM1-001 | Enrollment sessions API + token lifecycle (after DM0) | P0 | Backend | BACKLOG |
 | DM2-001 | Activation + contract bind + isolation tests | P0 | Backend | BACKLOG |

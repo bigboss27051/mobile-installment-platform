@@ -33,9 +33,9 @@ flowchart LR
 
 ## Android Device Channel
 
-- Enrollment: Android Enterprise **QR** (6-tap) as default counter path; Zero-touch evaluated in DM0; NFC out of pilot unless proven  
-- Management: **pending DM0** — Android Management API, custom Device Owner DPC, or hybrid. Phase 0 assumed custom Kotlin DPC; that remains a valid prototype path  
-- DPC or AMAPI agent authenticates as device agent after consuming a short-lived enrollment token  
+- Enrollment: **AMAPI QR** (6-tap) default; **Zero-touch** when reseller pre-registered the IMEI (D-049); NFC out of pilot  
+- Management: **Android Management API** (D-042). Custom DPC is not the EMM  
+- AMAPI agent authenticates after consuming a short-lived enrollment token  
 - Heartbeat + command poll/push (FCM)  
 - WorkManager for offline sync  
 - QR extras must not include Wi-Fi passwords or private keys  
@@ -46,7 +46,7 @@ flowchart LR
 
 - Via approved MDM provider or properly designed MDM server (`MdmProviderPort`)  
 - Apple Business Manager + supervision (Configurator on iPhone/Mac and/or ADE) required for the retail flow observed in reference materials  
-- Ownership **Model A (platform ABM)** vs **Model B (merchant ABM)** is **pending** — see [../device-management/TENANT-OWNERSHIP-MODELS.md](../device-management/TENANT-OWNERSHIP-MODELS.md)  
+- Ownership **Model B (merchant ABM)** + vendor MDM (D-043) — see [../device-management/TENANT-OWNERSHIP-MODELS.md](../device-management/TENANT-OWNERSHIP-MODELS.md)  
 - APNs for wake; check-in protocol behind adapter  
 - Capability matrix gates commands  
 - Do not require skipping Apple ID / passcode / Location Services  

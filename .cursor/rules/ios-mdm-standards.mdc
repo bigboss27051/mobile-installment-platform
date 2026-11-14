@@ -7,7 +7,7 @@ alwaysApply: false
 # iOS MDM Standards
 
 - Manage iOS only through an MDM adapter (`MdmProviderPort`). Do not claim native MDM protocol completeness without a test environment.
-- Do not assume the platform can supervise merchant devices without Apple Business authorization (Model A or B — see docs/device-management/TENANT-OWNERSHIP-MODELS.md).
+- iOS is Model B: merchant Apple Business + vendor MDM via MdmProviderPort; retail enroll is Configurator on iPhone (D-043).
 - Do not require skipping passcode, Apple ID, Location Services, or other Setup Assistant privacy/security screens.
 - Lost Mode is forbidden for debt collection. Emergency calling must remain available.
 - Unsupported Android-equivalent actions return `UNSUPPORTED_CAPABILITY`; never fake parity.

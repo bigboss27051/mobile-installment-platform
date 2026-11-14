@@ -20,6 +20,8 @@
 - Product/architecture/API/security/test/Cursor rules cross-references updated
 - Android: Play Protect disable is **not** required; QR must not contain secrets
 - iOS: Model A vs B pending; do not require skipping Apple ID/passcode/location
+- **2026-11-14 later:** D-042 AMAPI; D-043 Model B + vendor MDM + Configurator iPhone; D-049 QR + reseller Zero-touch; D-050 enroll mandatory; D-051 legal copy after mockups; D-052 GMS/matrix SKUs only
+- Wizard mockup + DM0 lab protocol added
 
 ### Unchanged
 
@@ -27,7 +29,7 @@
 
 ### Pending
 
-- D-042 Android AMAPI vs custom DPC; D-043 iOS ABM ownership; MDM vendor; hardware compatibility
+- MDM vendor SKU; AMAPI quotas; compatibility matrix; legal copy (D-051); production hardware proof
 
 ### Notes
 

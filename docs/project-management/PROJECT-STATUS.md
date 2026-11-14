@@ -1,7 +1,7 @@
 # Project Status
 
 **Updated:** 2026-11-14  
-**Current Phase:** R1f complete; next = **DM0** (R2 Device Provisioning & Enrollment feasibility)  
+**Current Phase:** R1f complete; DM0 **architecture accepted**; next = **DM0 lab** (not DM1 code)  
 **Branch:** `develop`  
 **Codebase:** NestJS backend R0–R1e plus R1f customer OTP/`/me` portal, Merchant Web, Customer Android on `develop`; CI on push/PR
 

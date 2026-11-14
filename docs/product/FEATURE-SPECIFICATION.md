@@ -98,7 +98,7 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 | AD-06 | Offline queue / retry | R2 / DM3 |
 | AD-07 | Recovery / unlock path | R2 / DM4 |
 | AD-08 | Audit events upload | R2 / DM3 |
-| AD-09 | AMAPI vs custom DPC evaluation | DM0 |
+| AD-09 | AMAPI vs custom DPC evaluation | DM0 — **AMAPI chosen (D-042)**; lab remaining |
 
 ### Level Mapping (Android)
 
@@ -120,7 +120,7 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 | IO-04 | Supported commands only | R2 / DM3 |
 | IO-05 | Capability matrix enforcement | R2 / DM3 |
 | IO-06 | Command history | R2 / DM3 |
-| IO-07 | Apple Business Model A vs B evaluation | DM0 |
+| IO-07 | Apple Business Model A vs B evaluation | DM0 — **Model B chosen (D-043)** |
 | IO-08 | Activation (shop code optional) + contract bind | R2 / DM2 |
 
 Unsupported Android-equivalent actions return structured `UNSUPPORTED_CAPABILITY` — never silently pretended.

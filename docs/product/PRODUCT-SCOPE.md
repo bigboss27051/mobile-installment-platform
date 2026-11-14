@@ -39,7 +39,7 @@ Auth, tenants, branches, RBAC, project skeleton, Docker Compose infra, health ch
 Merchant/inventory/IMEI, customer/KYC, installment application, scorecard, approve/reject, contracts, schedules (flat/reducing), PromptPay sandbox path, Merchant Web + Customer App (Android) critical flows.
 
 ### R2 — Device Management (Provisioning & Enrollment Platform)
-Split internally as **DM0–DM5** (feasibility → enrollment foundation → bind → management integration → automation → production readiness). Includes Android QR/Enterprise enrollment, iOS Configurator/ADE/MDM (ownership model pending), activation, contract binding, 5-level policies (merchant presets + custom), command queue, heartbeat, audit, recovery; iOS capability matrix. See [../project-management/MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md).
+Split internally as **DM0–DM5**. Android **AMAPI** (QR + reseller Zero-touch); iOS **merchant ABM + vendor MDM + Configurator iPhone**; enrollment **mandatory** before handover; activation, bind, 5-level policies, commands, heartbeat, recovery. See [../project-management/MASTER-EXECUTION-PLAN.md](../project-management/MASTER-EXECUTION-PLAN.md).
 
 ### R3 — SaaS Operations
 Super Admin complete, subscription billing separate from installment money, notification channels, advanced reporting, production hardening.
@@ -53,7 +53,7 @@ Super Admin complete, subscription billing separate from installment money, noti
 | Merchant Web | shell | core ops | device/collection | advanced reports/settings |
 | Merchant Mobile | shell | sell/collect | device status actions | polish |
 | Customer Mobile | shell | contracts/pay | device status | support/notify |
-| Android DPC | — | — | primary | harden |
+| Android DPC / AMAPI companion | — | — | AMAPI primary | harden |
 | iOS MDM adapter | — | — | adapter + sandbox | expand capabilities |
 
 ## Blocked Until External Dependency
