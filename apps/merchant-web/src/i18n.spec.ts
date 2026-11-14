@@ -26,6 +26,7 @@ describe('merchant i18n', () => {
 
   it('interpolates values', () => {
     expect(t('enroll.sessionId', 'th', { id: 'abc' })).toBe('เซสชัน abc');
+    expect(t('enroll.state.EXPIRED')).toBe('หมดอายุ');
   });
 
   it('falls back to Thai when an English key is missing', () => {

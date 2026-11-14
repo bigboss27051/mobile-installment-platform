@@ -107,3 +107,58 @@ pre {
 input::placeholder {
   color: #829ab1;
 }
+.muted {
+  color: #627d98;
+}
+.check-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  max-width: 560px;
+  font-size: 0.95rem;
+}
+.check-row input {
+  margin-top: 0.2rem;
+}
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.action-row button {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #bcccdc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.chip {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.chip-idle {
+  background: #d9e2ec;
+  color: #243b53;
+}
+.chip-warn {
+  background: #fcefc7;
+  color: #8d2b0b;
+}
+.chip-ok {
+  background: #c6f7c1;
+  color: #0b6e4f;
+}
+.chip-bad {
+  background: #ffd6d6;
+  color: #9b1c1c;
+}
+.card h2 {
+  margin-top: 0;
+  font-size: 1.05rem;
+}
+.card ol {
+  padding-left: 1.2rem;
+}

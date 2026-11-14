@@ -131,6 +131,39 @@ describe('EnrollmentService', () => {
     );
   });
 
+  it('marks an open session expired when TTL has passed', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      id: 's1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      status: 'WAITING_FOR_DEVICE',
+      expiresAt: new Date(Date.now() - 1000),
+      contractId: 'c1',
+      qrFingerprint: null,
+      lastErrorCode: null,
+    });
+    prisma.deviceEnrollmentSession.update.mockResolvedValue({
+      id: 's1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      status: 'EXPIRED',
+      expiresAt: new Date(Date.now() - 1000),
+      contractId: 'c1',
+      qrFingerprint: null,
+      lastErrorCode: 'ENROLLMENT_EXPIRED',
+    });
+    const result = await service.getById(tenantCtx, 's1');
+    expect(result.status).toBe('EXPIRED');
+    expect(prisma.deviceEnrollmentSession.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'EXPIRED',
+          lastErrorCode: 'ENROLLMENT_EXPIRED',
+        }),
+      }),
+    );
+  });
+
   it('returns 404 for another tenant session', async () => {
     prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(null);
     await expect(service.getById(tenantCtx, 's-other')).rejects.toBeInstanceOf(

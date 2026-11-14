@@ -114,11 +114,11 @@ export class EnrollmentService {
 
   async getById(ctx: TenantContext, id: string) {
     const session = await this.findOwned(ctx, id);
-    return this.toPublic(session);
+    return this.toPublic(await this.expireIfNeeded(session));
   }
 
   async cancel(ctx: TenantContext, id: string) {
-    const session = await this.findOwned(ctx, id);
+    const session = await this.expireIfNeeded(await this.findOwned(ctx, id));
     if (session.status === EnrollmentSessionStatus.CANCELLED) {
       return this.toPublic(session);
     }
@@ -133,11 +133,11 @@ export class EnrollmentService {
   }
 
   async materializeQr(ctx: TenantContext, id: string) {
-    const session = await this.findOwned(ctx, id);
+    const session = await this.expireIfNeeded(await this.findOwned(ctx, id));
     if (session.platform !== DevicePlatform.ANDROID) {
       throw new BadRequestException('QR_NOT_APPLICABLE');
     }
-    if (session.expiresAt.getTime() <= Date.now()) {
+    if (session.status === EnrollmentSessionStatus.EXPIRED) {
       throw new ConflictException('ENROLLMENT_EXPIRED');
     }
     const payload = buildAndroidEnrollmentQrPayload({
@@ -161,6 +161,29 @@ export class EnrollmentService {
       payloadFingerprint,
       expiresAt: session.expiresAt,
     };
+  }
+
+  private async expireIfNeeded<
+    T extends {
+      id: string;
+      status: EnrollmentSessionStatus;
+      expiresAt: Date;
+    },
+  >(session: T): Promise<T> {
+    if (
+      !OPEN_STATUSES.includes(session.status) ||
+      session.expiresAt.getTime() > Date.now()
+    ) {
+      return session;
+    }
+    const updated = await this.prisma.deviceEnrollmentSession.update({
+      where: { id: session.id },
+      data: {
+        status: EnrollmentSessionStatus.EXPIRED,
+        lastErrorCode: 'ENROLLMENT_EXPIRED',
+      },
+    });
+    return { ...session, ...updated };
   }
 
   private async findOwned(ctx: TenantContext, id: string) {
