@@ -76,12 +76,10 @@ Invalidates old token, issues new, resets to `WAITING_FOR_DEVICE` if recovery al
 
 ### POST `/devices/enroll/check-in`
 
-**Auth:** enrollment token (`Authorization: Bearer enc_<token>` or header `X-Enrollment-Token`) **or** MDM adapter service credential.  
-**Purpose:** First contact from custom DPC or MDM adapter that the device exists.
+**Auth:** enrollment token (`Authorization: Bearer enc_<token>` or header `X-Enrollment-Token`).  
+**Purpose:** First contact from the custom DPC that the device exists.
 
-Request: platform identifiers (Android: IMEI hashed/plain per PDPA rules, serial, `isDeviceOwner`, package name; iOS: UDID/serial via MDM — store hashed if required), `sessionId` if known.
-
-Tenant derived from token. Creates/updates `devices` row; session → `ENROLLING`.
+Request body: `deviceOwner` (boolean), optional `sessionId`, optional `errorCode`, optional `serial`. The token stays in the header. Tenant comes from the token hash. A `QR_GENERATED` session with `deviceOwner: true` creates or reuses the device row and moves the session to `ENROLLING`. `deviceOwner: false` sets `FAILED` and does not create a device.
 
 Idempotent on `(tenant_id, platform, hardware_fingerprint)`.
 

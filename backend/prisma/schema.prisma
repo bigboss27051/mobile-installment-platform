@@ -175,6 +175,7 @@ enum DeviceAuditAction {
   ACTIVATE
   BIND
   UNBIND
+  CHECK_IN
 }
 
 model Tenant {

@@ -11,7 +11,7 @@ import { EnrollmentService } from './enrollment.service';
 import { hashEnrollmentToken } from './enrollment-token';
 
 const DPC_ENV = {
-  DPC_COMPONENT_NAME: 'com.mip.dpc/com.mip.dpc.DeviceAdminReceiver',
+  DPC_COMPONENT_NAME: 'com.mip.dpc/com.mip.dpc.MipDeviceAdminReceiver',
   DPC_DOWNLOAD_URL: 'https://downloads.example.test/dpc.apk',
   DPC_PACKAGE_CHECKSUM: createHash('sha256').update('phase2-dpc').digest('base64url'),
   DPC_ENROLLMENT_ENDPOINT: 'https://api.example.test/api/v1/devices/enroll/check-in',

@@ -48,7 +48,8 @@ describe('Device enrollment sessions (e2e)', () => {
       }),
     );
     app.useGlobalFilters(new AllExceptionsFilter());
-    process.env.DPC_COMPONENT_NAME = 'com.mip.dpc/com.mip.dpc.DeviceAdminReceiver';
+    process.env.DPC_COMPONENT_NAME =
+      'com.mip.dpc/com.mip.dpc.MipDeviceAdminReceiver';
     process.env.DPC_DOWNLOAD_URL = 'https://downloads.example.test/dpc.apk';
     process.env.DPC_PACKAGE_CHECKSUM = createHash('sha256')
       .update('phase2-dpc')
@@ -341,7 +342,7 @@ describe('Device enrollment sessions (e2e)', () => {
       qr.body.data.payload[
         'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME'
       ],
-    ).toBe('com.mip.dpc/com.mip.dpc.DeviceAdminReceiver');
+    ).toBe('com.mip.dpc/com.mip.dpc.MipDeviceAdminReceiver');
     const bundle = qr.body.data.payload[
       'android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE'
     ] as { enrollmentToken: string; enrollmentEndpoint: string };
@@ -366,6 +367,44 @@ describe('Device enrollment sessions (e2e)', () => {
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(200);
     expect(afterQr.body.data.status).toBe('QR_GENERATED');
+
+    await request(app.getHttpServer())
+      .post('/api/v1/devices/enroll/check-in')
+      .send({ deviceOwner: true })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .post('/api/v1/devices/enroll/check-in')
+      .set('X-Enrollment-Token', 'enc_not_a_real_token')
+      .send({ deviceOwner: true })
+      .expect(401);
+
+    const checkedIn = await request(app.getHttpServer())
+      .post('/api/v1/devices/enroll/check-in')
+      .set('X-Enrollment-Token', bundle.enrollmentToken)
+      .send({ deviceOwner: true, sessionId })
+      .expect(201);
+    expect(checkedIn.body.data.deviceOwner).toBe(true);
+    expect(checkedIn.body.data.deviceId).toEqual(expect.any(String));
+    const checkedInDeviceId = checkedIn.body.data.deviceId as string;
+
+    const replayCheckIn = await request(app.getHttpServer())
+      .post('/api/v1/devices/enroll/check-in')
+      .set('X-Enrollment-Token', bundle.enrollmentToken)
+      .send({ deviceOwner: true, sessionId })
+      .expect(201);
+    expect(replayCheckIn.body.data.deviceId).toBe(checkedInDeviceId);
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/devices/${checkedInDeviceId}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(404);
+
+    const enrolled = await prisma.deviceEnrollmentSession.findUniqueOrThrow({
+      where: { id: sessionId },
+    });
+    expect(enrolled.status).toBe('ENROLLING');
+    expect(enrolled.deviceId).toBe(checkedInDeviceId);
 
     const iosSession = await request(app.getHttpServer())
       .post('/api/v1/devices/enrollment-sessions')

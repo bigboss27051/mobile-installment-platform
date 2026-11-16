@@ -12,7 +12,7 @@ describe('buildAndroidEnrollmentQrPayload', () => {
     const payload = buildAndroidEnrollmentQrPayload({
       enrollmentToken: 'enc_test_token_value',
       sessionId: '11111111-1111-4111-8111-111111111111',
-      componentName: 'com.mip.dpc/com.mip.dpc.DeviceAdminReceiver',
+      componentName: 'com.mip.dpc/com.mip.dpc.MipDeviceAdminReceiver',
       downloadUrl: 'https://downloads.example.test/dpc.apk',
       packageChecksum,
       enrollmentEndpoint: endpoint,
@@ -20,7 +20,7 @@ describe('buildAndroidEnrollmentQrPayload', () => {
 
     expect(payload).toEqual({
       'android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME':
-        'com.mip.dpc/com.mip.dpc.DeviceAdminReceiver',
+        'com.mip.dpc/com.mip.dpc.MipDeviceAdminReceiver',
       'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION':
         'https://downloads.example.test/dpc.apk',
       'android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_CHECKSUM': packageChecksum,
@@ -42,7 +42,7 @@ describe('buildAndroidEnrollmentQrPayload', () => {
 
 describe('resolveDpcQrSettings', () => {
   const valid = {
-    DPC_COMPONENT_NAME: 'com.mip.dpc/com.mip.dpc.DeviceAdminReceiver',
+    DPC_COMPONENT_NAME: 'com.mip.dpc/com.mip.dpc.MipDeviceAdminReceiver',
     DPC_DOWNLOAD_URL: 'https://downloads.example.test/dpc.apk',
     DPC_PACKAGE_CHECKSUM: packageChecksum,
     DPC_ENROLLMENT_ENDPOINT: endpoint,
