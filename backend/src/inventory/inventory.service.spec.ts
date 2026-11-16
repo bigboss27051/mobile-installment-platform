@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
@@ -100,6 +101,48 @@ describe('InventoryService', () => {
         imei: '356938035643809',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects a unit with neither IMEI nor serial', async () => {
+    await expect(
+      service.receive(ctx, {
+        branchId: 'b1',
+        variantId: 'v1',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(tx.imeiUnit.create).not.toHaveBeenCalled();
+  });
+
+  it('receives a Wi-Fi-only unit by serial', async () => {
+    tx.branch.findFirst.mockResolvedValue({ id: 'b1', tenantId: 'tenant-a' });
+    tx.productVariant.findFirst.mockResolvedValue({
+      id: 'v1',
+      tenantId: 'tenant-a',
+    });
+    tx.imeiUnit.create.mockResolvedValue({
+      id: 'u1',
+      imei: null,
+      serial: 'TAB-WIFI-001',
+      status: ImeiStatus.AVAILABLE,
+    });
+    tx.stockMovement.create.mockResolvedValue({ id: 'm1' });
+
+    await expect(
+      service.receive(ctx, {
+        branchId: 'b1',
+        variantId: 'v1',
+        serial: 'TAB-WIFI-001',
+      }),
+    ).resolves.toMatchObject({ id: 'u1', serial: 'TAB-WIFI-001' });
+
+    expect(tx.imeiUnit.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          imei: null,
+          serial: 'TAB-WIFI-001',
+        }),
+      }),
+    );
   });
 
   it('receives IMEI into branch with RECEIVE movement', async () => {

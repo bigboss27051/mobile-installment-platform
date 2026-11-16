@@ -422,7 +422,8 @@ model ImeiUnit {
   tenantId  String         @map("tenant_id") @db.Uuid
   branchId  String         @map("branch_id") @db.Uuid
   variantId String         @map("variant_id") @db.Uuid
-  imei      String
+  imei      String?
+  serial    String?
   status    ImeiStatus     @default(AVAILABLE)
   createdAt DateTime       @default(now()) @map("created_at")
   updatedAt DateTime       @updatedAt @map("updated_at")
@@ -436,6 +437,7 @@ model ImeiUnit {
   deviceContractBindings DeviceContractBinding[]
 
   @@unique([tenantId, imei])
+  @@unique([tenantId, serial])
   @@index([tenantId, branchId])
   @@index([tenantId, status])
   @@map("imei_units")

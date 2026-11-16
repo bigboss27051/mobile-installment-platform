@@ -32,6 +32,18 @@ describe('EnrollPage QR issue button', () => {
     vi.stubGlobal('fetch', fetchMock);
     const qrCalls: string[] = [];
     fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'GET' && String(path).includes('/api/v1/contracts')) {
+        return jsonResponse(200, {
+          data: [
+            {
+              id: '22222222-2222-4222-8222-222222222222',
+              status: 'ACTIVE',
+              principal: '8000.00',
+              termMonths: 6,
+            },
+          ],
+        });
+      }
       if (String(path).endsWith('/qr')) {
         qrCalls.push(init?.method ?? 'GET');
         if (qrCalls.length === 1) {
@@ -85,11 +97,11 @@ describe('EnrollPage QR issue button', () => {
       );
     });
 
-    const contract = container.querySelector('#enroll-contract-id') as HTMLInputElement;
+    expect((container.querySelector('#enroll-contract-id') as HTMLSelectElement).value).toBe(
+      '22222222-2222-4222-8222-222222222222',
+    );
     const consent = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
     await act(async () => {
-      contract.value = '22222222-2222-4222-8222-222222222222';
-      contract.dispatchEvent(new Event('input', { bubbles: true }));
       consent.click();
     });
     const form = container.querySelector('form') as HTMLFormElement;

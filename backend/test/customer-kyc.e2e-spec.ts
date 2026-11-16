@@ -186,5 +186,25 @@ describe('Customer + KYC isolation (e2e)', () => {
       .get(`/api/v1/kyc-cases/${caseId}`)
       .set('Authorization', `Bearer ${tokenB}`)
       .expect(404);
+
+    const listed = await request(app.getHttpServer())
+      .get('/api/v1/kyc-cases')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(listed.body.data).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: caseId,
+          customerId,
+          status: 'APPROVED',
+        }),
+      ]),
+    );
+
+    const otherTenant = await request(app.getHttpServer())
+      .get('/api/v1/kyc-cases')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(200);
+    expect(otherTenant.body.data).toEqual([]);
   });
 });

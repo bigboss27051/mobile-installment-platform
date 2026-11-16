@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -31,6 +32,11 @@ export class InventoryService {
 
   async receive(ctx: TenantContext, input: ReceiveImeiDto): Promise<ImeiUnit> {
     const tenantId = this.requireTenantId(ctx);
+    const imei = input.imei?.trim() || null;
+    const serial = input.serial?.trim() || null;
+    if (!imei && !serial) {
+      throw new BadRequestException('UNIT_IDENTITY_REQUIRED');
+    }
 
     try {
       return await this.prisma.$transaction(async (tx) => {
@@ -63,7 +69,8 @@ export class InventoryService {
             tenantId,
             branchId: input.branchId,
             variantId: input.variantId,
-            imei: input.imei,
+            imei,
+            serial,
             status: ImeiStatus.AVAILABLE,
           },
         });
@@ -87,7 +94,14 @@ export class InventoryService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException('IMEI already exists for this tenant.');
+        const target = JSON.stringify(
+          (error.meta as { target?: unknown } | undefined)?.target ?? '',
+        );
+        throw new ConflictException(
+          target.includes('serial')
+            ? 'SERIAL_ALREADY_EXISTS'
+            : 'IMEI already exists for this tenant.',
+        );
       }
       throw error;
     }

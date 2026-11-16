@@ -7,15 +7,18 @@ import {
   setAccessToken,
 } from './api';
 import { EnrollPage } from './enroll-page';
+import { KycPanel } from './kyc-panel';
 import { LanguageSwitch, useI18n } from './i18n-context';
 import {
   Alert,
   Button,
+  ConfirmDialog,
   EmptyState,
   FormField,
   Input,
   Page,
   Section,
+  Select,
   Spinner,
   Table,
 } from './ui';
@@ -43,12 +46,26 @@ const PAGES: AppPage[] = [
   'enroll',
 ];
 
+async function runAction(
+  action: () => Promise<void>,
+  onError: (message: string | null) => void,
+  apiError: (message: string) => string,
+  fallback: string,
+) {
+  try {
+    await action();
+  } catch (err) {
+    onError(err instanceof ApiError ? apiError(err.message) : fallback);
+  }
+}
+
 export function App() {
   const { t, apiError } = useI18n();
   const [token, setToken] = useState<string | null>(getAccessToken());
   const [page, setPage] = useState<AppPage>('contracts');
   const [error, setError] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   if (!token) {
     return (
@@ -81,19 +98,14 @@ export function App() {
             className={page === item ? 'active' : undefined}
             onClick={() => {
               setPage(item);
+              setError(null);
               setNavOpen(false);
             }}
           >
             {t(`nav.${item}`)}
           </button>
         ))}
-        <button
-          type="button"
-          onClick={() => {
-            setAccessToken(null);
-            setToken(null);
-          }}
-        >
+        <button type="button" onClick={() => setLogoutOpen(true)}>
           {t('nav.logout')}
         </button>
       </nav>
@@ -103,7 +115,35 @@ export function App() {
             {t('nav.menu')}
           </Button>
         </div>
-        {error ? <Alert tone="error">{error}</Alert> : null}
+        {error ? (
+          <div className="mip-toast">
+            <Alert tone="error">
+              <span>{error}</span>
+              <button
+                type="button"
+                className="mip-toast__close"
+                aria-label={t('common.dismiss')}
+                onClick={() => setError(null)}
+              >
+                ×
+              </button>
+            </Alert>
+          </div>
+        ) : null}
+        {logoutOpen ? (
+          <ConfirmDialog
+            title={t('logout.title')}
+            body={t('logout.body')}
+            confirmLabel={t('logout.confirm')}
+            cancelLabel={t('logout.cancel')}
+            onCancel={() => setLogoutOpen(false)}
+            onConfirm={() => {
+              setLogoutOpen(false);
+              setAccessToken(null);
+              setToken(null);
+            }}
+          />
+        ) : null}
         {page === 'products' ? <ProductsPage onError={setError} apiError={apiError} /> : null}
         {page === 'inventory' ? <InventoryPage onError={setError} apiError={apiError} /> : null}
         {page === 'customers' ? <CustomersPage onError={setError} apiError={apiError} /> : null}
@@ -178,14 +218,39 @@ function ProductsPage({
 }) {
   const { t } = useI18n();
   const [rows, setRows] = useState<{ id: string; name: string; brand: string }[]>([]);
+  const [variants, setVariants] = useState<
+    { id: string; sku: string; color: string; storage: string; productName: string }[]
+  >([]);
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
+  const [productId, setProductId] = useState('');
+  const [sku, setSku] = useState('');
+  const [color, setColor] = useState('');
+  const [storage, setStorage] = useState('');
+  const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(true);
 
   async function refresh() {
     setLoading(true);
     try {
-      setRows(await apiRequest('/api/v1/products'));
+      const products = await apiRequest<{ id: string; name: string; brand: string }[]>(
+        '/api/v1/products',
+      );
+      const listed = (
+        await Promise.all(
+          products.map(async (product) => {
+            const items = await apiRequest<
+              { id: string; sku: string; color: string; storage: string }[]
+            >(`/api/v1/products/${product.id}/variants`);
+            return items.map((item) => ({ ...item, productName: product.name }));
+          }),
+        )
+      ).flat();
+      setRows(products);
+      setVariants(listed);
+      if (!productId && products[0]) {
+        setProductId(products[0].id);
+      }
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('products.loadFailed'));
@@ -205,13 +270,17 @@ function ProductsPage({
           className="mip-form-grid mip-form-grid--2"
           onSubmit={async (event) => {
             event.preventDefault();
-            await apiRequest('/api/v1/products', {
-              method: 'POST',
-              body: JSON.stringify({ name, brand }),
-            });
-            setName('');
-            setBrand('');
-            await refresh();
+            try {
+              await apiRequest('/api/v1/products', {
+                method: 'POST',
+                body: JSON.stringify({ name, brand }),
+              });
+              setName('');
+              setBrand('');
+              await refresh();
+            } catch (err) {
+              onError(err instanceof ApiError ? apiError(err.message) : t('common.actionFailed'));
+            }
           }}
         >
           <FormField label={t('products.name')} htmlFor="product-name" required>
@@ -226,6 +295,86 @@ function ProductsPage({
             </Button>
           </div>
         </form>
+      </Section>
+      <Section title={t('products.variantTitle')}>
+        <form
+          className="mip-form-grid mip-form-grid--2"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            try {
+              await apiRequest(`/api/v1/products/${productId}/variants`, {
+                method: 'POST',
+                body: JSON.stringify({ sku, color, storage, price }),
+              });
+              setSku('');
+              setColor('');
+              setStorage('');
+              setPrice('');
+              await refresh();
+            } catch (err) {
+              onError(err instanceof ApiError ? apiError(err.message) : t('common.actionFailed'));
+            }
+          }}
+        >
+          <FormField label={t('products.colName')} htmlFor="variant-product" required>
+            <Select
+              id="variant-product"
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+            >
+              {rows.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField label={t('products.sku')} htmlFor="variant-sku" required>
+            <Input id="variant-sku" value={sku} onChange={(e) => setSku(e.target.value)} />
+          </FormField>
+          <FormField label={t('products.color')} htmlFor="variant-color" required>
+            <Input id="variant-color" value={color} onChange={(e) => setColor(e.target.value)} />
+          </FormField>
+          <FormField label={t('products.storage')} htmlFor="variant-storage" required>
+            <Input
+              id="variant-storage"
+              value={storage}
+              onChange={(e) => setStorage(e.target.value)}
+            />
+          </FormField>
+          <FormField label={t('products.price')} htmlFor="variant-price" required>
+            <Input id="variant-price" value={price} onChange={(e) => setPrice(e.target.value)} />
+          </FormField>
+          <div className="mip-form-actions mip-form-grid__span">
+            <Button type="submit" variant="primary" disabled={!productId}>
+              {t('products.variantCreate')}
+            </Button>
+          </div>
+        </form>
+        {variants.length === 0 ? (
+          <EmptyState>{t('products.variantsEmpty')}</EmptyState>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>{t('products.colName')}</th>
+                <th>{t('products.sku')}</th>
+                <th>{t('products.colVariant')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {variants.map((variant) => (
+                <tr key={variant.id}>
+                  <td>
+                    {variant.productName} {variant.color} {variant.storage}
+                  </td>
+                  <td>{variant.sku}</td>
+                  <td>{variant.id}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
       </Section>
       <Section title={t('products.title')}>
         {loading ? (
@@ -263,8 +412,12 @@ function InventoryPage({
   apiError: (message: string) => string;
 }) {
   const { t } = useI18n();
-  const [rows, setRows] = useState<{ id: string; imei: string; status: string }[]>([]);
+  const [rows, setRows] = useState<
+    { id: string; imei: string | null; serial: string | null; status: string }[]
+  >([]);
+  const [variants, setVariants] = useState<{ id: string; label: string }[]>([]);
   const [imei, setImei] = useState('');
+  const [serial, setSerial] = useState('');
   const [variantId, setVariantId] = useState('');
   const [branchId, setBranchId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -272,11 +425,31 @@ function InventoryPage({
   async function refresh() {
     setLoading(true);
     try {
-      const [imeis, me] = await Promise.all([
-        apiRequest<{ id: string; imei: string; status: string }[]>('/api/v1/inventory/imeis'),
+      const [imeis, me, products] = await Promise.all([
+        apiRequest<
+          { id: string; imei: string | null; serial: string | null; status: string }[]
+        >('/api/v1/inventory/imeis'),
         apiRequest<TenantMe>('/api/v1/tenants/me'),
+        apiRequest<{ id: string; name: string }[]>('/api/v1/products'),
       ]);
+      const listed = (
+        await Promise.all(
+          products.map(async (product) => {
+            const items = await apiRequest<{ id: string; sku: string; color: string }[]>(
+              `/api/v1/products/${product.id}/variants`,
+            );
+            return items.map((item) => ({
+              id: item.id,
+              label: `${product.name} ${item.sku} ${item.color}`,
+            }));
+          }),
+        )
+      ).flat();
       setRows(imeis);
+      setVariants(listed);
+      if (!variantId && listed[0]) {
+        setVariantId(listed[0].id);
+      }
       if (!branchId && me.branches[0]) {
         setBranchId(me.branches[0].id);
       }
@@ -299,29 +472,59 @@ function InventoryPage({
           className="mip-form-grid mip-form-grid--2"
           onSubmit={async (event) => {
             event.preventDefault();
-            await apiRequest('/api/v1/inventory/imeis/receive', {
-              method: 'POST',
-              body: JSON.stringify({
-                branchId,
-                variantId,
-                imei,
-                reason: t('inventory.receiveReason'),
-              }),
-            });
-            setVariantId('');
-            setImei('');
-            await refresh();
+            if (!imei.trim() && !serial.trim()) {
+              onError(t('inventory.identityRequired'));
+              return;
+            }
+            if (!variantId) {
+              onError(t('inventory.noVariant'));
+              return;
+            }
+            try {
+              await apiRequest('/api/v1/inventory/imeis/receive', {
+                method: 'POST',
+                body: JSON.stringify({
+                  branchId,
+                  variantId,
+                  ...(imei.trim() ? { imei: imei.trim() } : {}),
+                  ...(serial.trim() ? { serial: serial.trim() } : {}),
+                  reason: t('inventory.receiveReason'),
+                }),
+              });
+              setVariantId(variants[0]?.id ?? '');
+              setImei('');
+              setSerial('');
+              onError(null);
+              await refresh();
+            } catch (err) {
+              onError(
+                err instanceof ApiError ? apiError(err.message) : t('inventory.receiveFailed'),
+              );
+            }
           }}
         >
           <FormField label={t('inventory.variantId')} htmlFor="inventory-variant" required>
-            <Input
+            <Select
               id="inventory-variant"
               value={variantId}
               onChange={(e) => setVariantId(e.target.value)}
-            />
+            >
+              {variants.map((variant) => (
+                <option key={variant.id} value={variant.id}>
+                  {variant.label}
+                </option>
+              ))}
+            </Select>
           </FormField>
-          <FormField label={t('inventory.imei')} htmlFor="inventory-imei" required>
+          <FormField label={t('inventory.imei')} htmlFor="inventory-imei">
             <Input id="inventory-imei" value={imei} onChange={(e) => setImei(e.target.value)} />
+          </FormField>
+          <FormField label={t('inventory.serial')} htmlFor="inventory-serial">
+            <Input
+              id="inventory-serial"
+              value={serial}
+              onChange={(e) => setSerial(e.target.value)}
+            />
           </FormField>
           <div className="mip-form-actions mip-form-grid__span">
             <Button type="submit" variant="primary">
@@ -340,13 +543,15 @@ function InventoryPage({
             <thead>
               <tr>
                 <th>{t('inventory.colImei')}</th>
+                <th>{t('inventory.colSerial')}</th>
                 <th>{t('inventory.colStatus')}</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.imei}</td>
+                  <td>{row.imei ?? '—'}</td>
+                  <td>{row.serial ?? '—'}</td>
                   <td>{row.status}</td>
                 </tr>
               ))}
@@ -369,15 +574,28 @@ function CustomersPage({
   const [rows, setRows] = useState<
     { id: string; fullName: string; phone: string; nationalIdMasked: string }[]
   >([]);
+  const [kycCases, setKycCases] = useState<{ customerId: string; status: string }[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [nationalId, setNationalId] = useState('');
   const [loading, setLoading] = useState(true);
 
+  function latestKyc(customerId: string) {
+    return kycCases.find((item) => item.customerId === customerId)?.status ?? 'NONE';
+  }
+
   async function refresh() {
     setLoading(true);
     try {
-      setRows(await apiRequest('/api/v1/customers'));
+      const [customers, cases] = await Promise.all([
+        apiRequest<{ id: string; fullName: string; phone: string; nationalIdMasked: string }[]>(
+          '/api/v1/customers',
+        ),
+        apiRequest<{ customerId: string; status: string }[]>('/api/v1/kyc-cases'),
+      ]);
+      setRows(customers);
+      setKycCases(cases);
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('customers.loadFailed'));
@@ -397,14 +615,21 @@ function CustomersPage({
           className="mip-form-grid mip-form-grid--2"
           onSubmit={async (event) => {
             event.preventDefault();
-            await apiRequest('/api/v1/customers', {
-              method: 'POST',
-              body: JSON.stringify({ fullName, phone, nationalId }),
-            });
-            setFullName('');
-            setPhone('');
-            setNationalId('');
-            await refresh();
+            await runAction(
+              async () => {
+                await apiRequest('/api/v1/customers', {
+                  method: 'POST',
+                  body: JSON.stringify({ fullName, phone, nationalId }),
+                });
+                setFullName('');
+                setPhone('');
+                setNationalId('');
+                await refresh();
+              },
+              onError,
+              apiError,
+              t('common.actionFailed'),
+            );
           }}
         >
           <FormField label={t('customers.fullName')} htmlFor="customer-name" required>
@@ -450,6 +675,8 @@ function CustomersPage({
                 <th>{t('customers.colName')}</th>
                 <th>{t('customers.colPhone')}</th>
                 <th>{t('customers.colNationalId')}</th>
+                <th>{t('customers.colKyc')}</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -458,12 +685,27 @@ function CustomersPage({
                   <td>{row.fullName}</td>
                   <td>{row.phone}</td>
                   <td>{row.nationalIdMasked}</td>
+                  <td>{t(`kyc.status.${latestKyc(row.id)}`)}</td>
+                  <td>
+                    <Button type="button" variant="secondary" onClick={() => setSelectedId(row.id)}>
+                      {t('kyc.open')}
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </Table>
         )}
       </Section>
+      {selectedId ? (
+        <KycPanel
+          customerId={selectedId}
+          customerName={rows.find((row) => row.id === selectedId)?.fullName ?? ''}
+          onError={onError}
+          apiError={apiError}
+          onUpdated={refresh}
+        />
+      ) : null}
     </Page>
   );
 }
@@ -476,7 +718,14 @@ function ApplicationsPage({
   apiError: (message: string) => string;
 }) {
   const { t } = useI18n();
-  const [rows, setRows] = useState<{ id: string; status: string }[]>([]);
+  const [rows, setRows] = useState<{ id: string; status: string; customerId: string }[]>([]);
+  const [customers, setCustomers] = useState<{ id: string; fullName: string; phone: string }[]>([]);
+  const [devices, setDevices] = useState<{ id: string; imei: string | null; serial: string | null }[]>(
+    [],
+  );
+  const [plans, setPlans] = useState<{ id: string; code: string; name: string; termMonths: number }[]>(
+    [],
+  );
   const [customerId, setCustomerId] = useState('');
   const [imeiUnitId, setImeiUnitId] = useState('');
   const [planId, setPlanId] = useState('');
@@ -484,17 +733,35 @@ function ApplicationsPage({
   const [downPayment, setDownPayment] = useState('2000.00');
   const [loading, setLoading] = useState(true);
 
+  function keepOrFirst(current: string, ids: string[]) {
+    return ids.includes(current) ? current : (ids[0] ?? '');
+  }
+
   async function refresh() {
     setLoading(true);
     try {
-      const [apps, plans] = await Promise.all([
-        apiRequest<{ id: string; status: string }[]>('/api/v1/applications'),
-        apiRequest<{ id: string; code: string }[]>('/api/v1/installment-plans'),
+      const [apps, planRows, customerRows, kycCases, stock] = await Promise.all([
+        apiRequest<{ id: string; status: string; customerId: string }[]>('/api/v1/applications'),
+        apiRequest<{ id: string; code: string; name: string; termMonths: number }[]>(
+          '/api/v1/installment-plans',
+        ),
+        apiRequest<{ id: string; fullName: string; phone: string }[]>('/api/v1/customers'),
+        apiRequest<{ customerId: string; status: string }[]>('/api/v1/kyc-cases'),
+        apiRequest<{ id: string; imei: string | null; serial: string | null }[]>(
+          '/api/v1/inventory/imeis?status=AVAILABLE',
+        ),
       ]);
+      const approvedCustomerIds = new Set(
+        kycCases.filter((item) => item.status === 'APPROVED').map((item) => item.customerId),
+      );
+      const eligible = customerRows.filter((customer) => approvedCustomerIds.has(customer.id));
       setRows(apps);
-      if (!planId && plans[0]) {
-        setPlanId(plans[0].id);
-      }
+      setPlans(planRows);
+      setCustomers(eligible);
+      setDevices(stock);
+      setCustomerId((current) => keepOrFirst(current, eligible.map((customer) => customer.id)));
+      setImeiUnitId((current) => keepOrFirst(current, stock.map((device) => device.id)));
+      setPlanId((current) => keepOrFirst(current, planRows.map((plan) => plan.id)));
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('applications.loadFailed'));
@@ -514,32 +781,67 @@ function ApplicationsPage({
           className="mip-form-grid"
           onSubmit={async (event) => {
             event.preventDefault();
-            await apiRequest('/api/v1/applications', {
-              method: 'POST',
-              body: JSON.stringify({
-                customerId,
-                imeiUnitId,
-                planId,
-                principal,
-                downPayment,
-              }),
-            });
-            await refresh();
+            if (!customerId || !imeiUnitId || !planId) {
+              onError(t('applications.choose'));
+              return;
+            }
+            await runAction(
+              async () => {
+                await apiRequest('/api/v1/applications', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    customerId,
+                    imeiUnitId,
+                    planId,
+                    principal,
+                    downPayment,
+                  }),
+                });
+                await refresh();
+              },
+              onError,
+              apiError,
+              t('common.actionFailed'),
+            );
           }}
         >
           <FormField label={t('applications.customerId')} htmlFor="app-customer" required>
-            <Input
+            <Select
               id="app-customer"
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
-            />
+            >
+              {customers.length === 0 ? (
+                <option value="">{t('applications.noCustomer')}</option>
+              ) : null}
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.fullName} · {customer.phone}
+                </option>
+              ))}
+            </Select>
           </FormField>
           <FormField label={t('applications.imeiUnitId')} htmlFor="app-imei" required>
-            <Input
-              id="app-imei"
-              value={imeiUnitId}
-              onChange={(e) => setImeiUnitId(e.target.value)}
-            />
+            <Select id="app-imei" value={imeiUnitId} onChange={(e) => setImeiUnitId(e.target.value)}>
+              {devices.length === 0 ? (
+                <option value="">{t('applications.noDevice')}</option>
+              ) : null}
+              {devices.map((device) => (
+                <option key={device.id} value={device.id}>
+                  {device.imei || device.serial || device.id}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+          <FormField label={t('applications.plan')} htmlFor="app-plan" required>
+            <Select id="app-plan" value={planId} onChange={(e) => setPlanId(e.target.value)}>
+              {plans.length === 0 ? <option value="">{t('applications.noPlan')}</option> : null}
+              {plans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name} · {plan.code} · {plan.termMonths}
+                </option>
+              ))}
+            </Select>
           </FormField>
           <div className="mip-form-grid mip-form-grid--2">
             <FormField label={t('applications.principal')} htmlFor="app-principal" required>
@@ -589,10 +891,17 @@ function ApplicationsPage({
                         type="button"
                         variant="secondary"
                         onClick={async () => {
-                          await apiRequest(`/api/v1/applications/${row.id}/submit`, {
-                            method: 'POST',
-                          });
-                          await refresh();
+                          await runAction(
+                            async () => {
+                              await apiRequest(`/api/v1/applications/${row.id}/submit`, {
+                                method: 'POST',
+                              });
+                              await refresh();
+                            },
+                            onError,
+                            apiError,
+                            t('common.actionFailed'),
+                          );
                         }}
                       >
                         {t('applications.submit')}
@@ -601,14 +910,21 @@ function ApplicationsPage({
                         type="button"
                         variant="primary"
                         onClick={async () => {
-                          await apiRequest(`/api/v1/applications/${row.id}/decision`, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                              decision: 'APPROVE',
-                              reason: t('applications.approveReason'),
-                            }),
-                          });
-                          await refresh();
+                          await runAction(
+                            async () => {
+                              await apiRequest(`/api/v1/applications/${row.id}/decision`, {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                  decision: 'APPROVE',
+                                  reason: t('applications.approveReason'),
+                                }),
+                              });
+                              await refresh();
+                            },
+                            onError,
+                            apiError,
+                            t('common.actionFailed'),
+                          );
                         }}
                       >
                         {t('applications.approve')}
@@ -633,7 +949,11 @@ function ContractsPage({
   apiError: (message: string) => string;
 }) {
   const { t } = useI18n();
-  const [rows, setRows] = useState<{ id: string; status: string }[]>([]);
+  const [rows, setRows] = useState<{ id: string; status: string; applicationId: string }[]>([]);
+  const [approvedApps, setApprovedApps] = useState<{ id: string; customerId: string; status: string }[]>(
+    [],
+  );
+  const [customerNames, setCustomerNames] = useState<Record<string, string>>({});
   const [applicationId, setApplicationId] = useState('');
   const [selected, setSelected] = useState<{
     id: string;
@@ -647,7 +967,29 @@ function ContractsPage({
   async function refresh() {
     setLoading(true);
     try {
-      setRows(await apiRequest('/api/v1/contracts'));
+      const [contracts, applications, customerRows] = await Promise.all([
+        apiRequest<{ id: string; status: string; applicationId: string }[]>('/api/v1/contracts'),
+        apiRequest<{ id: string; status: string; customerId: string }[]>('/api/v1/applications'),
+        apiRequest<{ id: string; fullName: string }[]>('/api/v1/customers'),
+      ]);
+      setCustomerNames(
+        Object.fromEntries(customerRows.map((customer) => [customer.id, customer.fullName])),
+      );
+      const taken = new Set(
+        contracts
+          .filter((contract) => contract.status !== 'CANCELLED')
+          .map((contract) => contract.applicationId),
+      );
+      const approved = applications.filter(
+        (application) => application.status === 'APPROVED' && !taken.has(application.id),
+      );
+      setRows(contracts);
+      setApprovedApps(approved);
+      setApplicationId((current) =>
+        approved.some((application) => application.id === current)
+          ? current
+          : (approved[0]?.id ?? ''),
+      );
       onError(null);
     } catch (err) {
       onError(err instanceof ApiError ? apiError(err.message) : t('contracts.loadFailed'));
@@ -667,18 +1009,38 @@ function ContractsPage({
           className="mip-form-grid"
           onSubmit={async (event) => {
             event.preventDefault();
-            await apiRequest(`/api/v1/applications/${applicationId}/contracts`, {
-              method: 'POST',
-            });
-            await refresh();
+            if (!applicationId) {
+              onError(t('contracts.chooseApplication'));
+              return;
+            }
+            await runAction(
+              async () => {
+                await apiRequest(`/api/v1/applications/${applicationId}/contracts`, {
+                  method: 'POST',
+                });
+                await refresh();
+              },
+              onError,
+              apiError,
+              t('common.actionFailed'),
+            );
           }}
         >
           <FormField label={t('contracts.applicationId')} htmlFor="contract-app" required>
-            <Input
+            <Select
               id="contract-app"
               value={applicationId}
               onChange={(e) => setApplicationId(e.target.value)}
-            />
+            >
+              {approvedApps.length === 0 ? (
+                <option value="">{t('contracts.noApproved')}</option>
+              ) : null}
+              {approvedApps.map((application) => (
+                <option key={application.id} value={application.id}>
+                  {customerNames[application.customerId] ?? application.id} · {application.status}
+                </option>
+              ))}
+            </Select>
           </FormField>
           <div className="mip-form-actions">
             <Button type="submit" variant="primary">
@@ -712,7 +1074,15 @@ function ContractsPage({
                         type="button"
                         variant="secondary"
                         onClick={async () => {
-                          setSelected(await apiRequest(`/api/v1/contracts/${row.id}`));
+                          await runAction(
+                            async () => {
+                              setSelected(await apiRequest(`/api/v1/contracts/${row.id}`));
+                              onError(null);
+                            },
+                            onError,
+                            apiError,
+                            t('common.actionFailed'),
+                          );
                         }}
                       >
                         {t('contracts.open')}
@@ -721,10 +1091,17 @@ function ContractsPage({
                         type="button"
                         variant="primary"
                         onClick={async () => {
-                          await apiRequest(`/api/v1/contracts/${row.id}/activate`, {
-                            method: 'POST',
-                          });
-                          await refresh();
+                          await runAction(
+                            async () => {
+                              await apiRequest(`/api/v1/contracts/${row.id}/activate`, {
+                                method: 'POST',
+                              });
+                              await refresh();
+                            },
+                            onError,
+                            apiError,
+                            t('common.actionFailed'),
+                          );
                         }}
                       >
                         {t('contracts.activate')}
@@ -764,15 +1141,23 @@ function ContractsPage({
             className="mip-form-grid"
             onSubmit={async (event) => {
               event.preventDefault();
-              const intent = await apiRequest<{ qrPayload: unknown }>(
-                `/api/v1/contracts/${selected.id}/payment-intents`,
-                {
-                  method: 'POST',
-                  headers: { 'Idempotency-Key': crypto.randomUUID() },
-                  body: JSON.stringify({ amount }),
+              await runAction(
+                async () => {
+                  const intent = await apiRequest<{ qrPayload: unknown }>(
+                    `/api/v1/contracts/${selected.id}/payment-intents`,
+                    {
+                      method: 'POST',
+                      headers: { 'Idempotency-Key': crypto.randomUUID() },
+                      body: JSON.stringify({ amount }),
+                    },
+                  );
+                  setQr(intent.qrPayload);
+                  onError(null);
                 },
+                onError,
+                apiError,
+                t('common.actionFailed'),
               );
-              setQr(intent.qrPayload);
             }}
           >
             <FormField label={t('contracts.amount')} htmlFor="pay-amount" required>

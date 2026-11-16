@@ -4,6 +4,7 @@
 
 ### Added
 
+- Stock units may be received with a 15-digit IMEI or a serial number. Wi-Fi-only devices do not need an IMEI.
 - DPC check-in: `POST /api/v1/devices/enroll/check-in` for a hashed `enc_` token, and `apps/android-dpc` reads QR extras then posts that call. Hardware check-in is not run. Not production Device Owner.
 - D-057 custom DPC + QR Device Owner as Android implementation; D-058 `QR_GENERATED` + business vs platform lock
 - Architecture: `docs/architecture/android-dpc-architecture.md`, `android-qr-provisioning.md`, `android-kiosk-locking.md`, `device-lock-state-machine.md`, `payment-to-unlock.md`

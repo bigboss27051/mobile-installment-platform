@@ -5,5 +5,9 @@ export function Alert({
   tone?: 'error' | 'success' | 'info';
   children: React.ReactNode;
 }) {
-  return <div className={`mip-alert mip-alert--${tone}`} role="status">{children}</div>;
+  return (
+    <div className={`mip-alert mip-alert--${tone}`} role={tone === 'error' ? 'alert' : 'status'}>
+      {children}
+    </div>
+  );
 }

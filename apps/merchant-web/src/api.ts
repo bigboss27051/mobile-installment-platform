@@ -46,6 +46,27 @@ export async function apiRequest<T>(
   return (body.data as T) ?? (body as T);
 }
 
+export async function apiUpload<T>(path: string, body: FormData): Promise<T> {
+  const headers = new Headers();
+  const token = getAccessToken();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  const response = await fetch(path, { method: 'POST', body, headers });
+  if (response.status === 401) {
+    setAccessToken(null);
+    throw new ApiError('Unauthorized', 401);
+  }
+  const payload = (await response.json().catch(() => ({}))) as {
+    data?: T;
+    error?: { message?: string };
+  };
+  if (!response.ok) {
+    throw new ApiError(payload.error?.message ?? 'Request failed', response.status);
+  }
+  return (payload.data as T) ?? (payload as T);
+}
+
 export function login(email: string, password: string) {
   return apiRequest<{ accessToken: string }>('/api/v1/auth/login', {
     method: 'POST',

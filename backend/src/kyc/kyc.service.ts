@@ -29,6 +29,13 @@ export interface ReviewInput {
   reason?: string;
 }
 
+export interface KycCaseSummary {
+  id: string;
+  customerId: string;
+  status: KycCaseStatus;
+  createdAt: Date;
+}
+
 @Injectable()
 export class KycService {
   private readonly editableStatuses: KycCaseStatus[] = [
@@ -161,6 +168,20 @@ export class KycService {
         status: KycCaseStatus.IN_REVIEW,
         ocrProvider: ocrResult.provider,
         ocrSummaryJson,
+      },
+    });
+  }
+
+  async listCases(ctx: TenantContext): Promise<KycCaseSummary[]> {
+    const tenantId = this.requireTenantId(ctx);
+    return this.prisma.kycCase.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        customerId: true,
+        status: true,
+        createdAt: true,
       },
     });
   }

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { ApiError, apiRequest, withIdempotency } from './api';
 import {
   canIssueEnrollmentQr,
@@ -36,6 +36,10 @@ export function EnrollPage({
   apiError: (message: string) => string;
 }) {
   const { t } = useI18n();
+  const [contracts, setContracts] = useState<{ id: string; principal: string; termMonths: number }[]>(
+    [],
+  );
+  const [contractsLoaded, setContractsLoaded] = useState(false);
   const [contractId, setContractId] = useState('');
   const [platform, setPlatform] = useState<'ANDROID' | 'IOS'>('ANDROID');
   const [consent, setConsent] = useState(false);
@@ -49,6 +53,26 @@ export function EnrollPage({
   const [qr, setQr] = useState<EnrollmentQr | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [reason, setReason] = useState(() => t('enroll.defaultReason'));
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const rows = await apiRequest<
+          { id: string; status: string; principal: string; termMonths: number }[]
+        >('/api/v1/contracts');
+        const active = rows.filter((row) => row.status === 'ACTIVE');
+        setContracts(active);
+        setContractId((current) =>
+          active.some((row) => row.id === current) ? current : (active[0]?.id ?? ''),
+        );
+        onError(null);
+      } catch (err) {
+        onError(err instanceof ApiError ? apiError(err.message) : t('enroll.failed'));
+      } finally {
+        setContractsLoaded(true);
+      }
+    })();
+  }, []);
 
   const viewStatus = session
     ? resolveEnrollmentStatus(session)
@@ -72,6 +96,10 @@ export function EnrollPage({
 
   async function createSession(event: FormEvent) {
     event.preventDefault();
+    if (!contractId) {
+      onError(t('enroll.noContract'));
+      return;
+    }
     if (!consent) {
       onError(t('enroll.needConsent'));
       return;
@@ -209,11 +237,20 @@ export function EnrollPage({
       <Section>
         <form className="mip-form-grid mip-form-grid--2" onSubmit={createSession}>
           <FormField label={t('enroll.contractId')} htmlFor="enroll-contract-id" required>
-            <Input
+            <Select
               id="enroll-contract-id"
               value={contractId}
               onChange={(e) => setContractId(e.target.value)}
-            />
+            >
+              {contracts.length === 0 ? (
+                <option value="">{contractsLoaded ? t('enroll.noContract') : ''}</option>
+              ) : null}
+              {contracts.map((contract) => (
+                <option key={contract.id} value={contract.id}>
+                  {contract.principal} · {contract.termMonths}
+                </option>
+              ))}
+            </Select>
           </FormField>
           <FormField
             label={`${t('enroll.android')} / ${t('enroll.ios')}`}

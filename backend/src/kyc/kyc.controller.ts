@@ -70,6 +70,12 @@ export class KycController {
     return { data: kycCase };
   }
 
+  @Get('kyc-cases')
+  async listCases(@CurrentUser() user: TenantContext) {
+    const cases = await this.kyc.listCases(user);
+    return { data: cases };
+  }
+
   @Get('kyc-cases/:id')
   async getCase(
     @Param('id', new ParseUUIDPipe()) caseId: string,

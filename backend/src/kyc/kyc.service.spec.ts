@@ -30,6 +30,7 @@ describe('KycService', () => {
     },
     kycCase: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -479,6 +480,42 @@ describe('KycService', () => {
       }),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(tx.kycReviewAction.create).not.toHaveBeenCalled();
+  });
+
+  it('lists KYC cases only for the caller tenant', async () => {
+    const createdAt = new Date('2026-11-16T00:00:00.000Z');
+    prisma.kycCase.findMany.mockResolvedValue([
+      {
+        id: 'case-1',
+        customerId: 'customer-1',
+        status: KycCaseStatus.APPROVED,
+        createdAt,
+      },
+    ]);
+
+    await expect(service.listCases(ctx)).resolves.toEqual([
+      {
+        id: 'case-1',
+        customerId: 'customer-1',
+        status: KycCaseStatus.APPROVED,
+        createdAt,
+      },
+    ]);
+    expect(prisma.kycCase.findMany).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-a' },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        customerId: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+  });
+
+  it('rejects listCases without tenant context', async () => {
+    await expect(service.listCases(noTenantCtx)).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.kycCase.findMany).not.toHaveBeenCalled();
   });
 
   it('rejects review without tenant context', async () => {

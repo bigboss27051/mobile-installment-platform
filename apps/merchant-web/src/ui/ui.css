@@ -212,6 +212,62 @@
   width: 14px;
   height: 14px;
 }
+.mip-toast {
+  position: fixed;
+  z-index: 30;
+  top: var(--mip-space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(480px, calc(100% - 32px));
+}
+.mip-toast .mip-alert {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--mip-space-3);
+  margin: 0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+.mip-toast__close {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.mip-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--mip-space-4);
+  background: rgba(15, 23, 42, 0.45);
+}
+.mip-dialog {
+  width: min(420px, 100%);
+  box-sizing: border-box;
+  background: var(--mip-surface);
+  border: 1px solid var(--mip-border);
+  border-radius: var(--mip-radius);
+  padding: var(--mip-space-5);
+}
+.mip-dialog__title {
+  margin: 0 0 var(--mip-space-2);
+  font-size: var(--mip-section-size);
+  color: var(--mip-text);
+}
+.mip-dialog__body {
+  margin: 0;
+  color: var(--mip-text-secondary);
+  font-size: 14px;
+}
 .mip-pre {
   white-space: pre-wrap;
   background: var(--mip-text);

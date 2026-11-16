@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { apiRequest, setAccessToken } from './api';
+import { apiRequest, apiUpload, setAccessToken } from './api';
 
 describe('merchant api client', () => {
   afterEach(() => {
@@ -65,5 +65,27 @@ describe('merchant api client', () => {
       contractId: 'c1',
       platform: 'ANDROID',
     });
+  });
+
+  it('uploads KYC files without forcing a JSON content type', async () => {
+    setAccessToken('staff-token');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({ data: { id: 'doc-1' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const body = new FormData();
+    body.set('type', 'ID_FRONT');
+    body.set('file', new File(['png'], 'id.png', { type: 'image/png' }));
+
+    await expect(apiUpload('/api/v1/kyc-cases/case-1/documents', body)).resolves.toEqual({
+      id: 'doc-1',
+    });
+
+    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Headers;
+    expect(headers.get('Authorization')).toBe('Bearer staff-token');
+    expect(headers.get('Content-Type')).toBeNull();
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(body);
   });
 });

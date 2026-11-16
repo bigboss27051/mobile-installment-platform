@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class ReceiveImeiDto {
   @IsString()
@@ -9,9 +9,16 @@ export class ReceiveImeiDto {
   @MinLength(1)
   variantId!: string;
 
-  @IsString()
+  @IsOptional()
   @Matches(/^\d{15}$/)
-  imei!: string;
+  imei?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(4)
+  @MaxLength(64)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9-]*$/)
+  serial?: string;
 
   @IsOptional()
   @IsString()

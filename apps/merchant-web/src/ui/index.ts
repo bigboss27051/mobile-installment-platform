@@ -1,5 +1,6 @@
 export { Alert } from './Alert';
 export { Button } from './Button';
+export { ConfirmDialog } from './ConfirmDialog';
 export { EmptyState } from './EmptyState';
 export { FormField } from './FormField';
 export { Input } from './Input';
