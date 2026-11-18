@@ -1,7 +1,7 @@
 # Project Status
 
-**Updated:** 2026-11-14  
-**Current Phase:** R1f complete; DM1/DM2 stubs; **architecture D-057** (custom DPC QR). Next software: Phase 1 Shared Enrollment Foundation. Hardware wipe still requires asking. Commercial Device Owner **BLOCKED**.  
+**Updated:** 2026-11-18  
+**Current Phase:** R1f complete; R2 Phase 1 (shared enrollment foundation) done; Phase 2 custom DPC QR check-in code on `develop` (lab hardware NOT RUN). Next: one authorized lab device check-in (ask before any factory reset). Commercial Device Owner **BLOCKED**.  
 **Branch:** `develop`  
 **Codebase:** NestJS backend R0–R1e plus R1f customer OTP/`/me` portal, Merchant Web, Customer Android on `develop`; CI on push/PR
 
@@ -20,7 +20,7 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 ## In Progress
 
 - **Human:** Authorized Android lab device (ask before factory reset). ABM + MDM vendor still BLOCKED for iOS. AMAPI Google form is optional/historical, not the lock path.
-- **Software next:** Phase 1 enrollment foundation (`QR_GENERATED`, dashboard fields). Phase 2 custom DPC QR. No kiosk yet.
+- **Software next:** Phase 3 Android locking prototype is gated on a real Device Owner check-in from a lab device. Check-in unit tests cover replay idempotency, tenant-scoped device lookup, and CHECK_IN audit. No kiosk yet.
 
 ## Follow-ups (R0 / early Phase 3)
 
@@ -40,10 +40,10 @@ R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `sl
 
 1. `docs/roadmap/CURRENT-PHASE.md`  
 2. `docs/project-management/MASTER-EXECUTION-PLAN.md`  
-3. `docs/superpowers/plans/2026-11-14-phase1-shared-enrollment-foundation.md` — after docs acceptance  
+3. `docs/superpowers/plans/2026-11-14-phase1-shared-enrollment-foundation.md` — R2 Phase 1, already delivered (`R2-P1-001` in TASK-BACKLOG)  
 4. Lab phones only with explicit wipe approval  
-4. `docs/superpowers/specs/2026-11-12-r1f-merchant-web-customer-android-design.md` — R1f reference  
-5. `docs/superpowers/plans/2026-11-12-r1f-merchant-web-customer-android.md`
+5. `docs/superpowers/specs/2026-11-12-r1f-merchant-web-customer-android-design.md` — R1f reference  
+6. `docs/superpowers/plans/2026-11-12-r1f-merchant-web-customer-android.md`
 
 ## Do Not
 

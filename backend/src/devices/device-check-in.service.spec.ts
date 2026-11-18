@@ -127,4 +127,83 @@ describe('DeviceCheckInService', () => {
       }),
     );
   });
+
+  it('is idempotent on replay: returns the existing device without creating or auditing again', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      ...session,
+      status: EnrollmentSessionStatus.ENROLLING,
+      deviceId: 'dev-1',
+    });
+
+    const result = await service.checkIn(rawToken, {
+      deviceOwner: true,
+      sessionId: 'sess-1',
+    });
+
+    expect(result).toEqual({
+      sessionId: 'sess-1',
+      deviceId: 'dev-1',
+      deviceOwner: true,
+      lastErrorCode: null,
+    });
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.device.create).not.toHaveBeenCalled();
+    expect(prisma.deviceAuditEvent.create).not.toHaveBeenCalled();
+    expect(prisma.deviceEnrollmentSession.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects check-in for a session that is no longer checkable and has no device', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      ...session,
+      status: EnrollmentSessionStatus.COMPLETED,
+      deviceId: null,
+    });
+
+    await expect(
+      service.checkIn(rawToken, { deviceOwner: true }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.device.create).not.toHaveBeenCalled();
+  });
+
+  it('scopes the device lookup to the session tenant and reuses a matching device', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(session);
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-existing',
+      tenantId: 'tenant-a',
+    });
+    prisma.deviceEnrollmentSession.update.mockResolvedValue({});
+
+    const result = await service.checkIn(rawToken, { deviceOwner: true });
+
+    expect(result.deviceId).toBe('dev-existing');
+    expect(prisma.device.findFirst).toHaveBeenCalledWith({
+      where: expect.objectContaining({ tenantId: 'tenant-a' }),
+    });
+    expect(prisma.device.create).not.toHaveBeenCalled();
+  });
+
+  it('writes a CHECK_IN audit event tied to the session tenant and device', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(session);
+    prisma.device.findFirst.mockResolvedValue(null);
+    prisma.device.create.mockResolvedValue({
+      id: 'dev-2',
+      status: DeviceLifecycleStatus.ENROLLED,
+    });
+    prisma.deviceEnrollmentSession.update.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+
+    await service.checkIn(rawToken, {
+      deviceOwner: true,
+      serial: ' SN-123 ',
+    });
+
+    expect(prisma.deviceAuditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: 'tenant-a',
+        deviceId: 'dev-2',
+        action: 'CHECK_IN',
+        reason: 'dpc-check-in serial=SN-123',
+      }),
+    });
+  });
 });

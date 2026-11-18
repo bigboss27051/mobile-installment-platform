@@ -54,12 +54,16 @@ export class DeviceCheckInService {
     if (session.status === EnrollmentSessionStatus.CANCELLED) {
       throw new ConflictException('ENROLLMENT_CANCELLED');
     }
-    if (!CHECKIN_OPEN.includes(session.status) && session.deviceId) {
+    const alreadyBound =
+      !!session.deviceId &&
+      (session.status === EnrollmentSessionStatus.ENROLLING ||
+        !CHECKIN_OPEN.includes(session.status));
+    if (alreadyBound) {
       return {
         sessionId: session.id,
         deviceId: session.deviceId,
         deviceOwner: true,
-        lastErrorCode: session.lastErrorCode,
+        lastErrorCode: session.lastErrorCode ?? null,
       };
     }
     if (!CHECKIN_OPEN.includes(session.status)) {
