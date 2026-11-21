@@ -29,4 +29,6 @@
 
 **Post-wipe DO restore (~21:05–21:13+07):** After user enabled USB install, `adb install` succeeded (`0.1.15-lab`). Google + Xiaomi accounts removed via Settings → **Accounts: 0** → `dpm set-device-owner com.mip.dpc/.MipDeviceAdminReceiver` **Success**. New enrollment session `68da9860-…` → check-in → device `705f8cff-…` `ENROLLING`. Agent prefs + `adb reverse :3443` → HTTPS heartbeat updated `last_heartbeat_at`. Command loop: `START_LOCK_TASK` → `ACKED_SUCCESS` / `LOCK_TASK_ACTIVE` / `mLockTaskModeState=LOCKED`; `STOP_LOCK_TASK` → `LOCK_TASK_STOPPED` / `NONE`. Lab note: MIUI may keep DO process alive across `am force-stop` until a hard kill; SharedPreferences written via `run-as` need a fresh process. REENROLL bug found: cancelled session retained `device_id` unique → check-in `INTERNAL_ERROR`; fixed by clearing `device_id` on REENROLL.
 
-**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock, full Welcome QR re-prove.
+**Phase 3g soft location (~21:25–21:30+07):** DPC `0.1.16-lab` installed. Under desired `LOCK`, agent heartbeat with soft `location` → `locationAccepted: true`, staff `lastKnownLocation` populated; `STOP_LOCK_TASK` cleared last-known (purge).
+
+**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock, full Welcome QR re-prove, live payment-to-unlock E2E.

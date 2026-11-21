@@ -1,4 +1,4 @@
-# Current Phase: **Phase 3g soft location (arrears-only)**
+# Current Phase: **Phase 4 payment-to-unlock (lab)**
 
 **Previous:** R1f Merchant Web + Customer Android critical paths — **COMPLETE** on `develop`
 
@@ -44,11 +44,13 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 3f (lab HTTPS):** Nest dual listen HTTP + HTTPS (`TLS_*` / `HTTPS_PORT`); `scripts/generate-lab-https-certs.sh`; DPC `0.1.14-lab` pins lab CA. **Pad 6:** agent heartbeat over `https://127.0.0.1:3443` via `adb reverse` updated `last_heartbeat_at`. LAN Wi‑Fi HTTPS still optional when Pad/Mac share L2 + firewall allows `:3443`. Docs: [AGENT-HTTPS-LAB.md](../device-management/AGENT-HTTPS-LAB.md).
 
-**Phase 3g (lab software done):** Soft location **only** when desired policy is `RESTRICT` or `LOCK` (D-061). Heartbeat optional `location`; reject when desired NONE/REMINDER (`LOCATION_NOT_ALLOWED`); last-known on `devices` + `device_location_samples`; purge on STOP→NONE / REENROLL + 14-day purge helper; staff `GET …/location-history` (`devices.location.read`, audited); DPC `0.1.16-lab` `SoftLocationReader` + DO permission grants; Merchant Web last-known + history text. Spec/plan: [spec](../superpowers/specs/2026-11-21-phase3g-soft-location-arrears-design.md), [plan](../superpowers/plans/2026-11-21-phase3g-soft-location.md). Backlog `R2-P3-009`. **Before** Phase 4 payment-to-unlock. Pad live location sample optional (needs RESTRICT/LOCK + location fix).
+**Phase 3g (lab done):** Soft location **only** when desired policy is `RESTRICT` or `LOCK` (D-061). Pad proof: under LOCK, agent heartbeat with `location` → `locationAccepted` + `lastKnownLocation`; purge on STOP→NONE. DPC `0.1.16-lab`. Spec/plan linked from backlog `R2-P3-009`.
 
-**Wipe/FRP → re-enroll (lab, same evening):** Wipe approved + `wipeDevice` completed. Post-wipe: DO gone; FRP UI absent this run; staff signed Google+Xiaomi then removed both for DO. MIUI **Install via USB** / AdbInstall allow → DPC `0.1.15-lab` installed → `dpm set-device-owner com.mip.dpc/.MipDeviceAdminReceiver` → new session check-in → agent HTTPS heartbeat via `adb reverse` → `START_LOCK_TASK` / `STOP_LOCK_TASK` `ACKED_SUCCESS`. Full Welcome 6-tap QR path not re-run.
+**Wipe/FRP → re-enroll (lab):** DO restored via sideload + `dpm set-device-owner` (Welcome QR optional).
 
-**Next:** Phase 4 payment-to-unlock when command loop + HTTPS + 3g stay green. Optional: Pad live location proof under LOCK/RESTRICT; LAN HTTPS; full QR Welcome after approved wipe. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Phase 4a (lab software):** `PaymentUnlockOrchestrator` after **verified** sandbox webhook SUCCEEDED: if contract outstanding = 0 and ACTIVE Android binding with desired LOCK/RESTRICT → enqueue `STOP_*` with reason `payment-unlock pay:{txId}` (idempotent via audit marker). Payment success never fails if unlock throws. Plan: [2026-11-21-phase4-payment-to-unlock.md](../superpowers/plans/2026-11-21-phase4-payment-to-unlock.md). No auto-lock from overdue yet; iOS out of scope.
+
+**Next:** E2E sandbox pay → unlock on Pad; optional LAN HTTPS / Welcome QR. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

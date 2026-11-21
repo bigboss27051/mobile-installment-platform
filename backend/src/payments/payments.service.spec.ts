@@ -46,7 +46,18 @@ describe('PaymentsService', () => {
     parseWebhookEvent: jest.fn(),
   };
 
-  const service = new PaymentsService(prisma as never, gateway as never);
+  const paymentUnlock = {
+    onVerifiedPayment: jest.fn().mockResolvedValue({
+      applied: false,
+      reason: 'NO_ANDROID_BINDING',
+      commandIds: [],
+    }),
+  };
+  const service = new PaymentsService(
+    prisma as never,
+    gateway as never,
+    paymentUnlock as never,
+  );
 
   const tenantCtx = {
     tenantId: 'tenant-a',
