@@ -177,6 +177,23 @@ enum DeviceAuditAction {
   UNBIND
   CHECK_IN
   COMMAND
+  RECOVERY
+}
+
+enum DeviceRecoveryType {
+  REENROLL
+  REPLACE
+  UNENROLL
+  RELEASE
+  CONTRACT_CLOSE
+}
+
+enum DeviceRecoveryStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
 }
 
 enum DeviceCommandType {
@@ -246,6 +263,7 @@ model Tenant {
   deviceAuditEvents       DeviceAuditEvent[]
   deviceCommands          DeviceCommand[]
   devicePolicyStates      DevicePolicyState[]
+  deviceRecoveryRequests  DeviceRecoveryRequest[]
 
   @@map("tenants")
 }
@@ -287,6 +305,7 @@ model User {
   deviceContractBindings    DeviceContractBinding[]
   deviceAuditEvents         DeviceAuditEvent[]
   deviceCommands            DeviceCommand[]
+  deviceRecoveryRequests    DeviceRecoveryRequest[]
 
   @@index([tenantId])
   @@map("users")
@@ -775,11 +794,30 @@ model Device {
   auditEvents          DeviceAuditEvent[]
   commands             DeviceCommand[]
   policyState          DevicePolicyState?
+  recoveryRequests     DeviceRecoveryRequest[]
 
   @@unique([tenantId, hardwareFingerprint])
   @@unique([tenantId, imeiUnitId])
   @@index([tenantId, status])
   @@map("devices")
+}
+
+model DeviceRecoveryRequest {
+  id          String                @id @default(uuid()) @db.Uuid
+  tenantId    String                @map("tenant_id") @db.Uuid
+  deviceId    String                @map("device_id") @db.Uuid
+  type        DeviceRecoveryType
+  status      DeviceRecoveryStatus  @default(APPROVED)
+  reason      String
+  actorUserId String                @map("actor_user_id") @db.Uuid
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+  tenant      Tenant                @relation(fields: [tenantId], references: [id])
+  device      Device                @relation(fields: [deviceId], references: [id])
+  actor       User                  @relation(fields: [actorUserId], references: [id])
+
+  @@index([tenantId, deviceId, status])
+  @@map("device_recovery_requests")
 }
 
 model DeviceCommand {

@@ -32,9 +32,10 @@ Xiaomi Pad 6 was Device Owner (`com.mip.dpc`). After factory reset, FRP appeared
 
 1. Confirm the person at the counter can unlock FRP with the **same Google account** previously used on the phone, **or** the unit is new / never personal-accounted.
 2. Complete FRP + Wi-Fi on the device (staff do not type customer Google passwords into Merchant Web).
-3. Create a **new** enrollment session → show QR (no secrets in QR).
-4. 6-tap → scan → custom DPC Device Owner → check-in → activate / bind as usual.
-5. Audit as re-enroll / recovery — not as a collections lock.
+3. Staff: `POST /api/v1/devices/:id/recovery-requests` with `{ "type": "REENROLL", "reason": "…" }` (permission `devices.enroll`). This cancels open enrollment sessions for that device/IMEI, clears the device agent token, expires queued lock commands, and resets desired/platform policy to `NONE`. **No** remote FRP clear.
+4. Complete Merchant Web FRP checklist, then create a **new** enrollment session → show QR (no secrets in QR). Old `enc_` tokens are invalid.
+5. 6-tap → scan → custom DPC Device Owner → check-in → activate / bind as usual.
+6. Audit is `DeviceAuditAction.RECOVERY` — not a collections lock.
 
 If the customer cannot unlock FRP: stop. OEM/Google account recovery is out of band. Do not invent a platform unlock.
 

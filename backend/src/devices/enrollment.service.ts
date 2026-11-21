@@ -25,6 +25,7 @@ const QR_ISSUABLE_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.QR_GENERATED,
 ];
 
+/** Blocks a second create for the same contract+platform. RECOVERY_REQUIRED does not block — staff must be able to start a new session after wipe/FRP. */
 const OPEN_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.NOT_STARTED,
   EnrollmentSessionStatus.WAITING_FOR_DEVICE,
@@ -33,7 +34,6 @@ const OPEN_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.ENROLLING,
   EnrollmentSessionStatus.VERIFYING,
   EnrollmentSessionStatus.ACTIVATING,
-  EnrollmentSessionStatus.RECOVERY_REQUIRED,
 ];
 
 @Injectable()

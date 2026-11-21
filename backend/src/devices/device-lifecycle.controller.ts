@@ -16,8 +16,10 @@ import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { DeviceCommandsService } from './device-commands.service';
 import { DeviceLifecycleService } from './device-lifecycle.service';
+import { DeviceRecoveryService } from './device-recovery.service';
 import { ActivateDeviceDto } from './dto/activate-device.dto';
 import { BindContractDto, UnbindContractDto } from './dto/bind-contract.dto';
+import { CreateRecoveryRequestDto } from './dto/create-recovery-request.dto';
 import { EnqueueDeviceCommandDto } from './dto/enqueue-device-command.dto';
 
 @Controller('devices')
@@ -26,6 +28,7 @@ export class DeviceLifecycleController {
   constructor(
     private readonly lifecycle: DeviceLifecycleService,
     private readonly commands: DeviceCommandsService,
+    private readonly recovery: DeviceRecoveryService,
   ) {}
 
   @Post('activate')
@@ -99,5 +102,16 @@ export class DeviceLifecycleController {
   ) {
     const command = await this.commands.enqueue(user, id, dto);
     return { data: command };
+  }
+
+  @Post(':id/recovery-requests')
+  @RequirePermissions('devices.enroll')
+  async createRecoveryRequest(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateRecoveryRequestDto,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const recovery = await this.recovery.request(user, id, dto);
+    return { data: recovery };
   }
 }

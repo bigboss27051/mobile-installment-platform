@@ -57,14 +57,15 @@
 
 ### Task 5: Backend recovery (only if Task 2–4 done)
 
-- [ ] Ensure recovery / `REENROLL` session path exists and is audited (reuse enrollment types if already present)
-- [ ] Tests: expired token after wipe; new session required; tenant isolation
-- [ ] Do **not** auto-issue restrictive lock commands while session ≠ completed post-reenroll
+- [x] Ensure recovery / `REENROLL` session path exists and is audited (`POST …/recovery-requests`, `device_recovery_requests`)
+- [x] Tests: reason required; tenant isolation; cancel sessions / expire commands / clear agent token
+- [x] Do **not** auto-issue restrictive lock commands while session ≠ completed post-reenroll (queued commands expired on REENROLL)
 
 ### Task 6: Lab re-prove (ask before wipe)
 
 - [ ] After FRP cleared on Pad 6 (or on FRP-free spare): full QR → DO → check-in → agent token
 - [ ] Update lab-evidence; still no production claim
+- **Note (2026-11-21 evening):** `adb` still reports Pad 6 Device Owner `com.mip.dpc` and 0 Google accounts — full wipe/FRP re-prove needs explicit wipe approval again.
 
 ## Acceptance
 

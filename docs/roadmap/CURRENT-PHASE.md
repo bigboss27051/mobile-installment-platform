@@ -24,7 +24,11 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Merchant Web FRP checklist (done):** Android enroll page requires three staff attestations before create session / Issue QR (FRP cleared or N/A, new QR after wipe, no remote bypass) — D-060 copy; cannot clear FRP from UI.
 
-**Next:** REENROLL path + lab re-prove after FRP unlocked on Pad 6 (`R2-P2-002` remainder); then harden agent auth/tunnel; package suspend (RESTRICT); reboot recovery; payment-to-unlock later. **Do not** claim production Device Owner or financing lock.
+**REENROLL API (done):** `POST /api/v1/devices/:id/recovery-requests` `{ type: REENROLL, reason }` cancels open sessions, clears `agentTokenHash`, expires open lock commands, resets policy to `NONE`, audits `RECOVERY`. Create enrollment no longer blocked by stale `RECOVERY_REQUIRED` sessions.
+
+**Lab note:** Pad 6 still shows Device Owner via adb — full wipe→FRP→QR re-prove needs **explicit wipe approval** (Task 6).
+
+**Next:** lab re-prove after approved wipe + FRP unlock (`R2-P2-002` Task 6); then harden agent auth/tunnel; package suspend (RESTRICT); reboot recovery; payment-to-unlock later. **Do not** claim production Device Owner or financing lock.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 
