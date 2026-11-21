@@ -86,6 +86,7 @@ describe('DeviceLifecycleService', () => {
         platformState: 'LOCK_TASK',
         policyVersion: 4,
       },
+      commands: [],
     });
     const view = await service.getDashboard(tenantCtx, 'd1');
     expect(view).toEqual(
@@ -95,6 +96,7 @@ describe('DeviceLifecycleService', () => {
         platformState: 'LOCK_TASK',
         policyVersion: 4,
         lastHeartbeatAt: '2026-11-21T12:00:00.000Z',
+        lastCommand: null,
         enrollmentStatus: 'QR_GENERATED',
         outstandingBalance: null,
       }),
@@ -105,6 +107,39 @@ describe('DeviceLifecycleService', () => {
     await expect(service.getDashboard(tenantCtx, 'other')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('includes last command summary on the dashboard', async () => {
+    prisma.device.findFirst.mockResolvedValueOnce({
+      id: 'd1',
+      platform: 'ANDROID',
+      status: DeviceLifecycleStatus.ACTIVE,
+      lastHeartbeatAt: null,
+      enrollmentSession: { status: EnrollmentSessionStatus.COMPLETED },
+      imeiUnit: { imei: '359999999999999' },
+      policyState: {
+        desiredPresentation: 'RESTRICT',
+        platformState: 'PACKAGES_SUSPENDED',
+        policyVersion: 6,
+      },
+      commands: [
+        {
+          id: 'cmd-9',
+          type: 'START_PACKAGE_SUSPEND',
+          status: 'ACKED_SUCCESS',
+          resultCode: 'PACKAGES_SUSPENDED:3',
+          ackedAt: new Date('2026-11-21T13:10:00.000Z'),
+        },
+      ],
+    });
+    const view = await service.getDashboard(tenantCtx, 'd1');
+    expect(view.lastCommand).toEqual({
+      id: 'cmd-9',
+      type: 'START_PACKAGE_SUSPEND',
+      status: 'ACKED_SUCCESS',
+      resultCode: 'PACKAGES_SUSPENDED:3',
+      ackedAt: '2026-11-21T13:10:00.000Z',
+    });
   });
 
   it('returns heartbeat freshness and 410 when never seen', async () => {

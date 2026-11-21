@@ -37,4 +37,5 @@
 ### Task 3: Lab + docs
 
 - [x] Pad 6: enqueue + poll → `ACKED_SUCCESS` / `NO_PACKAGES_TO_SUSPEND:0` / desired `RESTRICT` / platform `NONE` (no third-party targets on this DO image)
+- [x] Follow-up `0.1.13-lab`: `QUERY_ALL_PACKAGES` → Pad 6 non-empty suspend (`cn.wps…`, `com.miui.mediaeditor` `suspended=true`)
 - [x] CURRENT-PHASE / backlog `R2-P3-002`

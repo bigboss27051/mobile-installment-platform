@@ -67,7 +67,13 @@ object PackageSuspendHelper {
     }
 
     fun candidatePackages(pm: PackageManager): Array<String> {
-        val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        @Suppress("DEPRECATION")
+        val flags = PackageManager.GET_META_DATA or PackageManager.MATCH_ALL
+        val apps = try {
+            pm.getInstalledApplications(flags)
+        } catch (_: Exception) {
+            pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        }
         return filterSuspendCandidates(
             apps.map { it.packageName to ((it.flags and ApplicationInfo.FLAG_SYSTEM) != 0) },
         )

@@ -19,4 +19,6 @@
 
 **Phase 3d / lab-target (evening):** DPC updated to `0.1.12-lab` (heartbeat from poller). Built `:lab-target` (`com.mip.labtarget`) for non-empty suspend. Fresh package sideload returned `INSTALL_FAILED_USER_RESTRICTED` on Pad 6 until on-device USB install is confirmed; not yet proven `PACKAGES_SUSPENDED` count > 0.
 
+**Phase 3b non-empty suspend (evening, `0.1.13-lab`):** Root cause of empty suspend was Android 11+ package visibility (DPC could not see user apps). Fix: `QUERY_ALL_PACKAGES` + `MATCH_ALL`. PolicyRecovery desired=`RESTRICT` on Pad 6 set `suspended=true` for `cn.wps.xiaomi.abroad.lite` and `com.miui.mediaeditor`; then cleared with desired=`NONE`.
+
 **Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock.

@@ -165,7 +165,22 @@ export class DeviceLifecycleService {
     const tenantId = this.requireTenant(ctx);
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, tenantId },
-      include: { enrollmentSession: true, imeiUnit: true, policyState: true },
+      include: {
+        enrollmentSession: true,
+        imeiUnit: true,
+        policyState: true,
+        commands: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            resultCode: true,
+            ackedAt: true,
+          },
+        },
+      },
     });
     if (!device) {
       throw new NotFoundException('Device not found.');
@@ -173,6 +188,7 @@ export class DeviceLifecycleService {
     const imei = device.imeiUnit?.imei;
     const maskedImei =
       imei && imei.length > 4 ? `••••${imei.slice(-4)}` : null;
+    const last = device.commands[0];
     return {
       id: device.id,
       platform: device.platform,
@@ -183,6 +199,15 @@ export class DeviceLifecycleService {
       platformState: device.policyState?.platformState ?? ('NONE' as const),
       policyVersion: device.policyState?.policyVersion ?? 0,
       lastHeartbeatAt: device.lastHeartbeatAt?.toISOString() ?? null,
+      lastCommand: last
+        ? {
+            id: last.id,
+            type: last.type,
+            status: last.status,
+            resultCode: last.resultCode,
+            ackedAt: last.ackedAt?.toISOString() ?? null,
+          }
+        : null,
       outstandingBalance: null as string | null,
       maskedImei,
     };
