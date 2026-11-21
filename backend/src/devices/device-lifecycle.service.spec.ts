@@ -25,6 +25,7 @@ describe('DeviceLifecycleService', () => {
       findFirst: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     deviceActivation: {
       findFirst: jest.fn(),
@@ -331,10 +332,56 @@ describe('DeviceLifecycleService', () => {
     expect(prisma.device.create).not.toHaveBeenCalled();
   });
 
+  it('activates an existing check-in device without creating a second device', async () => {
+    prisma.deviceActivation.findFirst.mockResolvedValue(null);
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      ...session,
+      deviceId: 'dev-checked-in',
+      status: EnrollmentSessionStatus.ENROLLING,
+    });
+    prisma.contract.findFirst.mockResolvedValue(contract);
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-checked-in',
+      tenantId: 'tenant-a',
+      imeiUnitId: 'imei-1',
+      status: DeviceLifecycleStatus.PENDING_ENROLL,
+    });
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-checked-in',
+      tenantId: 'tenant-a',
+      imeiUnitId: 'imei-1',
+      status: DeviceLifecycleStatus.ACTIVE,
+    });
+    prisma.deviceActivation.create.mockResolvedValue({
+      id: 'act-ci',
+      tenantId: 'tenant-a',
+      deviceId: 'dev-checked-in',
+      enrollmentSessionId: 'sess-1',
+      contractId: 'c1',
+      customerId: 'cust-1',
+      reason: 'after check-in',
+      shopCode: null,
+      createdAt: new Date(),
+    });
+    prisma.deviceEnrollmentSession.update.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+
+    const result = await service.activate(
+      tenantCtx,
+      { enrollmentSessionId: 'sess-1', contractId: 'c1', reason: 'after check-in' },
+      'idem-checkin',
+    );
+
+    expect(result.deviceId).toBe('dev-checked-in');
+    expect(prisma.device.create).not.toHaveBeenCalled();
+    expect(prisma.device.update).toHaveBeenCalled();
+  });
+
   it('creates device + activation without calling AMAPI or Apple', async () => {
     prisma.deviceActivation.findFirst.mockResolvedValue(null);
     prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(session);
     prisma.contract.findFirst.mockResolvedValue(contract);
+    prisma.device.findFirst.mockResolvedValue(null);
     prisma.device.create.mockResolvedValue({
       id: 'dev-new',
       tenantId: 'tenant-a',

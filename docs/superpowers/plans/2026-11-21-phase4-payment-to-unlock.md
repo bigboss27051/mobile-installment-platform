@@ -44,3 +44,7 @@
 ### Task 4: Docs / backlog
 
 - [x] CURRENT-PHASE Phase 4; TASK-BACKLOG R2-P4-001; API note
+
+### Task 5: Pad E2E (lab)
+
+- [x] Activate (check-in device) + bind → LOCK → sandbox pay outstanding 0 → STOP_LOCK_TASK acked / `mLockTaskModeState=NONE` (2026-11-21)

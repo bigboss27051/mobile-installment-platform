@@ -48,9 +48,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Wipe/FRP → re-enroll (lab):** DO restored via sideload + `dpm set-device-owner` (Welcome QR optional).
 
-**Phase 4a (lab software):** `PaymentUnlockOrchestrator` after **verified** sandbox webhook SUCCEEDED: if contract outstanding = 0 and ACTIVE Android binding with desired LOCK/RESTRICT → enqueue `STOP_*` with reason `payment-unlock pay:{txId}` (idempotent via audit marker). Payment success never fails if unlock throws. Plan: [2026-11-21-phase4-payment-to-unlock.md](../superpowers/plans/2026-11-21-phase4-payment-to-unlock.md). No auto-lock from overdue yet; iOS out of scope.
+**Phase 4a (lab done + Pad E2E):** `PaymentUnlockOrchestrator` after **verified** sandbox webhook SUCCEEDED: if contract outstanding = 0 and ACTIVE Android binding with desired LOCK/RESTRICT → enqueue `STOP_*` with reason `payment-unlock pay:{txId}` (idempotent via audit marker). Payment success never fails if unlock throws. **Pad 6 E2E:** activate+bind → LOCK → sandbox pay outstanding `10600.00` → all installments PAID → `STOP_LOCK_TASK` acked → `mLockTaskModeState=NONE`. Activate after check-in reuses existing device (D-062). Plan: [2026-11-21-phase4-payment-to-unlock.md](../superpowers/plans/2026-11-21-phase4-payment-to-unlock.md). No auto-lock from overdue yet; iOS out of scope.
 
-**Next:** E2E sandbox pay → unlock on Pad; optional LAN HTTPS / Welcome QR. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Next:** Optional LAN HTTPS / Welcome QR; Phase 4b overdue auto-lock later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

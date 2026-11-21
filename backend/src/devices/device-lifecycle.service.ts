@@ -107,7 +107,12 @@ export class DeviceLifecycleService {
     }
 
     if (session.deviceId) {
-      throw new ConflictException('ALREADY_ACTIVATED');
+      const existingActivation = await this.prisma.deviceActivation.findFirst({
+        where: { deviceId: session.deviceId, tenantId },
+      });
+      if (existingActivation) {
+        throw new ConflictException('ALREADY_ACTIVATED');
+      }
     }
 
     const hardwareFingerprint = createHash('sha256')
@@ -115,15 +120,30 @@ export class DeviceLifecycleService {
       .digest('hex');
 
     const created = await this.prisma.$transaction(async (tx) => {
-      const device = await tx.device.create({
-        data: {
-          tenantId,
-          imeiUnitId: session.imeiUnitId,
-          platform: session.platform,
-          status: DeviceLifecycleStatus.ACTIVE,
-          hardwareFingerprint,
-        },
-      });
+      let device = session.deviceId
+        ? await tx.device.findFirst({
+            where: { id: session.deviceId, tenantId },
+          })
+        : null;
+      if (session.deviceId && !device) {
+        throw new NotFoundException('Device not found.');
+      }
+      if (!device) {
+        device = await tx.device.create({
+          data: {
+            tenantId,
+            imeiUnitId: session.imeiUnitId,
+            platform: session.platform,
+            status: DeviceLifecycleStatus.ACTIVE,
+            hardwareFingerprint,
+          },
+        });
+      } else if (device.status !== DeviceLifecycleStatus.ACTIVE) {
+        device = await tx.device.update({
+          where: { id: device.id },
+          data: { status: DeviceLifecycleStatus.ACTIVE },
+        });
+      }
       const activation = await tx.deviceActivation.create({
         data: {
           tenantId,

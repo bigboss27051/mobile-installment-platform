@@ -31,4 +31,6 @@
 
 **Phase 3g soft location (~21:25–21:30+07):** DPC `0.1.16-lab` installed. Under desired `LOCK`, agent heartbeat with soft `location` → `locationAccepted: true`, staff `lastKnownLocation` populated; `STOP_LOCK_TASK` cleared last-known (purge).
 
-**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock, full Welcome QR re-prove, live payment-to-unlock E2E.
+**Phase 4a payment-to-unlock E2E (~21:36–21:39+07):** Activate after check-in (reuse existing `deviceId`; was blocked by `ALREADY_ACTIVATED`) + bind contract `205e6746-…` → device `705f8cff-…` `ACTIVE` / binding `ACTIVE`. `START_LOCK_TASK` → desired `LOCK` / `mLockTaskModeState=LOCKED`. Sandbox intent `10600.00` + signed webhook → all 6 schedule items `PAID` → `PaymentUnlockOrchestrator` enqueued `STOP_LOCK_TASK` reason `payment-unlock pay:82744e66-…` → poller `ACKED_SUCCESS` / `LOCK_TASK_STOPPED` / desired `NONE` / `mLockTaskModeState=NONE`. Agent path: HTTPS via `adb reverse :3443`.
+
+**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock, full Welcome QR re-prove, live Omise.
