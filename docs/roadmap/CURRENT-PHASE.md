@@ -44,9 +44,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 3f (lab HTTPS):** Nest dual listen HTTP + HTTPS (`TLS_*` / `HTTPS_PORT`); `scripts/generate-lab-https-certs.sh`; DPC `0.1.14-lab` pins lab CA. **Pad 6:** agent heartbeat over `https://127.0.0.1:3443` via `adb reverse` updated `last_heartbeat_at`. LAN Wi‑Fi HTTPS still optional when Pad/Mac share L2 + firewall allows `:3443`. Docs: [AGENT-HTTPS-LAB.md](../device-management/AGENT-HTTPS-LAB.md).
 
-**Wipe/FRP:** not run this slice — **explicit wipe approval required** before factory reset / FRP re-prove.
+**Wipe/FRP (in progress):** Wipe **approved** and started via DO `LabWipeActivity` / `wipeDevice` (`0.1.15-lab`). Pad left `adb` during reset. Waiting on-device Setup / **FRP unlock** (Google account out of band) → then `REENROLL` + **new** QR. Platform does not clear FRP.
 
-**Next:** same-subnet LAN HTTPS proof (optional); wipe/FRP only with approval; then payment-to-unlock when command loop + HTTPS stay solid. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Next:** after FRP cleared on Pad — complete QR → DO → check-in; update Task 6 evidence. Then payment-to-unlock when command loop + HTTPS stay solid. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

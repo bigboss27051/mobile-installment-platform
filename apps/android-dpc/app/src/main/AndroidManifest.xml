@@ -27,6 +27,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Lab-only Device Owner wipe; requires confirm extra after human approval. -->
+        <activity
+            android:name=".LabWipeActivity"
+            android:exported="true"
+            android:excludeFromRecents="true" />
+
         <activity
             android:name=".GetProvisioningModeActivity"
             android:exported="true"

@@ -23,4 +23,6 @@
 
 **Phase 3f HTTPS agent (evening):** DPC `0.1.14-lab` + Nest `HTTPS_PORT=3443` with lab CA pin. Pad poller `apiBase=https://127.0.0.1:3443/api/v1` + `adb reverse tcp:3443` updated `last_heartbeat_at` (TLS). Direct LAN HTTPS from Pad not proven (Wi‑Fi subnet mismatch).
 
+**Wipe re-prove (approved 2026-11-21 ~20:45+07):** Human approved factory wipe. DPC `0.1.15-lab` `LabWipeActivity` → Device Owner `wipeDevice(WIPE_EXTERNAL_STORAGE)`. Device dropped off `adb` (expected mid-wipe / Setup Wizard; USB debugging cleared). **Do not** remote-clear FRP. After Setup Wizard shows FRP or Welcome: unlock prior Google account out of band → Wi‑Fi → 6-tap → **new** QR + `REENROLL` if registry row still exists. Re-attach USB and re-enable debugging to continue lab capture.
+
 **Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock.
