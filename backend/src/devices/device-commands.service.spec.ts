@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
@@ -6,6 +7,7 @@ import {
 import {
   DeviceCommandStatus,
   DeviceCommandType,
+  DeviceLocationSource,
   PlatformEnforcementState,
 } from '@prisma/client';
 import {
@@ -32,10 +34,22 @@ describe('DeviceCommandsService', () => {
       findUnique: jest.fn(),
     },
     deviceAuditEvent: { create: jest.fn() },
+    deviceLocationSample: {
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
-  const service = new DeviceCommandsService(prisma as never);
+  const locations = {
+    persistSample: jest.fn(),
+    clearForDevice: jest.fn(),
+  };
+
+  const service = new DeviceCommandsService(
+    prisma as never,
+    locations as never,
+  );
   const user = {
     userId: 'user-1',
     tenantId: 'tenant-a',
@@ -226,6 +240,7 @@ describe('DeviceCommandsService', () => {
     });
     prisma.devicePolicyState.findUnique.mockResolvedValue({
       policyVersion: 2,
+      desiredPresentation: 'NONE',
     });
 
     const result = await service.heartbeatForAgent(raw, {
@@ -236,11 +251,91 @@ describe('DeviceCommandsService', () => {
 
     expect(result.deviceId).toBe('dev-1');
     expect(result.lastHeartbeatAt).toBe(stamped.toISOString());
+    expect(result.locationAccepted).toBe(false);
     expect(prisma.device.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'dev-1' },
         data: expect.objectContaining({ lastHeartbeatAt: expect.any(Date) }),
       }),
+    );
+  });
+
+  it('rejects location on heartbeat when desired is NONE', async () => {
+    const raw = 'dat_lab_token';
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      agentTokenHash: hashDeviceAgentToken(raw),
+    });
+    prisma.devicePolicyState.findUnique.mockResolvedValue({
+      desiredPresentation: 'NONE',
+      policyVersion: 1,
+    });
+
+    await expect(
+      service.heartbeatForAgent(raw, {
+        location: {
+          lat: 13.7,
+          lng: 100.5,
+          source: DeviceLocationSource.NETWORK,
+          capturedAt: '2026-11-21T12:00:00.000Z',
+        },
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(locations.persistSample).not.toHaveBeenCalled();
+  });
+
+  it('accepts location on heartbeat when desired is LOCK', async () => {
+    const raw = 'dat_lab_token';
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      agentTokenHash: hashDeviceAgentToken(raw),
+    });
+    prisma.devicePolicyState.findUnique.mockResolvedValue({
+      desiredPresentation: 'LOCK',
+      policyVersion: 3,
+    });
+    const stamped = new Date('2026-11-21T12:00:00.000Z');
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-1',
+      lastHeartbeatAt: stamped,
+    });
+    locations.persistSample.mockResolvedValue(undefined);
+
+    const result = await service.heartbeatForAgent(raw, {
+      location: {
+        lat: 13.7563,
+        lng: 100.5018,
+        accuracyMeters: 90,
+        source: DeviceLocationSource.NETWORK,
+        capturedAt: '2026-11-21T12:00:00.000Z',
+      },
+    });
+
+    expect(result.locationAccepted).toBe(true);
+    expect(locations.persistSample).toHaveBeenCalled();
+  });
+
+  it('clears location when enqueueing STOP that sets desired NONE', async () => {
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+    });
+    prisma.deviceCommand.create.mockResolvedValue({ id: 'cmd-1' });
+    prisma.devicePolicyState.upsert.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+    locations.clearForDevice.mockResolvedValue(undefined);
+
+    await service.enqueue(user, 'dev-1', {
+      type: DeviceCommandType.STOP_LOCK_TASK,
+      reason: 'paid',
+    });
+
+    expect(locations.clearForDevice).toHaveBeenCalledWith(
+      expect.anything(),
+      'dev-1',
     );
   });
 

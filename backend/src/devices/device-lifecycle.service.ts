@@ -17,6 +17,7 @@ import {
 } from '@prisma/client';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeviceLocationService } from './device-location.service';
 
 const ACTIVATABLE_SESSION_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.NOT_STARTED,
@@ -30,7 +31,10 @@ const ACTIVATABLE_SESSION_STATUSES: EnrollmentSessionStatus[] = [
 
 @Injectable()
 export class DeviceLifecycleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly locations: DeviceLocationService,
+  ) {}
 
   async activate(
     ctx: TenantContext,
@@ -250,6 +254,46 @@ export class DeviceLifecycleService {
         : null,
       outstandingBalance: null as string | null,
       maskedImei,
+      lastKnownLocation: this.locations.mapLastKnown(device),
+      locationUpdatedAt: device.lastLocationAt?.toISOString() ?? null,
+    };
+  }
+
+  async getLocationHistory(ctx: TenantContext, deviceId: string) {
+    const tenantId = this.requireTenant(ctx);
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, tenantId },
+      select: { id: true },
+    });
+    if (!device) {
+      throw new NotFoundException('Device not found.');
+    }
+    const samples = await this.prisma.deviceLocationSample.findMany({
+      where: { deviceId: device.id, tenantId },
+      orderBy: { capturedAt: 'desc' },
+      take: 100,
+    });
+    if (ctx.userId) {
+      await this.prisma.deviceAuditEvent.create({
+        data: {
+          tenantId,
+          deviceId: device.id,
+          actorUserId: ctx.userId,
+          action: DeviceAuditAction.LOCATION_READ,
+          reason: 'staff location-history',
+        },
+      });
+    }
+    return {
+      deviceId: device.id,
+      samples: samples.map((s) => ({
+        id: s.id,
+        lat: Number(s.lat),
+        lng: Number(s.lng),
+        accuracyMeters: s.accuracyMeters,
+        source: s.source,
+        capturedAt: s.capturedAt.toISOString(),
+      })),
     };
   }
 

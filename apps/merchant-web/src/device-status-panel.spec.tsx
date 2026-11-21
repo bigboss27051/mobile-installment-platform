@@ -33,6 +33,13 @@ describe('DeviceStatusPanel', () => {
             platformState: 'LOCK_TASK',
             policyVersion: 4,
             lastHeartbeatAt: '2026-11-21T12:00:00.000Z',
+            lastKnownLocation: {
+              lat: 13.7563,
+              lng: 100.5018,
+              accuracyMeters: 120,
+              source: 'NETWORK',
+              capturedAt: '2026-11-21T12:00:00.000Z',
+            },
             maskedImei: '••••9999',
           },
         }),
@@ -60,5 +67,7 @@ describe('DeviceStatusPanel', () => {
     expect(container.textContent).toContain('LOCK');
     expect(container.textContent).toContain('LOCK_TASK');
     expect(container.textContent).toContain('2026-11-21T12:00:00.000Z');
+    expect(container.textContent).toContain('13.75630');
+    expect(container.textContent).toContain('NETWORK');
   });
 });

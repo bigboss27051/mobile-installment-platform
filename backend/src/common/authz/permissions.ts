@@ -8,6 +8,7 @@ export const PERMISSIONS = [
   'devices.bind',
   'devices.unbind',
   'devices.command',
+  'devices.location.read',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

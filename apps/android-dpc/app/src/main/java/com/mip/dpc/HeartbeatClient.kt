@@ -11,6 +11,7 @@ object HeartbeatClient {
         policyVersion: Int,
         connectivity: String = "UNKNOWN",
         batteryPercent: Int? = null,
+        location: SoftLocationSample? = null,
     ): Boolean {
         val url = session.apiBase.trimEnd('/') + "/devices/agent/heartbeat"
         val connection = URL(url).openConnection() as HttpURLConnection
@@ -26,6 +27,17 @@ object HeartbeatClient {
                 .put("policyVersion", policyVersion)
             if (batteryPercent != null) {
                 payload.put("batteryPercent", batteryPercent)
+            }
+            if (location != null) {
+                val loc = JSONObject()
+                    .put("lat", location.lat)
+                    .put("lng", location.lng)
+                    .put("source", location.source)
+                    .put("capturedAt", location.capturedAtIso)
+                if (location.accuracyMeters != null) {
+                    loc.put("accuracyMeters", location.accuracyMeters.toInt())
+                }
+                payload.put("location", loc)
             }
             OutputStreamWriter(connection.outputStream).use { it.write(payload.toString()) }
             connection.responseCode in 200..299

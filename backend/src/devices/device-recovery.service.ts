@@ -16,6 +16,7 @@ import {
 } from '@prisma/client';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeviceLocationService } from './device-location.service';
 
 const OPEN_SESSION_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.NOT_STARTED,
@@ -35,7 +36,10 @@ const OPEN_COMMAND_STATUSES: DeviceCommandStatus[] = [
 
 @Injectable()
 export class DeviceRecoveryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly locations: DeviceLocationService,
+  ) {}
 
   async request(
     user: TenantContext,
@@ -132,6 +136,7 @@ export class DeviceRecoveryService {
           policyVersion: { increment: 1 },
         },
       });
+      await this.locations.clearForDevice(tx, device.id);
       const recovery = await tx.deviceRecoveryRequest.create({
         data: {
           tenantId,

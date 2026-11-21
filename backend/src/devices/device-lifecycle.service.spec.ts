@@ -12,6 +12,7 @@ import {
   PlatformRole,
 } from '@prisma/client';
 import { DeviceLifecycleService } from './device-lifecycle.service';
+import { DeviceLocationService } from './device-location.service';
 
 describe('DeviceLifecycleService', () => {
   const prisma = {
@@ -35,10 +36,14 @@ describe('DeviceLifecycleService', () => {
       update: jest.fn(),
     },
     deviceAuditEvent: { create: jest.fn() },
+    deviceLocationSample: {
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
-  const service = new DeviceLifecycleService(prisma as never);
+  const locations = new DeviceLocationService(prisma as never);
+  const service = new DeviceLifecycleService(prisma as never, locations);
   const tenantCtx = {
     tenantId: 'tenant-a',
     userId: 'user-1',
@@ -80,6 +85,11 @@ describe('DeviceLifecycleService', () => {
       platform: 'ANDROID',
       status: DeviceLifecycleStatus.ACTIVE,
       lastHeartbeatAt: new Date('2026-11-21T12:00:00.000Z'),
+      lastLocationLat: null,
+      lastLocationLng: null,
+      lastLocationAccuracyM: null,
+      lastLocationSource: null,
+      lastLocationAt: null,
       enrollmentSession: { status: EnrollmentSessionStatus.QR_GENERATED },
       imeiUnit: { imei: '359999999999999' },
       policyState: {
@@ -97,6 +107,8 @@ describe('DeviceLifecycleService', () => {
         platformState: 'LOCK_TASK',
         policyVersion: 4,
         lastHeartbeatAt: '2026-11-21T12:00:00.000Z',
+        lastKnownLocation: null,
+        locationUpdatedAt: null,
         lastCommand: null,
         enrollmentStatus: 'QR_GENERATED',
         outstandingBalance: null,
@@ -143,6 +155,11 @@ describe('DeviceLifecycleService', () => {
       platform: 'ANDROID',
       status: DeviceLifecycleStatus.ACTIVE,
       lastHeartbeatAt: null,
+      lastLocationLat: null,
+      lastLocationLng: null,
+      lastLocationAccuracyM: null,
+      lastLocationSource: null,
+      lastLocationAt: null,
       enrollmentSession: { status: EnrollmentSessionStatus.COMPLETED },
       imeiUnit: { imei: '359999999999999' },
       policyState: {
@@ -168,6 +185,38 @@ describe('DeviceLifecycleService', () => {
       resultCode: 'PACKAGES_SUSPENDED:3',
       ackedAt: '2026-11-21T13:10:00.000Z',
     });
+  });
+
+  it('returns location history for tenant device and audits read', async () => {
+    prisma.device.findFirst.mockResolvedValueOnce({ id: 'd1' });
+    prisma.deviceLocationSample.findMany.mockResolvedValueOnce([
+      {
+        id: 's1',
+        lat: { toString: () => '13.75' },
+        lng: { toString: () => '100.50' },
+        accuracyMeters: 100,
+        source: 'NETWORK',
+        capturedAt: new Date('2026-11-21T12:00:00.000Z'),
+      },
+    ]);
+    prisma.deviceAuditEvent.create.mockResolvedValueOnce({});
+
+    const history = await service.getLocationHistory(tenantCtx, 'd1');
+    expect(history.samples).toHaveLength(1);
+    expect(history.samples[0].source).toBe('NETWORK');
+    expect(prisma.deviceAuditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'LOCATION_READ',
+          deviceId: 'd1',
+        }),
+      }),
+    );
+
+    prisma.device.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.getLocationHistory(tenantCtx, 'other'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('returns heartbeat freshness and 410 when never seen', async () => {

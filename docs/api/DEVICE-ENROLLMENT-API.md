@@ -152,9 +152,11 @@ iOS unsupported type → `422 UNSUPPORTED_CAPABILITY` (no silent no-op success).
 
 ### POST `/devices/agent/heartbeat` (device-agent)
 
-Header `X-Device-Agent-Token` (`dat_…` from check-in). Body: `{ connectivity?, policyVersion?, batteryPercent? }`. Updates `devices.last_heartbeat_at`. Staff see it on `GET /devices/:id` and `GET /devices/:id/heartbeat` (`410 HEARTBEAT_NEVER_SEEN` if never posted).
+Header `X-Device-Agent-Token` (`dat_…` from check-in). Body: `{ connectivity?, policyVersion?, batteryPercent?, location? }`. Updates `devices.last_heartbeat_at`. Optional `location` (`lat`, `lng`, `accuracyMeters?`, `source`, `capturedAt`) only when desired policy is `RESTRICT` or `LOCK` (D-061); otherwise `400 LOCATION_NOT_ALLOWED`. Staff see heartbeat on `GET /devices/:id` / `GET /devices/:id/heartbeat` (`410 HEARTBEAT_NEVER_SEEN` if never), and last-known on device detail.
 
-**Phase 3g (planned, D-061):** optional `location` on this heartbeat **only** when desired policy is `RESTRICT` or `LOCK` (soft/network primary; GPS if already on). Server rejects location otherwise (`LOCATION_NOT_ALLOWED`). Last-known + ≤14-day arrears history; staff history via `GET /devices/:id/location-history` (`devices.location.read`). Not implemented until `R2-P3-009`.
+### GET `/devices/:id/location-history`
+
+Staff. Requires `devices.location.read`. Tenant-scoped samples (newest first). Audited as `LOCATION_READ`.
 
 ### POST `/devices/:id/command-acks` (device-agent)
 

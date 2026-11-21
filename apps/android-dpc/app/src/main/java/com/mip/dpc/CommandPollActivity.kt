@@ -51,12 +51,26 @@ class CommandPollActivity : Activity() {
             return
         }
         thread {
-            val policyVersion = PolicyCacheStore(this).load().policyVersion
-            val hbOk = HeartbeatClient.post(session, policyVersion = policyVersion)
+            val cache = PolicyCacheStore(this)
+            val remote = PolicyClient.fetch(session)
+            if (remote != null) {
+                cache.save(
+                    remote.desiredPresentation,
+                    remote.platformState,
+                    remote.policyVersion,
+                )
+            }
+            val policy = cache.load()
+            val location = SoftLocationReader.readIfAllowed(this, policy.desiredPresentation)
+            val hbOk = HeartbeatClient.post(
+                session,
+                policyVersion = policy.policyVersion,
+                location = location,
+            )
             val commands = CommandClient.poll(session)
             runOnUiThread {
                 statusView.text =
-                    "HB=${if (hbOk) "ok" else "fail"}; polled ${commands.size} command(s)."
+                    "HB=${if (hbOk) "ok" else "fail"}; loc=${if (location != null) location.source else "none"}; polled ${commands.size} command(s)."
             }
             for (command in commands) {
                 handle(session, command)

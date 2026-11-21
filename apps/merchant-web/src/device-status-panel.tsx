@@ -4,6 +4,14 @@ import { DeviceCommandPanel } from './device-command-panel';
 import { useI18n } from './i18n-context';
 import { Alert, Section } from './ui';
 
+export type LastKnownLocation = {
+  lat: number;
+  lng: number;
+  accuracyMeters: number | null;
+  source: string;
+  capturedAt: string;
+};
+
 export type DeviceDashboard = {
   id: string;
   platform: string;
@@ -13,6 +21,8 @@ export type DeviceDashboard = {
   platformState: string;
   policyVersion: number;
   lastHeartbeatAt: string | null;
+  lastKnownLocation?: LastKnownLocation | null;
+  locationUpdatedAt?: string | null;
   lastCommand?: {
     id: string;
     type: string;
@@ -23,9 +33,19 @@ export type DeviceDashboard = {
   maskedImei: string | null;
 };
 
+type LocationHistorySample = {
+  id: string;
+  lat: number;
+  lng: number;
+  accuracyMeters: number | null;
+  source: string;
+  capturedAt: string;
+};
+
 export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
   const { t } = useI18n();
   const [dash, setDash] = useState<DeviceDashboard | null>(null);
+  const [history, setHistory] = useState<LocationHistorySample[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -33,6 +53,14 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
       const data = await apiRequest<DeviceDashboard>(`/api/v1/devices/${deviceId}`);
       setDash(data);
       setError(null);
+      try {
+        const hist = await apiRequest<{ samples: LocationHistorySample[] }>(
+          `/api/v1/devices/${deviceId}/location-history`,
+        );
+        setHistory(hist.samples);
+      } catch {
+        setHistory(null);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('deviceStatus.loadFailed'));
     }
@@ -41,6 +69,8 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const loc = dash?.lastKnownLocation;
 
   return (
     <>
@@ -69,6 +99,16 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
               <dd>{dash.lastHeartbeatAt ?? t('deviceStatus.heartbeatNever')}</dd>
             </div>
             <div>
+              <dt>{t('deviceStatus.lastKnownLocation')}</dt>
+              <dd>
+                {loc
+                  ? `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} · ${loc.source} · ±${
+                      loc.accuracyMeters ?? '?'
+                    }m · ${loc.capturedAt}`
+                  : t('deviceStatus.lastKnownLocationNone')}
+              </dd>
+            </div>
+            <div>
               <dt>{t('deviceStatus.lastCommand')}</dt>
               <dd>
                 {dash.lastCommand
@@ -89,6 +129,17 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
           <p>{t('deviceStatus.loading')}</p>
         ) : null}
       </Section>
+      {history && history.length > 0 ? (
+        <Section title={t('deviceStatus.locationHistory')}>
+          <ul>
+            {history.slice(0, 20).map((s) => (
+              <li key={s.id}>
+                {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · {s.source} · {s.capturedAt}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
       <DeviceCommandPanel deviceId={deviceId} onEnqueued={() => void refresh()} />
     </>
   );

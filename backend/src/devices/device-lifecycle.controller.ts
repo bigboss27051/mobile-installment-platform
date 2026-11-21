@@ -77,6 +77,16 @@ export class DeviceLifecycleController {
     return { data: heartbeat };
   }
 
+  @Get(':id/location-history')
+  @RequirePermissions('devices.location.read')
+  async getLocationHistory(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const history = await this.lifecycle.getLocationHistory(user, id);
+    return { data: history };
+  }
+
   @Get(':id/activation')
   async getActivation(
     @Param('id', new ParseUUIDPipe()) id: string,

@@ -13,6 +13,7 @@ describe('permissionsForRole', () => {
         'devices.bind',
         'devices.unbind',
         'devices.command',
+        'devices.location.read',
       ]),
     );
     expect(hasPermission(PlatformRole.MERCHANT_OWNER, 'devices.unbind')).toBe(
@@ -30,6 +31,9 @@ describe('permissionsForRole', () => {
     expect(hasPermission(PlatformRole.MERCHANT_STAFF, 'devices.unbind')).toBe(
       false,
     );
+    expect(
+      hasPermission(PlatformRole.MERCHANT_STAFF, 'devices.location.read'),
+    ).toBe(true);
     expect(
       hasPermission(PlatformRole.MERCHANT_STAFF, 'applications.decide'),
     ).toBe(true);

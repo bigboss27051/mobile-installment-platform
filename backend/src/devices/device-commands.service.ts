@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -9,11 +10,13 @@ import {
   DeviceAuditAction,
   DeviceCommandStatus,
   DeviceCommandType,
+  DeviceLocationSource,
   PlatformEnforcementState,
 } from '@prisma/client';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashDeviceAgentToken } from './device-agent-token';
+import { DeviceLocationService } from './device-location.service';
 
 const OPEN_STATUSES: DeviceCommandStatus[] = [
   DeviceCommandStatus.QUEUED,
@@ -38,7 +41,10 @@ export function desiredPresentationForCommand(
 
 @Injectable()
 export class DeviceCommandsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly locations: DeviceLocationService,
+  ) {}
 
   async enqueue(
     user: TenantContext,
@@ -101,6 +107,9 @@ export class DeviceCommandsService {
           reason: `${input.type}: ${reason}`,
         },
       });
+      if (desired === DesiredPresentation.NONE) {
+        await this.locations.clearForDevice(tx, device.id);
+      }
       return command;
     });
   }
@@ -124,17 +133,50 @@ export class DeviceCommandsService {
       connectivity?: string;
       policyVersion?: number;
       batteryPercent?: number;
+      location?: {
+        lat: number;
+        lng: number;
+        accuracyMeters?: number;
+        source: DeviceLocationSource;
+        capturedAt: string;
+      };
     },
   ) {
     const device = await this.requireAgentDevice(rawToken);
-    const now = new Date();
-    const updated = await this.prisma.device.update({
-      where: { id: device.id },
-      data: { lastHeartbeatAt: now },
-    });
     const state = await this.prisma.devicePolicyState.findUnique({
       where: { deviceId: device.id },
     });
+    const desired =
+      state?.desiredPresentation ?? DesiredPresentation.NONE;
+
+    if (input.location) {
+      if (!DeviceLocationService.allowsLocation(desired)) {
+        throw new BadRequestException('LOCATION_NOT_ALLOWED');
+      }
+    }
+
+    const now = new Date();
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.device.update({
+        where: { id: device.id },
+        data: { lastHeartbeatAt: now },
+      });
+      if (input.location) {
+        await this.locations.persistSample(tx, {
+          tenantId: device.tenantId,
+          deviceId: device.id,
+          location: {
+            lat: input.location.lat,
+            lng: input.location.lng,
+            accuracyMeters: input.location.accuracyMeters,
+            source: input.location.source,
+            capturedAt: new Date(input.location.capturedAt),
+          },
+        });
+      }
+      return row;
+    });
+
     return {
       deviceId: device.id,
       lastHeartbeatAt: (updated.lastHeartbeatAt ?? now).toISOString(),
@@ -142,6 +184,7 @@ export class DeviceCommandsService {
       connectivity: input.connectivity?.trim() || null,
       batteryPercent:
         typeof input.batteryPercent === 'number' ? input.batteryPercent : null,
+      locationAccepted: Boolean(input.location),
     };
   }
 

@@ -36,7 +36,14 @@ describe('DeviceRecoveryService', () => {
     $transaction: jest.fn(),
   };
 
-  const service = new DeviceRecoveryService(prisma as never);
+  const locations = {
+    clearForDevice: jest.fn(),
+  };
+
+  const service = new DeviceRecoveryService(
+    prisma as never,
+    locations as never,
+  );
   const user = {
     userId: 'user-1',
     tenantId: 'tenant-a',
@@ -134,6 +141,10 @@ describe('DeviceRecoveryService', () => {
           platformState: PlatformEnforcementState.NONE,
         }),
       }),
+    );
+    expect(locations.clearForDevice).toHaveBeenCalledWith(
+      expect.anything(),
+      'dev-1',
     );
   });
 

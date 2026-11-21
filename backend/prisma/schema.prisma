@@ -178,6 +178,14 @@ enum DeviceAuditAction {
   CHECK_IN
   COMMAND
   RECOVERY
+  LOCATION_READ
+}
+
+enum DeviceLocationSource {
+  NETWORK
+  GPS
+  FUSED
+  UNKNOWN
 }
 
 enum DeviceRecoveryType {
@@ -266,6 +274,7 @@ model Tenant {
   deviceCommands          DeviceCommand[]
   devicePolicyStates      DevicePolicyState[]
   deviceRecoveryRequests  DeviceRecoveryRequest[]
+  deviceLocationSamples   DeviceLocationSample[]
 
   @@map("tenants")
 }
@@ -785,25 +794,49 @@ model Device {
   platform             DevicePlatform
   status               DeviceLifecycleStatus @default(PENDING_ENROLL)
   hardwareFingerprint  String                @map("hardware_fingerprint")
-  agentTokenHash       String?               @unique @map("agent_token_hash")
-  lastHeartbeatAt      DateTime?             @map("last_heartbeat_at")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
-  tenant               Tenant                @relation(fields: [tenantId], references: [id])
-  imeiUnit             ImeiUnit              @relation(fields: [imeiUnitId], references: [id])
-  enrollmentSession    DeviceEnrollmentSession?
-  activation           DeviceActivation?
-  bindings             DeviceContractBinding[]
-  auditEvents          DeviceAuditEvent[]
-  commands             DeviceCommand[]
-  policyState          DevicePolicyState?
-  recoveryRequests     DeviceRecoveryRequest[]
+  agentTokenHash           String?               @unique @map("agent_token_hash")
+  lastHeartbeatAt          DateTime?             @map("last_heartbeat_at")
+  lastLocationLat          Decimal?              @map("last_location_lat") @db.Decimal(10, 7)
+  lastLocationLng          Decimal?              @map("last_location_lng") @db.Decimal(10, 7)
+  lastLocationAccuracyM    Int?                  @map("last_location_accuracy_m")
+  lastLocationSource       DeviceLocationSource? @map("last_location_source")
+  lastLocationAt           DateTime?             @map("last_location_at")
+  createdAt                DateTime              @default(now()) @map("created_at")
+  updatedAt                DateTime              @updatedAt @map("updated_at")
+  tenant                   Tenant                @relation(fields: [tenantId], references: [id])
+  imeiUnit                 ImeiUnit              @relation(fields: [imeiUnitId], references: [id])
+  enrollmentSession        DeviceEnrollmentSession?
+  activation               DeviceActivation?
+  bindings                 DeviceContractBinding[]
+  auditEvents              DeviceAuditEvent[]
+  commands                 DeviceCommand[]
+  policyState              DevicePolicyState?
+  recoveryRequests         DeviceRecoveryRequest[]
+  locationSamples          DeviceLocationSample[]
 
   @@unique([tenantId, hardwareFingerprint])
   @@unique([tenantId, imeiUnitId])
   @@index([tenantId, status])
   @@index([tenantId, lastHeartbeatAt])
   @@map("devices")
+}
+
+model DeviceLocationSample {
+  id              String               @id @default(uuid()) @db.Uuid
+  tenantId        String               @map("tenant_id") @db.Uuid
+  deviceId        String               @map("device_id") @db.Uuid
+  lat             Decimal              @db.Decimal(10, 7)
+  lng             Decimal              @db.Decimal(10, 7)
+  accuracyMeters  Int?                 @map("accuracy_meters")
+  source          DeviceLocationSource
+  capturedAt      DateTime             @map("captured_at")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  tenant          Tenant               @relation(fields: [tenantId], references: [id])
+  device          Device               @relation(fields: [deviceId], references: [id])
+
+  @@index([tenantId, deviceId, capturedAt])
+  @@index([capturedAt])
+  @@map("device_location_samples")
 }
 
 model DeviceRecoveryRequest {

@@ -6,6 +6,7 @@ import { DeviceCheckInService } from './device-check-in.service';
 import { DeviceCommandsService } from './device-commands.service';
 import { DeviceLifecycleController } from './device-lifecycle.controller';
 import { DeviceLifecycleService } from './device-lifecycle.service';
+import { DeviceLocationService } from './device-location.service';
 import { DeviceRecoveryService } from './device-recovery.service';
 import { EnrollmentController } from './enrollment.controller';
 import { EnrollmentService } from './enrollment.service';
@@ -21,6 +22,7 @@ import { MDM_PROVIDER } from './ports/mdm-provider.port';
   providers: [
     EnrollmentService,
     DeviceCheckInService,
+    DeviceLocationService,
     DeviceCommandsService,
     DeviceLifecycleService,
     DeviceRecoveryService,
