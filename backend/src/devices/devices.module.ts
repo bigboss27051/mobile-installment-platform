@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SandboxMdmAdapter } from './adapters/sandbox-mdm.adapter';
 import { DeviceAgentController } from './device-agent.controller';
@@ -10,12 +11,14 @@ import { DeviceLocationService } from './device-location.service';
 import { DeviceRecoveryService } from './device-recovery.service';
 import { EnrollmentController } from './enrollment.controller';
 import { EnrollmentService } from './enrollment.service';
+import { OverdueLockCronService } from './overdue-lock-cron.service';
+import { OverdueLockSystemActorService } from './overdue-lock-system-actor.service';
 import { OverdueLockOrchestrator } from './overdue-lock.orchestrator';
 import { PaymentUnlockOrchestrator } from './payment-unlock.orchestrator';
 import { MDM_PROVIDER } from './ports/mdm-provider.port';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, ScheduleModule.forRoot()],
   controllers: [
     EnrollmentController,
     DeviceAgentController,
@@ -30,6 +33,8 @@ import { MDM_PROVIDER } from './ports/mdm-provider.port';
     DeviceRecoveryService,
     PaymentUnlockOrchestrator,
     OverdueLockOrchestrator,
+    OverdueLockSystemActorService,
+    OverdueLockCronService,
     { provide: MDM_PROVIDER, useClass: SandboxMdmAdapter },
   ],
   exports: [MDM_PROVIDER, PaymentUnlockOrchestrator],

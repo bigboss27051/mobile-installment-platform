@@ -21,4 +21,6 @@ export const envValidationSchema = Joi.object({
   TLS_CERT_PATH: Joi.string().optional().allow(''),
   TLS_KEY_PATH: Joi.string().optional().allow(''),
   HTTPS_PORT: Joi.number().optional(),
+  /** Empty/unset = overdue evaluate cron disabled. Invalid cron fails boot. */
+  OVERDUE_EVALUATE_CRON: Joi.string().optional().allow(''),
 });

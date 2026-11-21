@@ -161,7 +161,7 @@ iOS unsupported type → `422 UNSUPPORTED_CAPABILITY` (no silent no-op success).
 
 **Response `200`:** `{ "data": { "evaluatedAt", "timezone": "Asia/Bangkok", "scannedBindings", "locked": [{ "deviceId", "contractId", "commandId", "reason" }], "skipped": [{ "deviceId", "contractId", "reason" }], "replay"?: true } }`
 
-Does not unlock (that remains payment-verified Phase 4a). No cron in this slice; staff-triggered only.
+Does not unlock (that remains payment-verified Phase 4a). Optional lab cron: set `OVERDUE_EVALUATE_CRON` (e.g. `0 * * * *`); unset disables. Cron uses per-tenant system actor + Postgres advisory lock (D-064); same `evaluateTenant` path as this endpoint.
 
 ### POST `/devices/agent/heartbeat` (device-agent)
 
