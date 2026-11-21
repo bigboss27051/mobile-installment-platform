@@ -1,4 +1,4 @@
-# Current Phase: **Phase 3b package suspend / RESTRICT (lab)**
+# Current Phase: **Phase 3c reboot recovery (lab)**
 
 **Previous:** R1f Merchant Web + Customer Android critical paths — **COMPLETE** on `develop`
 
@@ -30,9 +30,11 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 3b (lab):** Commands `START_PACKAGE_SUSPEND` / `STOP_PACKAGE_SUSPEND` → desired `RESTRICT` / `NONE`. DPC `0.1.4-lab` uses `setPackagesSuspended` (allowlist keeps dialer/messages/`com.mip.dpc`). Pad 6: poller `ACKED_SUCCESS` with `NO_PACKAGES_TO_SUSPEND:0` and honest `platform_state=NONE` (no non-system targets on this image). Plan: `docs/superpowers/plans/2026-11-21-phase3b-package-suspend.md`.
 
-**Checkpoint:** Phase 3a + FRP already on `develop` (clean tree at start of 3b). Phase 3b changes may still be local until committed.
+**Phase 3c (lab):** `GET /devices/agent/policy`; DPC `0.1.5-lab` `BootCompletedReceiver` + `PolicyRecoveryActivity` re-applies last authorized desired (`LOCK`→Mango Lock, `RESTRICT`→suspend, `NONE`→clear). Does not escalate. Lab: recovered `LOCK` launched `MangoLockActivity` from policy fetch (no physical reboot required for that path). Plan: `docs/superpowers/plans/2026-11-21-phase3c-reboot-recovery.md`.
 
-**Next:** reboot recovery (re-apply last authorized policy); optional lab with a third-party app installed to prove non-empty suspend; HTTPS agent poll; wipe/FRP re-prove only with approval. **Do not** start payment-to-unlock until command loop + re-enroll stay solid. **Do not** claim production Device Owner or financing lock.
+**Checkpoint:** Phase 3b already on `develop` (`b60c7b3`). Phase 3c pending commit.
+
+**Next:** commit Phase 3c; optional real reboot lab; third-party app for non-empty suspend; HTTPS agent poll. **Do not** start payment-to-unlock until command loop + re-enroll stay solid. **Do not** claim production Device Owner or financing lock.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

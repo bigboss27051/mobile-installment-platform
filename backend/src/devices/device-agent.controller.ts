@@ -37,6 +37,14 @@ export class DeviceAgentController {
     return { data };
   }
 
+  @Get('agent/policy')
+  async getPolicy(
+    @Headers('x-device-agent-token') agentToken: string | undefined,
+  ) {
+    const data = await this.commands.policyForAgent(agentToken ?? '');
+    return { data };
+  }
+
   @Get('agent/commands')
   async pollCommands(
     @Headers('x-device-agent-token') agentToken: string | undefined,

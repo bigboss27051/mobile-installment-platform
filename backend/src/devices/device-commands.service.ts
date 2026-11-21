@@ -105,6 +105,19 @@ export class DeviceCommandsService {
     });
   }
 
+  async policyForAgent(rawToken: string) {
+    const device = await this.requireAgentDevice(rawToken);
+    const state = await this.prisma.devicePolicyState.findUnique({
+      where: { deviceId: device.id },
+    });
+    return {
+      deviceId: device.id,
+      desiredPresentation: state?.desiredPresentation ?? DesiredPresentation.NONE,
+      platformState: state?.platformState ?? PlatformEnforcementState.NONE,
+      policyVersion: state?.policyVersion ?? 0,
+    };
+  }
+
   async pollForAgent(rawToken: string) {
     const device = await this.requireAgentDevice(rawToken);
     const now = new Date();

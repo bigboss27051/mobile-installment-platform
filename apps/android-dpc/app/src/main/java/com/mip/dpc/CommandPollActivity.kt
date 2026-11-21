@@ -89,6 +89,7 @@ class CommandPollActivity : Activity() {
                     platformState = "LOCK_TASK",
                     resultCode = "LOCK_TASK_ACTIVE",
                 )
+                PolicyCacheStore(this).save("LOCK", "LOCK_TASK", bumpVersion())
             }
             "STOP_LOCK_TASK" -> {
                 runOnUiThread {
@@ -105,6 +106,7 @@ class CommandPollActivity : Activity() {
                     platformState = "NONE",
                     resultCode = "LOCK_TASK_STOPPED",
                 )
+                PolicyCacheStore(this).save("NONE", "NONE", bumpVersion())
             }
             "START_PACKAGE_SUSPEND" -> {
                 val result = PackageSuspendHelper.suspendNonEssential(this, dpm, admin)
@@ -115,6 +117,9 @@ class CommandPollActivity : Activity() {
                     platformState = result.platformState,
                     resultCode = "${result.resultCode}:${result.affectedCount}",
                 )
+                if (result.ok) {
+                    PolicyCacheStore(this).save("RESTRICT", result.platformState, bumpVersion())
+                }
             }
             "STOP_PACKAGE_SUSPEND" -> {
                 val result = PackageSuspendHelper.unsuspendAll(this, dpm, admin)
@@ -125,6 +130,9 @@ class CommandPollActivity : Activity() {
                     platformState = result.platformState,
                     resultCode = "${result.resultCode}:${result.affectedCount}",
                 )
+                if (result.ok) {
+                    PolicyCacheStore(this).save("NONE", result.platformState, bumpVersion())
+                }
             }
             else -> {
                 CommandClient.ack(
@@ -136,6 +144,11 @@ class CommandPollActivity : Activity() {
                 )
             }
         }
+    }
+
+    private fun bumpVersion(): Int {
+        val store = PolicyCacheStore(this)
+        return store.load().policyVersion + 1
     }
 
     companion object {

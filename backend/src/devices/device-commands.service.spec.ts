@@ -28,6 +28,7 @@ describe('DeviceCommandsService', () => {
     },
     devicePolicyState: {
       upsert: jest.fn(),
+      findUnique: jest.fn(),
     },
     deviceAuditEvent: { create: jest.fn() },
     $transaction: jest.fn(),
@@ -143,6 +144,43 @@ describe('DeviceCommandsService', () => {
     await expect(service.pollForAgent('')).rejects.toBeInstanceOf(
       ForbiddenException,
     );
+  });
+
+  it('returns NONE policy when the device has no policy row', async () => {
+    const raw = 'dat_lab_token';
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      agentTokenHash: hashDeviceAgentToken(raw),
+    });
+    prisma.devicePolicyState.findUnique.mockResolvedValue(null);
+
+    const result = await service.policyForAgent(raw);
+    expect(result).toEqual({
+      deviceId: 'dev-1',
+      desiredPresentation: 'NONE',
+      platformState: 'NONE',
+      policyVersion: 0,
+    });
+  });
+
+  it('returns stored desired and platform policy for the agent', async () => {
+    const raw = 'dat_lab_token';
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      agentTokenHash: hashDeviceAgentToken(raw),
+    });
+    prisma.devicePolicyState.findUnique.mockResolvedValue({
+      desiredPresentation: 'LOCK',
+      platformState: 'LOCK_TASK',
+      policyVersion: 3,
+    });
+
+    const result = await service.policyForAgent(raw);
+    expect(result.desiredPresentation).toBe('LOCK');
+    expect(result.platformState).toBe('LOCK_TASK');
+    expect(result.policyVersion).toBe(3);
   });
 
   it('enqueues START_PACKAGE_SUSPEND with desired RESTRICT', async () => {
