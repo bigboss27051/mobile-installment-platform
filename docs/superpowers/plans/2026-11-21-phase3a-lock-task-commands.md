@@ -10,6 +10,8 @@
 
 **Out of scope this slice:** package suspend, payment-to-unlock, FCM push, reboot recovery hardening, iOS, production claims.
 
+**Related (do next / parallel):** FRP after wipe — `docs/superpowers/plans/2026-11-21-android-frp-after-wipe.md` (Pad 6 hit FRP post-reset; D-060 / `R2-P2-002`).
+
 ## File map
 
 | File | Responsibility |

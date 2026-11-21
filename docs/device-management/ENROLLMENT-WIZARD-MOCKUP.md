@@ -48,10 +48,22 @@ Consent checkbox placeholder: `[ ] Customer agreed to device management (wording
 
 ```text
 1. Phone must be new or factory reset (GMS).
-2. Connect shop Wi-Fi ON THE PHONE when asked. Do not scan Wi-Fi passwords from this app.
-3. On Welcome, tap 6 times → scan this QR.
-4. Accept “This device belongs to your organization”.
+2. If Google asks for a previous account (FRP), unlock that ON THE PHONE first.
+   Our app cannot skip FRP. Then use a NEW QR (old QR after wipe is invalid).
+3. Connect shop Wi-Fi ON THE PHONE when asked. Do not scan Wi-Fi passwords from this app.
+4. On Welcome, tap 6 times → scan this QR.
+5. Accept “This device belongs to your organization”.
 Do NOT turn off Play Protect.
+```
+
+### A2. FRP blocked (after wipe)
+
+```text
+FRP on phone — cannot enroll yet
+Google is asking for the previous account on this device.
+1. Customer/staff unlock FRP on the phone (same Google account as before).
+2. Then tap [Issue new QR].
+We cannot clear FRP from this screen.
 ```
 
 ### B. QR

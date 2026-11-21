@@ -13,4 +13,6 @@
 
 **Phase 3a lab (same day):** DPC `0.1.3-lab` + `device_commands`. With agent token + `adb reverse`, poller executed `START_LOCK_TASK` → command `ACKED_SUCCESS` / `LOCK_TASK_ACTIVE`, `device_policy_states.platform_state=LOCK_TASK`, `dumpsys` `mLockTaskModeState=LOCKED`, `MangoLockActivity` resumed. Used Lock Task Mode (not `lockNow()`).
 
-**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution.
+**FRP after wipe (same day):** Factory reset of the Pad 6 removed Device Owner and Setup Wizard presented **Factory Reset Protection** (previous Google account) before a new QR Device Owner path could run. Documented in [FRP-AND-REENROLL.md](../FRP-AND-REENROLL.md) and plan `docs/superpowers/plans/2026-11-21-android-frp-after-wipe.md`. Platform cannot clear FRP remotely; unlock is Google account / out-of-band, then a **new** enrollment QR.
+
+**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock.
