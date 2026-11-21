@@ -1,4 +1,4 @@
-# Current Phase: **Phase 3c reboot recovery (lab)**
+# Current Phase: **Phase 3d agent heartbeat + live dashboard (lab)**
 
 **Previous:** R1f Merchant Web + Customer Android critical paths — **COMPLETE** on `develop`
 
@@ -32,7 +32,11 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 3c (lab, reboot proven):** `GET /devices/agent/policy`; DPC `0.1.11-lab` boot recovery + **`LockHomeAlias` persistent HOME** while desired=`LOCK`. **Pad 6 cold reboot:** HOME Intent landed on `MangoLockActivity`, `mLockTaskModeState=LOCKED`. MIUI autostart/`BOOT_COMPLETED` alone is unreliable; preferred HOME is the shop-relevant path. Plan: `docs/superpowers/plans/2026-11-21-phase3c-reboot-recovery.md`.
 
-**Next:** HTTPS agent poll / third-party app for non-empty suspend; wipe/FRP re-prove only with approval. **Do not** start payment-to-unlock until command loop + re-enroll stay solid. **Do not** claim production Device Owner or financing lock.
+**Phase 3d (lab):** `POST /devices/agent/heartbeat` + `devices.last_heartbeat_at`; staff `GET /devices/:id` returns live `desiredPresentation` / `platformState` / `policyVersion` / `lastHeartbeatAt` (not hardcoded NONE); `GET /devices/:id/heartbeat` freshness (`410` if never). DPC `0.1.12-lab` posts heartbeat from command poller; `AgentApiBase` prefers HTTPS (lab cleartext allowed). Merchant Web device status panel after bind. Plan: `docs/superpowers/plans/2026-11-21-phase3d-agent-heartbeat.md`.
+
+**Lab suspend target:** module `:lab-target` (`com.mip.labtarget`) builds a non-system APK so RESTRICT can suspend a real package. Pad 6 sideload of a *new* package hit `INSTALL_FAILED_USER_RESTRICTED` (MIUI user confirm); DPC *update* install still works. Staff must confirm USB install on-device once, then re-run suspend.
+
+**Next:** confirm lab-target install on Pad → non-empty `PACKAGES_SUSPENDED`; HTTPS host for agent (not only adb reverse); wipe/FRP re-prove only with approval. **Do not** start payment-to-unlock until command loop + re-enroll stay solid. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

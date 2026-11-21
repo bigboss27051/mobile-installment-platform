@@ -10,6 +10,7 @@ import {
   showsAndroidQr,
   statusTone,
 } from './enroll-status';
+import { DeviceStatusPanel } from './device-status-panel';
 import { useI18n } from './i18n-context';
 import { Alert, Button, FormField, Input, Page, Section, Select } from './ui';
 
@@ -444,6 +445,8 @@ export function EnrollPage({
           </form>
         </Section>
       ) : null}
+
+      {deviceId ? <DeviceStatusPanel deviceId={deviceId} /> : null}
 
       {viewStatus === 'COMPLETED' ? (
         <Alert tone="success">{t('enroll.handoverReady')}</Alert>

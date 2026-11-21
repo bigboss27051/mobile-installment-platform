@@ -165,7 +165,7 @@ export class DeviceLifecycleService {
     const tenantId = this.requireTenant(ctx);
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, tenantId },
-      include: { enrollmentSession: true, imeiUnit: true },
+      include: { enrollmentSession: true, imeiUnit: true, policyState: true },
     });
     if (!device) {
       throw new NotFoundException('Device not found.');
@@ -178,10 +178,35 @@ export class DeviceLifecycleService {
       platform: device.platform,
       status: device.status,
       enrollmentStatus: device.enrollmentSession?.status ?? 'NOT_ENROLLED',
-      desiredPresentation: 'NONE' as const,
-      platformState: 'NONE' as const,
+      desiredPresentation:
+        device.policyState?.desiredPresentation ?? ('NONE' as const),
+      platformState: device.policyState?.platformState ?? ('NONE' as const),
+      policyVersion: device.policyState?.policyVersion ?? 0,
+      lastHeartbeatAt: device.lastHeartbeatAt?.toISOString() ?? null,
       outstandingBalance: null as string | null,
       maskedImei,
+    };
+  }
+
+  async getHeartbeat(ctx: TenantContext, deviceId: string) {
+    const tenantId = this.requireTenant(ctx);
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, tenantId },
+      include: { policyState: true },
+    });
+    if (!device) {
+      throw new NotFoundException('Device not found.');
+    }
+    if (!device.lastHeartbeatAt) {
+      throw new GoneException('HEARTBEAT_NEVER_SEEN');
+    }
+    const ageMs = Date.now() - device.lastHeartbeatAt.getTime();
+    return {
+      deviceId: device.id,
+      lastHeartbeatAt: device.lastHeartbeatAt.toISOString(),
+      policyVersion: device.policyState?.policyVersion ?? 0,
+      ageMs,
+      fresh: ageMs <= 5 * 60 * 1000,
     };
   }
 

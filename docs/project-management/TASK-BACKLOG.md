@@ -45,5 +45,7 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R2-P3-001 | Phase 3a Lock Task command loop: enqueue/poll/ack + DPC Lock Task Mode (lab) | P0 | Android/Backend | DONE (lab; not production) |
 | R2-P3-002 | Phase 3b package suspend (RESTRICT): START/STOP_PACKAGE_SUSPEND + DPC setPackagesSuspended | P0 | Android/Backend | DONE (lab; empty target SKU noted) |
 | R2-P3-003 | Phase 3c reboot recovery: agent policy GET + LockHomeAlias persistent HOME after reboot | P0 | Android/Backend | DONE (Pad 6 cold reboot → MangoLock HOME + LOCKED; MIUI note) |
+| R2-P3-004 | Phase 3d agent heartbeat + live staff dashboard policy fields | P0 | Android/Backend/Web | DONE (unit + Merchant Web panel; lab Pad heartbeat optional) |
+| R2-P3-005 | Lab suspend target APK (`com.mip.labtarget`) for non-empty RESTRICT | P1 | Android | IN_PROGRESS (module builds; Pad sideload blocked by MIUI USER_RESTRICTED until on-device confirm) |
 | R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | IN_PROGRESS (SOP+checklist+REENROLL API done; lab wipe/re-prove needs wipe approval) |
 | P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |

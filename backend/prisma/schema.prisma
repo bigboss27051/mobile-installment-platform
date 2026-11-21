@@ -786,6 +786,7 @@ model Device {
   status               DeviceLifecycleStatus @default(PENDING_ENROLL)
   hardwareFingerprint  String                @map("hardware_fingerprint")
   agentTokenHash       String?               @unique @map("agent_token_hash")
+  lastHeartbeatAt      DateTime?             @map("last_heartbeat_at")
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
   tenant               Tenant                @relation(fields: [tenantId], references: [id])
@@ -801,6 +802,7 @@ model Device {
   @@unique([tenantId, hardwareFingerprint])
   @@unique([tenantId, imeiUnitId])
   @@index([tenantId, status])
+  @@index([tenantId, lastHeartbeatAt])
   @@map("devices")
 }
 

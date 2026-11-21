@@ -150,9 +150,9 @@ Body: `{ "type", "presentation?": "REMINDER|RESTRICT|LOCK|UNLOCK", "level?", "re
 Creates `QUEUED` command; HTTP 201 ≠ executed.  
 iOS unsupported type → `422 UNSUPPORTED_CAPABILITY` (no silent no-op success).
 
-### POST `/devices/:id/heartbeat` (device-agent)
+### POST `/devices/agent/heartbeat` (device-agent)
 
-Device JWT. Body: connectivity, policy version, battery optional — **no** location tracking unless separately consented and specified (currently **not in scope**).
+Header `X-Device-Agent-Token` (`dat_…` from check-in). Body: `{ connectivity?, policyVersion?, batteryPercent? }` — **no** location. Updates `devices.last_heartbeat_at`. Staff see it on `GET /devices/:id` and `GET /devices/:id/heartbeat` (`410 HEARTBEAT_NEVER_SEEN` if never posted).
 
 ### POST `/devices/:id/command-acks` (device-agent)
 

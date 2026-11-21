@@ -78,15 +78,23 @@ describe('DeviceLifecycleService', () => {
       id: 'd1',
       platform: 'ANDROID',
       status: DeviceLifecycleStatus.ACTIVE,
+      lastHeartbeatAt: new Date('2026-11-21T12:00:00.000Z'),
       enrollmentSession: { status: EnrollmentSessionStatus.QR_GENERATED },
       imeiUnit: { imei: '359999999999999' },
+      policyState: {
+        desiredPresentation: 'LOCK',
+        platformState: 'LOCK_TASK',
+        policyVersion: 4,
+      },
     });
     const view = await service.getDashboard(tenantCtx, 'd1');
     expect(view).toEqual(
       expect.objectContaining({
         id: 'd1',
-        desiredPresentation: 'NONE',
-        platformState: 'NONE',
+        desiredPresentation: 'LOCK',
+        platformState: 'LOCK_TASK',
+        policyVersion: 4,
+        lastHeartbeatAt: '2026-11-21T12:00:00.000Z',
         enrollmentStatus: 'QR_GENERATED',
         outstandingBalance: null,
       }),
@@ -96,6 +104,28 @@ describe('DeviceLifecycleService', () => {
     prisma.device.findFirst.mockResolvedValueOnce(null);
     await expect(service.getDashboard(tenantCtx, 'other')).rejects.toBeInstanceOf(
       NotFoundException,
+    );
+  });
+
+  it('returns heartbeat freshness and 410 when never seen', async () => {
+    const recent = new Date(Date.now() - 30_000);
+    prisma.device.findFirst.mockResolvedValueOnce({
+      id: 'd1',
+      lastHeartbeatAt: recent,
+      policyState: { policyVersion: 3 },
+    });
+    const hb = await service.getHeartbeat(tenantCtx, 'd1');
+    expect(hb.lastHeartbeatAt).toBe(recent.toISOString());
+    expect(hb.policyVersion).toBe(3);
+    expect(hb.fresh).toBe(true);
+
+    prisma.device.findFirst.mockResolvedValueOnce({
+      id: 'd1',
+      lastHeartbeatAt: null,
+      policyState: null,
+    });
+    await expect(service.getHeartbeat(tenantCtx, 'd1')).rejects.toBeInstanceOf(
+      GoneException,
     );
   });
 

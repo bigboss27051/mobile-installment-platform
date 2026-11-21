@@ -54,6 +54,15 @@ export class DeviceLifecycleController {
     return { data: device };
   }
 
+  @Get(':id/heartbeat')
+  async getHeartbeat(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const heartbeat = await this.lifecycle.getHeartbeat(user, id);
+    return { data: heartbeat };
+  }
+
   @Get(':id/activation')
   async getActivation(
     @Param('id', new ParseUUIDPipe()) id: string,

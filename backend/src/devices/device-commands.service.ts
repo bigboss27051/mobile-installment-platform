@@ -118,6 +118,33 @@ export class DeviceCommandsService {
     };
   }
 
+  async heartbeatForAgent(
+    rawToken: string,
+    input: {
+      connectivity?: string;
+      policyVersion?: number;
+      batteryPercent?: number;
+    },
+  ) {
+    const device = await this.requireAgentDevice(rawToken);
+    const now = new Date();
+    const updated = await this.prisma.device.update({
+      where: { id: device.id },
+      data: { lastHeartbeatAt: now },
+    });
+    const state = await this.prisma.devicePolicyState.findUnique({
+      where: { deviceId: device.id },
+    });
+    return {
+      deviceId: device.id,
+      lastHeartbeatAt: (updated.lastHeartbeatAt ?? now).toISOString(),
+      policyVersion: input.policyVersion ?? state?.policyVersion ?? 0,
+      connectivity: input.connectivity?.trim() || null,
+      batteryPercent:
+        typeof input.batteryPercent === 'number' ? input.batteryPercent : null,
+    };
+  }
+
   async pollForAgent(rawToken: string) {
     const device = await this.requireAgentDevice(rawToken);
     const now = new Date();

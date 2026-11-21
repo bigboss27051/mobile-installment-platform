@@ -17,4 +17,6 @@
 
 **Phase 3c real reboot (evening):** DPC `0.1.10-lab`+; desired `LOCK`. Cold reboot → `MangoLockActivity` resumed as HOME (`Intent MAIN/HOME`), `mLockTaskModeState=LOCKED`. MIUI blocks bare `BOOT_COMPLETED` activity starts / autostart; reliable path is **persistent preferred HOME** via `LockHomeAlias` while LOCK is authorized (cleared on NONE / STOP_LOCK_TASK). MIUI background-start appops `10020–10023` help FGS recovery when used. Lab then cleared HOME back to `com.miui.home/.launcher.Launcher` with desired `NONE`.
 
+**Phase 3d / lab-target (evening):** DPC updated to `0.1.12-lab` (heartbeat from poller). Built `:lab-target` (`com.mip.labtarget`) for non-empty suspend. Fresh package sideload returned `INSTALL_FAILED_USER_RESTRICTED` on Pad 6 until on-device USB install is confirmed; not yet proven `PACKAGES_SUSPENDED` count > 0.
+
 **Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock.

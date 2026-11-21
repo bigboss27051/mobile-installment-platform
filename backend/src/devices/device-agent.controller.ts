@@ -11,6 +11,7 @@ import {
 import { DeviceCheckInService } from './device-check-in.service';
 import { DeviceCommandsService } from './device-commands.service';
 import { AckDeviceCommandDto } from './dto/ack-device-command.dto';
+import { AgentHeartbeatDto } from './dto/agent-heartbeat.dto';
 import { CheckInDeviceDto } from './dto/check-in-device.dto';
 
 @Controller('devices')
@@ -42,6 +43,15 @@ export class DeviceAgentController {
     @Headers('x-device-agent-token') agentToken: string | undefined,
   ) {
     const data = await this.commands.policyForAgent(agentToken ?? '');
+    return { data };
+  }
+
+  @Post('agent/heartbeat')
+  async heartbeat(
+    @Body() dto: AgentHeartbeatDto,
+    @Headers('x-device-agent-token') agentToken: string | undefined,
+  ) {
+    const data = await this.commands.heartbeatForAgent(agentToken ?? '', dto);
     return { data };
   }
 

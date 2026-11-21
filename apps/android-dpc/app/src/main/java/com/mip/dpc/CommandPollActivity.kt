@@ -51,9 +51,12 @@ class CommandPollActivity : Activity() {
             return
         }
         thread {
+            val policyVersion = PolicyCacheStore(this).load().policyVersion
+            val hbOk = HeartbeatClient.post(session, policyVersion = policyVersion)
             val commands = CommandClient.poll(session)
             runOnUiThread {
-                statusView.text = "Polled ${commands.size} command(s)."
+                statusView.text =
+                    "HB=${if (hbOk) "ok" else "fail"}; polled ${commands.size} command(s)."
             }
             for (command in commands) {
                 handle(session, command)

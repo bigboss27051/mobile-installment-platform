@@ -18,6 +18,7 @@ describe('DeviceCommandsService', () => {
   const prisma = {
     device: {
       findFirst: jest.fn(),
+      update: jest.fn(),
     },
     deviceCommand: {
       create: jest.fn(),
@@ -209,6 +210,45 @@ describe('DeviceCommandsService', () => {
         }),
       }),
     );
+  });
+
+  it('records heartbeat for a valid agent token', async () => {
+    const raw = 'dat_lab_token';
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      agentTokenHash: hashDeviceAgentToken(raw),
+    });
+    const stamped = new Date('2026-11-21T12:00:00.000Z');
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-1',
+      lastHeartbeatAt: stamped,
+    });
+    prisma.devicePolicyState.findUnique.mockResolvedValue({
+      policyVersion: 2,
+    });
+
+    const result = await service.heartbeatForAgent(raw, {
+      policyVersion: 2,
+      connectivity: 'WIFI',
+      batteryPercent: 80,
+    });
+
+    expect(result.deviceId).toBe('dev-1');
+    expect(result.lastHeartbeatAt).toBe(stamped.toISOString());
+    expect(prisma.device.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'dev-1' },
+        data: expect.objectContaining({ lastHeartbeatAt: expect.any(Date) }),
+      }),
+    );
+  });
+
+  it('rejects heartbeat with an invalid agent token', async () => {
+    prisma.device.findFirst.mockResolvedValue(null);
+    await expect(
+      service.heartbeatForAgent('dat_bad', { connectivity: 'WIFI' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('acks START_LOCK_TASK success and sets platform LOCK_TASK', async () => {

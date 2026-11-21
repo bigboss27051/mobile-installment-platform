@@ -68,10 +68,17 @@ object PackageSuspendHelper {
 
     fun candidatePackages(pm: PackageManager): Array<String> {
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+        return filterSuspendCandidates(
+            apps.map { it.packageName to ((it.flags and ApplicationInfo.FLAG_SYSTEM) != 0) },
+        )
+    }
+
+    /** Pure filter used by unit tests and [candidatePackages]. */
+    fun filterSuspendCandidates(apps: List<Pair<String, Boolean>>): Array<String> {
         return apps
             .asSequence()
-            .filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
-            .map { it.packageName }
+            .filter { (_, isSystem) -> !isSystem }
+            .map { (name, _) -> name }
             .filter { it !in ALWAYS_ALLOW }
             .distinct()
             .toList()

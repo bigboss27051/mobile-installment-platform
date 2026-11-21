@@ -55,7 +55,7 @@ object CheckInHttp {
             val data = JSONObject(response).optJSONObject("data")
             val agentToken = data?.optString("agentToken")?.takeIf { it.isNotBlank() }
             val deviceId = data?.optString("deviceId")?.takeIf { it.isNotBlank() }
-            val apiBase = checkInUrl.substringBefore("/devices/enroll/check-in").trimEnd('/')
+            val apiBase = AgentApiBase.fromCheckInUrl(checkInUrl)
             Parsed(agentToken, deviceId, apiBase)
         } catch (_: Exception) {
             null
