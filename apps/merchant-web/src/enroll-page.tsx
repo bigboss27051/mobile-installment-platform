@@ -4,6 +4,7 @@ import {
   canIssueEnrollmentQr,
   canStaffActivate,
   canStaffCancel,
+  isAndroidFrpChecklistComplete,
   isTerminalEnrollment,
   resolveEnrollmentStatus,
   showsAndroidQr,
@@ -49,6 +50,11 @@ export function EnrollPage({
     configurator: false,
     erased: false,
   });
+  const [frpChecklist, setFrpChecklist] = useState({
+    frpClearedOrNotApplicable: false,
+    newQrAfterWipe: false,
+    noRemoteFrpBypass: false,
+  });
   const [session, setSession] = useState<EnrollmentSession | null>(null);
   const [qr, setQr] = useState<EnrollmentQr | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -80,8 +86,13 @@ export function EnrollPage({
   const qrText = qr ? JSON.stringify(qr.payload) : '';
   const qrHasWifiSecret = /WIFI_PASSWORD/i.test(qrText);
   const iosReady = Object.values(iosPrereq).every(Boolean);
+  const frpReady = isAndroidFrpChecklistComplete(frpChecklist);
 
   async function loadQr(sessionId: string) {
+    if (!isAndroidFrpChecklistComplete(frpChecklist)) {
+      onError(t('enroll.needFrp'));
+      return;
+    }
     try {
       const material = await apiRequest<EnrollmentQr>(
         `/api/v1/devices/enrollment-sessions/${sessionId}/qr`,
@@ -102,6 +113,10 @@ export function EnrollPage({
     }
     if (!consent) {
       onError(t('enroll.needConsent'));
+      return;
+    }
+    if (platform === 'ANDROID' && !frpReady) {
+      onError(t('enroll.needFrp'));
       return;
     }
     if (platform === 'IOS' && !iosReady) {
@@ -181,8 +196,47 @@ export function EnrollPage({
               <li>{t('enroll.androidStep2')}</li>
               <li>{t('enroll.androidStep3')}</li>
               <li>{t('enroll.androidStep4')}</li>
+              <li>{t('enroll.androidStep5')}</li>
             </ol>
             <Alert tone="error">{t('enroll.playProtect')}</Alert>
+            <Alert tone="info">{t('enroll.frpBlocked')}</Alert>
+            <p>{t('enroll.frpTitle')}</p>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                data-testid="enroll-frp-cleared"
+                checked={frpChecklist.frpClearedOrNotApplicable}
+                onChange={(e) =>
+                  setFrpChecklist({
+                    ...frpChecklist,
+                    frpClearedOrNotApplicable: e.target.checked,
+                  })
+                }
+              />
+              {t('enroll.frpCleared')}
+            </label>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                data-testid="enroll-frp-new-qr"
+                checked={frpChecklist.newQrAfterWipe}
+                onChange={(e) =>
+                  setFrpChecklist({ ...frpChecklist, newQrAfterWipe: e.target.checked })
+                }
+              />
+              {t('enroll.frpNewQr')}
+            </label>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                data-testid="enroll-frp-no-bypass"
+                checked={frpChecklist.noRemoteFrpBypass}
+                onChange={(e) =>
+                  setFrpChecklist({ ...frpChecklist, noRemoteFrpBypass: e.target.checked })
+                }
+              />
+              {t('enroll.frpNoBypass')}
+            </label>
           </>
         ) : (
           <>
@@ -269,6 +323,7 @@ export function EnrollPage({
             <label className="check-row">
               <input
                 type="checkbox"
+                data-testid="enroll-consent"
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
               />
@@ -300,7 +355,12 @@ export function EnrollPage({
               {t('enroll.refresh')}
             </Button>
             {canIssueEnrollmentQr(session.platform, viewStatus, qr !== null) ? (
-              <Button type="button" variant="primary" onClick={() => void loadQr(session.id)}>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={session.platform === 'ANDROID' && !frpReady}
+                onClick={() => void loadQr(session.id)}
+              >
                 {t('enroll.issueQr')}
               </Button>
             ) : null}

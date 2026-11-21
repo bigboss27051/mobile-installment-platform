@@ -3,6 +3,7 @@ import {
   canIssueEnrollmentQr,
   canStaffActivate,
   canStaffCancel,
+  isAndroidFrpChecklistComplete,
   isTerminalEnrollment,
   resolveEnrollmentStatus,
   showsAndroidQr,
@@ -58,5 +59,29 @@ describe('enrollment wizard status', () => {
     expect(
       resolveEnrollmentStatus({ status: 'QR_GENERATED', expiresAt: past }),
     ).toBe('EXPIRED');
+  });
+
+  it('requires every Android FRP checklist item before issuing QR', () => {
+    expect(
+      isAndroidFrpChecklistComplete({
+        frpClearedOrNotApplicable: false,
+        newQrAfterWipe: false,
+        noRemoteFrpBypass: false,
+      }),
+    ).toBe(false);
+    expect(
+      isAndroidFrpChecklistComplete({
+        frpClearedOrNotApplicable: true,
+        newQrAfterWipe: true,
+        noRemoteFrpBypass: false,
+      }),
+    ).toBe(false);
+    expect(
+      isAndroidFrpChecklistComplete({
+        frpClearedOrNotApplicable: true,
+        newQrAfterWipe: true,
+        noRemoteFrpBypass: true,
+      }),
+    ).toBe(true);
   });
 });

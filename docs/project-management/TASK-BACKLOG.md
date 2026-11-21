@@ -43,5 +43,5 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R2-P1-001 | Shared enrollment foundation: `QR_GENERATED` + `NOT_STARTED`, policy presentation fields, dashboard GET | P0 | Backend/Web | DONE |
 | R2-P2-001 | Custom DPC QR extras (replace Cloud DPC stub) + Device Owner check-in on authorized lab phone | P0 | Android/Backend | DONE (Pad 6 DO + check-in; ask before wipe) |
 | R2-P3-001 | Phase 3a Lock Task command loop: enqueue/poll/ack + DPC Lock Task Mode (lab) | P0 | Android/Backend | IN_PROGRESS (Pad 6 START_LOCK_TASK ack LOCKED; not production) |
-| R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | IN_PROGRESS (D-060 + FRP plan; Pad 6 hit FRP; UI/REENROLL pending) |
+| R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | IN_PROGRESS (SOP+D-060+Merchant FRP checklist done; REENROLL/lab re-prove pending) |
 | P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |

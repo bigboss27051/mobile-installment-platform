@@ -22,7 +22,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **FRP gate (lab, 2026-11-21):** Pad 6 factory reset removed Device Owner and Setup Wizard showed **Factory Reset Protection** before a new QR could run. SOP + D-060: [FRP-AND-REENROLL.md](../device-management/FRP-AND-REENROLL.md), plan `docs/superpowers/plans/2026-11-21-android-frp-after-wipe.md`, backlog `R2-P2-002`. Unlock FRP with the previous Google account (out of band) → **new** QR; platform does not clear FRP remotely. Prefer FRP-free lab stock next wipe.
 
-**Next:** finish FRP Merchant Web checklist / REENROLL copy (`R2-P2-002`); then harden agent auth/tunnel; package suspend (RESTRICT); reboot recovery; payment-to-unlock later. **Do not** claim production Device Owner or financing lock.
+**Merchant Web FRP checklist (done):** Android enroll page requires three staff attestations before create session / Issue QR (FRP cleared or N/A, new QR after wipe, no remote bypass) — D-060 copy; cannot clear FRP from UI.
+
+**Next:** REENROLL path + lab re-prove after FRP unlocked on Pad 6 (`R2-P2-002` remainder); then harden agent auth/tunnel; package suspend (RESTRICT); reboot recovery; payment-to-unlock later. **Do not** claim production Device Owner or financing lock.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

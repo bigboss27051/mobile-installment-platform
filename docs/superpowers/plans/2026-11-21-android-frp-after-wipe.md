@@ -51,7 +51,7 @@
 
 ### Task 4: Product / UI copy (thin)
 
-- [ ] Merchant enroll page: after “device wiped”, show FRP checklist before rotating QR
+- [x] Merchant enroll page: after “device wiped”, show FRP checklist before rotating QR
 - [x] Enrollment wizard mockup: FRP screen branch (cannot continue to QR until unlocked)
 - [x] No API that claims `CLEAR_FRP` / wipe-from-arrears (rule in D-060 / SOP)
 
