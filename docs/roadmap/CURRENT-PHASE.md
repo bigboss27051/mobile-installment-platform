@@ -38,7 +38,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Merchant Web:** after bind, device status panel + **command enqueue** UI (reason required; queued ≠ executed).
 
-**Next:** HTTPS agent host (not only adb reverse); last-command result on dashboard; wipe/FRP re-prove only with approval. **Do not** start payment-to-unlock until command loop + re-enroll stay solid. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**E2E (Pad 6, same evening):** `START_PACKAGE_SUSPEND` → `ACKED_SUCCESS` / `PACKAGES_SUSPENDED:3`; `STOP_PACKAGE_SUSPEND` → `PACKAGES_UNSUSPENDED:3`. HTTPS lab notes: [AGENT-HTTPS-LAB.md](../device-management/AGENT-HTTPS-LAB.md).
+
+**Next:** point enrollment/agent at a real HTTPS host; wipe/FRP re-prove only with approval. **Do not** start payment-to-unlock until HTTPS agent + re-enroll stay solid. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 
