@@ -64,8 +64,8 @@
 ### Task 6: Lab re-prove (ask before wipe)
 
 - [x] Wipe **approved** (2026-11-21) and started: DPC `LabWipeActivity` → `wipeDevice` (`0.1.15-lab`); device dropped `adb`
-- [ ] Confirm Setup Wizard / **FRP** on Pad (operator); unlock prior Google account out of band (no platform bypass)
-- [ ] After FRP cleared: full QR → DO → check-in → agent token; update lab-evidence; still no production claim
+- [x] Post-wipe: Setup completed; **Accounts: 0**; **FRP UI not shown** this run; DO/`com.mip.dpc` gone; `REENROLL` APPROVED
+- [ ] Reinstall DPC (needs MIUI Install via USB allow) → `dpm set-device-owner` or full QR path → check-in; still no production claim
 
 
 ## Acceptance
