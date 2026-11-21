@@ -161,6 +161,46 @@ export class DeviceLifecycleService {
     );
   }
 
+  async listDevices(
+    ctx: TenantContext,
+    filters: { platform?: string; status?: string },
+  ) {
+    const tenantId = this.requireTenant(ctx);
+    const rows = await this.prisma.device.findMany({
+      where: {
+        tenantId,
+        ...(filters.platform ? { platform: filters.platform as never } : {}),
+        ...(filters.status
+          ? { status: filters.status as DeviceLifecycleStatus }
+          : {}),
+      },
+      include: {
+        imeiUnit: true,
+        policyState: true,
+        enrollmentSession: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+    });
+    return rows.map((device) => {
+      const imei = device.imeiUnit?.imei;
+      const maskedImei =
+        imei && imei.length > 4 ? `••••${imei.slice(-4)}` : null;
+      return {
+        id: device.id,
+        platform: device.platform,
+        status: device.status,
+        enrollmentStatus: device.enrollmentSession?.status ?? 'NOT_ENROLLED',
+        desiredPresentation:
+          device.policyState?.desiredPresentation ?? ('NONE' as const),
+        platformState: device.policyState?.platformState ?? ('NONE' as const),
+        policyVersion: device.policyState?.policyVersion ?? 0,
+        lastHeartbeatAt: device.lastHeartbeatAt?.toISOString() ?? null,
+        maskedImei,
+      };
+    });
+  }
+
   async getDashboard(ctx: TenantContext, deviceId: string) {
     const tenantId = this.requireTenant(ctx);
     const device = await this.prisma.device.findFirst({

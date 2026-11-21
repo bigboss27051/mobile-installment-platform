@@ -22,6 +22,7 @@ describe('DeviceLifecycleService', () => {
     contract: { findFirst: jest.fn() },
     device: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       create: jest.fn(),
     },
     deviceActivation: {
@@ -106,6 +107,33 @@ describe('DeviceLifecycleService', () => {
     prisma.device.findFirst.mockResolvedValueOnce(null);
     await expect(service.getDashboard(tenantCtx, 'other')).rejects.toBeInstanceOf(
       NotFoundException,
+    );
+  });
+
+  it('lists only tenant devices with masked IMEI', async () => {
+    prisma.device.findMany.mockResolvedValueOnce([
+      {
+        id: 'd1',
+        platform: 'ANDROID',
+        status: DeviceLifecycleStatus.ACTIVE,
+        lastHeartbeatAt: new Date('2026-11-21T13:00:00.000Z'),
+        imeiUnit: { imei: '359999999999999' },
+        policyState: {
+          desiredPresentation: 'NONE',
+          platformState: 'NONE',
+          policyVersion: 1,
+        },
+        enrollmentSession: { status: EnrollmentSessionStatus.COMPLETED },
+      },
+    ]);
+    const rows = await service.listDevices(tenantCtx, {});
+    expect(rows).toHaveLength(1);
+    expect(rows[0].maskedImei).toBe('••••9999');
+    expect(JSON.stringify(rows)).not.toContain('359999999999999');
+    expect(prisma.device.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ tenantId: 'tenant-a' }),
+      }),
     );
   });
 

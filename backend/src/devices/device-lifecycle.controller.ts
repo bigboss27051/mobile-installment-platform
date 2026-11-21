@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -43,6 +44,19 @@ export class DeviceLifecycleController {
     }
     const activation = await this.lifecycle.activate(user, dto, idempotencyKey);
     return { data: activation };
+  }
+
+  @Get()
+  async listDevices(
+    @CurrentUser() user: TenantContext,
+    @Query('platform') platform?: string,
+    @Query('status') status?: string,
+  ) {
+    const devices = await this.lifecycle.listDevices(user, {
+      platform,
+      status,
+    });
+    return { data: devices };
   }
 
   @Get(':id')

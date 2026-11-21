@@ -6,6 +6,7 @@ import {
   login,
   setAccessToken,
 } from './api';
+import { DevicesPage } from './devices-page';
 import { EnrollPage } from './enroll-page';
 import { KycPanel } from './kyc-panel';
 import { LanguageSwitch, useI18n } from './i18n-context';
@@ -29,6 +30,7 @@ type AppPage =
   | 'customers'
   | 'applications'
   | 'contracts'
+  | 'devices'
   | 'enroll';
 
 type TenantMe = {
@@ -43,6 +45,7 @@ const PAGES: AppPage[] = [
   'customers',
   'applications',
   'contracts',
+  'devices',
   'enroll',
 ];
 
@@ -151,6 +154,7 @@ export function App() {
           <ApplicationsPage onError={setError} apiError={apiError} />
         ) : null}
         {page === 'contracts' ? <ContractsPage onError={setError} apiError={apiError} /> : null}
+        {page === 'devices' ? <DevicesPage onError={setError} apiError={apiError} /> : null}
         {page === 'enroll' ? <EnrollPage onError={setError} apiError={apiError} /> : null}
       </div>
     </div>

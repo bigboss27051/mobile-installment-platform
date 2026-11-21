@@ -1,4 +1,4 @@
-# Current Phase: **Phase 3d agent heartbeat + live dashboard (lab)**
+# Current Phase: **Phase 3e staff device list (lab)**
 
 **Previous:** R1f Merchant Web + Customer Android critical paths — **COMPLETE** on `develop`
 
@@ -39,6 +39,8 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 **Merchant Web:** after bind, device status panel + **command enqueue** UI (reason required; queued ≠ executed).
 
 **E2E (Pad 6, same evening):** `START_PACKAGE_SUSPEND` → `ACKED_SUCCESS` / `PACKAGES_SUSPENDED:3`; `STOP_PACKAGE_SUSPEND` → `PACKAGES_UNSUSPENDED:3`. HTTPS lab notes: [AGENT-HTTPS-LAB.md](../device-management/AGENT-HTTPS-LAB.md).
+
+**Phase 3e:** Staff `GET /api/v1/devices` (tenant-scoped, masked IMEI, policy + heartbeat). Merchant Web **Devices** page opens status + command panel.
 
 **Next:** point enrollment/agent at a real HTTPS host; wipe/FRP re-prove only with approval. **Do not** start payment-to-unlock until HTTPS agent + re-enroll stay solid. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
