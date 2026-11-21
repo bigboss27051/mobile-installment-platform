@@ -82,6 +82,7 @@ class CommandPollActivity : Activity() {
                             .putExtra(MangoLockActivity.EXTRA_REASON, command.reason),
                     )
                 }
+                LockHomeHelper.enableLockHome(this, dpm, admin)
                 CommandClient.ack(
                     session,
                     command.id,
@@ -92,6 +93,7 @@ class CommandPollActivity : Activity() {
                 PolicyCacheStore(this).save("LOCK", "LOCK_TASK", bumpVersion())
             }
             "STOP_LOCK_TASK" -> {
+                LockHomeHelper.clearLockHome(this, dpm, admin)
                 runOnUiThread {
                     try {
                         stopLockTask()

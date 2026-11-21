@@ -4,6 +4,8 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 
 /**
  * Re-applies the last **authorized** desired presentation after reboot.
@@ -16,23 +18,29 @@ object PolicyRecovery {
         if (!dpm.isDeviceOwnerApp(context.packageName)) {
             return "NOT_DEVICE_OWNER"
         }
+        val app = context.applicationContext
         return when (desiredPresentation) {
             "LOCK" -> {
-                PackageSuspendHelper.unsuspendAll(context, dpm, admin)
-                dpm.setLockTaskPackages(admin, arrayOf(context.packageName))
-                context.startActivity(
-                    Intent(context, MangoLockActivity::class.java)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        .putExtra(MangoLockActivity.EXTRA_REASON, "reboot-recovery"),
-                )
+                PackageSuspendHelper.unsuspendAll(app, dpm, admin)
+                dpm.setLockTaskPackages(admin, arrayOf(app.packageName))
+                LockHomeHelper.enableLockHome(app, dpm, admin)
+                Handler(Looper.getMainLooper()).post {
+                    app.startActivity(
+                        Intent(app, MangoLockActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            .putExtra(MangoLockActivity.EXTRA_REASON, "reboot-recovery"),
+                    )
+                }
                 "REAPPLIED_LOCK"
             }
             "RESTRICT" -> {
-                val result = PackageSuspendHelper.suspendNonEssential(context, dpm, admin)
+                LockHomeHelper.clearLockHome(app, dpm, admin)
+                val result = PackageSuspendHelper.suspendNonEssential(app, dpm, admin)
                 if (result.ok) "REAPPLIED_RESTRICT" else result.resultCode
             }
             else -> {
-                PackageSuspendHelper.unsuspendAll(context, dpm, admin)
+                LockHomeHelper.clearLockHome(app, dpm, admin)
+                PackageSuspendHelper.unsuspendAll(app, dpm, admin)
                 "REAPPLIED_NONE"
             }
         }

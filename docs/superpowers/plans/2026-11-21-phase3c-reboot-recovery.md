@@ -27,4 +27,5 @@
 
 ### Task 3: Docs
 
-- [x] CURRENT-PHASE, backlog `R2-P3-003`, lab note (recovery activity path verified; physical reboot optional)
+- [x] CURRENT-PHASE, backlog `R2-P3-003`, lab note
+- [x] Pad 6 **cold reboot** → `MangoLockActivity` as HOME + `mLockTaskModeState=LOCKED` via persistent preferred HOME / `LockHomeAlias` (MIUI autostart alone insufficient)

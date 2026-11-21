@@ -15,4 +15,6 @@
 
 **FRP after wipe (same day):** Factory reset of the Pad 6 removed Device Owner and Setup Wizard presented **Factory Reset Protection** (previous Google account) before a new QR Device Owner path could run. Documented in [FRP-AND-REENROLL.md](../FRP-AND-REENROLL.md) and plan `docs/superpowers/plans/2026-11-21-android-frp-after-wipe.md`. Platform cannot clear FRP remotely; unlock is Google account / out-of-band, then a **new** enrollment QR.
 
+**Phase 3c real reboot (evening):** DPC `0.1.10-lab`+; desired `LOCK`. Cold reboot → `MangoLockActivity` resumed as HOME (`Intent MAIN/HOME`), `mLockTaskModeState=LOCKED`. MIUI blocks bare `BOOT_COMPLETED` activity starts / autostart; reliable path is **persistent preferred HOME** via `LockHomeAlias` while LOCK is authorized (cleared on NONE / STOP_LOCK_TASK). MIUI background-start appops `10020–10023` help FGS recovery when used. Lab then cleared HOME back to `com.miui.home/.launcher.Launcher` with desired `NONE`.
+
 **Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock.
