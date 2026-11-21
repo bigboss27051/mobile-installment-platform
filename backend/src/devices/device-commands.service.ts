@@ -20,6 +20,22 @@ const OPEN_STATUSES: DeviceCommandStatus[] = [
   DeviceCommandStatus.SENT,
 ];
 
+export function desiredPresentationForCommand(
+  type: DeviceCommandType,
+): DesiredPresentation {
+  switch (type) {
+    case DeviceCommandType.START_LOCK_TASK:
+      return DesiredPresentation.LOCK;
+    case DeviceCommandType.START_PACKAGE_SUSPEND:
+      return DesiredPresentation.RESTRICT;
+    case DeviceCommandType.STOP_LOCK_TASK:
+    case DeviceCommandType.STOP_PACKAGE_SUSPEND:
+      return DesiredPresentation.NONE;
+    default:
+      return DesiredPresentation.NONE;
+  }
+}
+
 @Injectable()
 export class DeviceCommandsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,10 +63,7 @@ export class DeviceCommandsService {
       throw new ConflictException('COMMAND_PLATFORM_UNSUPPORTED');
     }
 
-    const desired =
-      input.type === DeviceCommandType.START_LOCK_TASK
-        ? DesiredPresentation.LOCK
-        : DesiredPresentation.NONE;
+    const desired = desiredPresentationForCommand(input.type);
 
     return this.prisma.$transaction(async (tx) => {
       const command = await tx.deviceCommand.create({
@@ -157,10 +170,7 @@ export class DeviceCommandsService {
       return command;
     }
 
-    const desired =
-      command.type === DeviceCommandType.START_LOCK_TASK
-        ? DesiredPresentation.LOCK
-        : DesiredPresentation.NONE;
+    const desired = desiredPresentationForCommand(command.type);
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.deviceCommand.update({

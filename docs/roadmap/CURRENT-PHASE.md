@@ -1,4 +1,4 @@
-# Current Phase: **Phase 3a Lock Task command loop (lab)**
+# Current Phase: **Phase 3b package suspend / RESTRICT (lab)**
 
 **Previous:** R1f Merchant Web + Customer Android critical paths — **COMPLETE** on `develop`
 
@@ -28,7 +28,11 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Lab note:** Pad 6 still shows Device Owner via adb — full wipe→FRP→QR re-prove needs **explicit wipe approval** (Task 6).
 
-**Next:** lab re-prove after approved wipe + FRP unlock (`R2-P2-002` Task 6); then harden agent auth/tunnel; package suspend (RESTRICT); reboot recovery; payment-to-unlock later. **Do not** claim production Device Owner or financing lock.
+**Phase 3b (lab):** Commands `START_PACKAGE_SUSPEND` / `STOP_PACKAGE_SUSPEND` → desired `RESTRICT` / `NONE`. DPC `0.1.4-lab` uses `setPackagesSuspended` (allowlist keeps dialer/messages/`com.mip.dpc`). Pad 6: poller `ACKED_SUCCESS` with `NO_PACKAGES_TO_SUSPEND:0` and honest `platform_state=NONE` (no non-system targets on this image). Plan: `docs/superpowers/plans/2026-11-21-phase3b-package-suspend.md`.
+
+**Checkpoint:** Phase 3a + FRP already on `develop` (clean tree at start of 3b). Phase 3b changes may still be local until committed.
+
+**Next:** reboot recovery (re-apply last authorized policy); optional lab with a third-party app installed to prove non-empty suspend; HTTPS agent poll; wipe/FRP re-prove only with approval. **Do not** start payment-to-unlock until command loop + re-enroll stay solid. **Do not** claim production Device Owner or financing lock.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

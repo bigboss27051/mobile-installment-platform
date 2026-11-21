@@ -8,7 +8,10 @@ import {
   DeviceCommandType,
   PlatformEnforcementState,
 } from '@prisma/client';
-import { DeviceCommandsService } from './device-commands.service';
+import {
+  desiredPresentationForCommand,
+  DeviceCommandsService,
+} from './device-commands.service';
 import { hashDeviceAgentToken } from './device-agent-token';
 
 describe('DeviceCommandsService', () => {
@@ -41,6 +44,21 @@ describe('DeviceCommandsService', () => {
     jest.resetAllMocks();
     prisma.$transaction.mockImplementation(
       async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
+    );
+  });
+
+  it('maps command types to desired presentations', () => {
+    expect(desiredPresentationForCommand(DeviceCommandType.START_LOCK_TASK)).toBe(
+      'LOCK',
+    );
+    expect(
+      desiredPresentationForCommand(DeviceCommandType.START_PACKAGE_SUSPEND),
+    ).toBe('RESTRICT');
+    expect(
+      desiredPresentationForCommand(DeviceCommandType.STOP_PACKAGE_SUSPEND),
+    ).toBe('NONE');
+    expect(desiredPresentationForCommand(DeviceCommandType.STOP_LOCK_TASK)).toBe(
+      'NONE',
     );
   });
 
@@ -124,6 +142,34 @@ describe('DeviceCommandsService', () => {
   it('rejects a missing agent token', async () => {
     await expect(service.pollForAgent('')).rejects.toBeInstanceOf(
       ForbiddenException,
+    );
+  });
+
+  it('enqueues START_PACKAGE_SUSPEND with desired RESTRICT', async () => {
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+    });
+    prisma.deviceCommand.create.mockResolvedValue({
+      id: 'cmd-suspend',
+      type: DeviceCommandType.START_PACKAGE_SUSPEND,
+      status: DeviceCommandStatus.QUEUED,
+    });
+    prisma.devicePolicyState.upsert.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+
+    await service.enqueue(user, 'dev-1', {
+      type: DeviceCommandType.START_PACKAGE_SUSPEND,
+      reason: 'lab restrict',
+    });
+
+    expect(prisma.devicePolicyState.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          desiredPresentation: 'RESTRICT',
+        }),
+      }),
     );
   });
 

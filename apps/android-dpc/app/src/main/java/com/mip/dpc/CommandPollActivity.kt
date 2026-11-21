@@ -2,6 +2,7 @@ package com.mip.dpc
 
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -62,6 +63,7 @@ class CommandPollActivity : Activity() {
 
     private fun handle(session: AgentTokenStore.AgentSession, command: PendingCommand) {
         val dpm = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        val admin = ComponentName(this, MipDeviceAdminReceiver::class.java)
         when (command.type) {
             "START_LOCK_TASK" -> {
                 if (!dpm.isDeviceOwnerApp(packageName)) {
@@ -102,6 +104,26 @@ class CommandPollActivity : Activity() {
                     status = "ACKED_SUCCESS",
                     platformState = "NONE",
                     resultCode = "LOCK_TASK_STOPPED",
+                )
+            }
+            "START_PACKAGE_SUSPEND" -> {
+                val result = PackageSuspendHelper.suspendNonEssential(this, dpm, admin)
+                CommandClient.ack(
+                    session,
+                    command.id,
+                    status = if (result.ok) "ACKED_SUCCESS" else "UNSUPPORTED",
+                    platformState = result.platformState,
+                    resultCode = "${result.resultCode}:${result.affectedCount}",
+                )
+            }
+            "STOP_PACKAGE_SUSPEND" -> {
+                val result = PackageSuspendHelper.unsuspendAll(this, dpm, admin)
+                CommandClient.ack(
+                    session,
+                    command.id,
+                    status = if (result.ok) "ACKED_SUCCESS" else "UNSUPPORTED",
+                    platformState = result.platformState,
+                    resultCode = "${result.resultCode}:${result.affectedCount}",
                 )
             }
             else -> {
