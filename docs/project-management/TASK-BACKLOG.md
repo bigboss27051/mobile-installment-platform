@@ -54,5 +54,6 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R2-P4-001 | Phase 4a payment-to-unlock: verified sandbox webhook → outstanding 0 → STOP_LOCK/SUSPEND enqueue (idempotent) | P0 | Backend | DONE (unit + Pad E2E 2026-11-21) |
 | R2-P4-002 | Phase 4b overdue auto-lock: staff evaluate-overdue → START_LOCK_TASK (lab jump-to-LOCK) | P0 | Backend | DONE (unit + Pad E2E 2026-11-21) |
 | R2-P4-003 | Phase 4c overdue evaluate cron: env-gated + system actor + PG advisory lock + boot/tick logs (D-064) | P1 | Backend | DONE (unit) |
+| R2-P4-004 | Phase 4d overdue ladder: 1/3/7d → REMINDER/RESTRICT/LOCK (escalate-only; D-065) | P0 | Backend | DONE (unit) |
 | R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | DONE (lab: wipe → reinstall DO via dpm + check-in + HTTPS HB + lock loop; full Welcome QR optional; REENROLL clears device_id) |
 | P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |

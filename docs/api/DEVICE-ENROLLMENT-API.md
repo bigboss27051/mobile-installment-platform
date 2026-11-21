@@ -157,11 +157,11 @@ iOS unsupported type → `422 UNSUPPORTED_CAPABILITY` (no silent no-op success).
 **Headers:** `Idempotency-Key` required — replay with the same key returns the stored summary without re-enqueueing.
 **Body:** `{ "reason": "non-empty staff reason" }`
 
-**Purpose:** Tenant batch overdue evaluation (Phase 4b lab). Scans ACTIVE Android device–contract bindings; for each contract with at least one unpaid schedule item whose `dueDate` is strictly before today (Asia/Bangkok), enqueues `START_LOCK_TASK` and sets desired presentation to `LOCK`. Skips bindings that are not overdue, already `LOCK`, have an open `START_LOCK_TASK`, or already received an overdue lock for the Bangkok calendar day.
+**Purpose:** Tenant batch overdue evaluation (Phase 4d ladder, D-065). Scans ACTIVE Android bindings; computes overdue days from the oldest unpaid past-due installment (Asia/Bangkok): ≥1 → `REMINDER` (desired+audit only, `commandId` null), ≥3 → `RESTRICT` + `START_PACKAGE_SUSPEND`, ≥7 → `LOCK` + `START_LOCK_TASK`. Escalate-only (skips if already at/above target). Day marker `overdue-ladder:{ymd}:{target}`.
 
-**Response `200`:** `{ "data": { "evaluatedAt", "timezone": "Asia/Bangkok", "scannedBindings", "locked": [{ "deviceId", "contractId", "commandId", "reason" }], "skipped": [{ "deviceId", "contractId", "reason" }], "replay"?: true } }`
+**Response `200`:** `{ "data": { "evaluatedAt", "timezone": "Asia/Bangkok", "scannedBindings", "locked": [{ "deviceId", "contractId", "commandId", "target", "reason" }], "skipped": [{ "deviceId", "contractId", "reason" }], "replay"?: true } }`
 
-Does not unlock (that remains payment-verified Phase 4a). Optional lab cron: set `OVERDUE_EVALUATE_CRON` (e.g. `0 * * * *`); unset disables. Cron uses per-tenant system actor + Postgres advisory lock (D-064); same `evaluateTenant` path as this endpoint.
+Does not unlock (Phase 4a / staff STOP). Optional cron: `OVERDUE_EVALUATE_CRON` (D-064) uses the same `evaluateTenant` path.
 
 ### POST `/devices/agent/heartbeat` (device-agent)
 

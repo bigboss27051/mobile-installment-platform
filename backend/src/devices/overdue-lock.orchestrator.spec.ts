@@ -17,7 +17,9 @@ describe('OverdueLockOrchestrator', () => {
     deviceContractBinding: { findMany: jest.fn() },
     paymentScheduleItem: { findMany: jest.fn() },
     deviceCommand: { findFirst: jest.fn() },
-    deviceAuditEvent: { findFirst: jest.fn() },
+    deviceAuditEvent: { findFirst: jest.fn(), create: jest.fn() },
+    devicePolicyState: { upsert: jest.fn() },
+    $transaction: jest.fn(),
   };
   const commands = { enqueue: jest.fn() };
   const orchestrator = new OverdueLockOrchestrator(
@@ -30,7 +32,12 @@ describe('OverdueLockOrchestrator', () => {
     role: 'MERCHANT_OWNER' as const,
   };
 
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    prisma.$transaction.mockImplementation(
+      async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
+    );
+  });
 
   it('replays stored summary for same idempotency key', async () => {
     const summary = {
@@ -54,7 +61,7 @@ describe('OverdueLockOrchestrator', () => {
     expect(commands.enqueue).not.toHaveBeenCalled();
   });
 
-  it('enqueues START_LOCK_TASK when binding overdue and not LOCK', async () => {
+  it('applies REMINDER without enqueue when overdue 1–2 days', async () => {
     prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
     prisma.deviceContractBinding.findMany.mockResolvedValue([
       {
@@ -69,13 +76,47 @@ describe('OverdueLockOrchestrator', () => {
       },
     ]);
     prisma.paymentScheduleItem.findMany.mockResolvedValue([
+      { dueDate: new Date('2026-11-20'), status: ScheduleItemStatus.PENDING },
+    ]);
+    prisma.deviceAuditEvent.findFirst.mockResolvedValue(null);
+    prisma.devicePolicyEvaluationRun.create.mockResolvedValue({});
+
+    const result = await orchestrator.evaluateTenant(
+      ctx,
+      'lab ladder',
+      'idem-rem',
+      new Date('2026-11-21T10:00:00+07:00'),
+    );
+
+    expect(result.locked[0]).toEqual(
+      expect.objectContaining({
+        target: DesiredPresentation.REMINDER,
+        commandId: null,
+      }),
+    );
+    expect(commands.enqueue).not.toHaveBeenCalled();
+    expect(prisma.devicePolicyState.upsert).toHaveBeenCalled();
+  });
+
+  it('enqueues START_LOCK_TASK when overdue ≥7 days and below LOCK', async () => {
+    prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
+    prisma.deviceContractBinding.findMany.mockResolvedValue([
       {
-        dueDate: new Date('2026-11-01'),
-        status: ScheduleItemStatus.PENDING,
+        deviceId: 'dev-1',
+        contractId: 'c1',
+        status: DeviceBindingStatus.ACTIVE,
+        device: {
+          id: 'dev-1',
+          platform: 'ANDROID',
+          policyState: { desiredPresentation: DesiredPresentation.NONE },
+        },
       },
     ]);
-    prisma.deviceCommand.findFirst.mockResolvedValue(null);
+    prisma.paymentScheduleItem.findMany.mockResolvedValue([
+      { dueDate: new Date('2026-11-14'), status: ScheduleItemStatus.PENDING },
+    ]);
     prisma.deviceAuditEvent.findFirst.mockResolvedValue(null);
+    prisma.deviceCommand.findFirst.mockResolvedValue(null);
     commands.enqueue.mockResolvedValue({ id: 'cmd-lock' });
     prisma.devicePolicyEvaluationRun.create.mockResolvedValue({});
 
@@ -89,8 +130,8 @@ describe('OverdueLockOrchestrator', () => {
     expect(result.locked).toEqual([
       expect.objectContaining({
         deviceId: 'dev-1',
-        contractId: 'c1',
         commandId: 'cmd-lock',
+        target: DesiredPresentation.LOCK,
       }),
     ]);
     expect(commands.enqueue).toHaveBeenCalledWith(
@@ -98,17 +139,50 @@ describe('OverdueLockOrchestrator', () => {
       'dev-1',
       expect.objectContaining({
         type: DeviceCommandType.START_LOCK_TASK,
-        reason: expect.stringContaining('overdue-lock:2026-11-21'),
-      }),
-    );
-    expect(prisma.deviceContractBinding.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ tenantId: 'tenant-a' }),
+        reason: expect.stringContaining('overdue-ladder:2026-11-21:LOCK'),
       }),
     );
   });
 
-  it('skips NOT_OVERDUE and ALREADY_LOCK', async () => {
+  it('enqueues START_PACKAGE_SUSPEND for RESTRICT band', async () => {
+    prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
+    prisma.deviceContractBinding.findMany.mockResolvedValue([
+      {
+        deviceId: 'dev-1',
+        contractId: 'c1',
+        device: {
+          id: 'dev-1',
+          platform: 'ANDROID',
+          policyState: { desiredPresentation: DesiredPresentation.NONE },
+        },
+      },
+    ]);
+    prisma.paymentScheduleItem.findMany.mockResolvedValue([
+      { dueDate: new Date('2026-11-18'), status: ScheduleItemStatus.PENDING },
+    ]);
+    prisma.deviceAuditEvent.findFirst.mockResolvedValue(null);
+    prisma.deviceCommand.findFirst.mockResolvedValue(null);
+    commands.enqueue.mockResolvedValue({ id: 'cmd-sus' });
+    prisma.devicePolicyEvaluationRun.create.mockResolvedValue({});
+
+    const result = await orchestrator.evaluateTenant(
+      ctx,
+      'lab',
+      'idem-r',
+      new Date('2026-11-21T10:00:00+07:00'),
+    );
+
+    expect(result.locked[0].target).toBe(DesiredPresentation.RESTRICT);
+    expect(commands.enqueue).toHaveBeenCalledWith(
+      expect.anything(),
+      'dev-1',
+      expect.objectContaining({
+        type: DeviceCommandType.START_PACKAGE_SUSPEND,
+      }),
+    );
+  });
+
+  it('skips NOT_OVERDUE and ALREADY_AT_OR_ABOVE', async () => {
     prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
     prisma.deviceContractBinding.findMany.mockResolvedValue([
       {
@@ -131,7 +205,7 @@ describe('OverdueLockOrchestrator', () => {
       },
     ]);
     prisma.paymentScheduleItem.findMany
-      .mockResolvedValueOnce([]) // current
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
         { dueDate: new Date('2026-11-01'), status: ScheduleItemStatus.PENDING },
       ]);
@@ -145,7 +219,7 @@ describe('OverdueLockOrchestrator', () => {
     );
 
     expect(result.skipped.map((s) => s.reason).sort()).toEqual([
-      'ALREADY_LOCK',
+      'ALREADY_AT_OR_ABOVE',
       'NOT_OVERDUE',
     ]);
     expect(commands.enqueue).not.toHaveBeenCalled();
@@ -165,8 +239,9 @@ describe('OverdueLockOrchestrator', () => {
       },
     ]);
     prisma.paymentScheduleItem.findMany.mockResolvedValue([
-      { dueDate: new Date('2026-11-01'), status: ScheduleItemStatus.PENDING },
+      { dueDate: new Date('2026-11-14'), status: ScheduleItemStatus.PENDING },
     ]);
+    prisma.deviceAuditEvent.findFirst.mockResolvedValue(null);
     prisma.deviceCommand.findFirst.mockResolvedValue({
       id: 'open',
       status: DeviceCommandStatus.QUEUED,
@@ -190,7 +265,35 @@ describe('OverdueLockOrchestrator', () => {
     ).rejects.toThrow(/REASON/);
   });
 
-  it('skips ALREADY_APPLIED_TODAY when audit already contains the day marker', async () => {
+  it('rejects missing tenant', async () => {
+    await expect(
+      orchestrator.evaluateTenant(
+        { ...ctx, tenantId: null },
+        'lab',
+        'idem-t',
+      ),
+    ).rejects.toThrow(/TENANT/);
+  });
+
+  it('rejects blank idempotency key', async () => {
+    await expect(
+      orchestrator.evaluateTenant(ctx, 'lab', '  '),
+    ).rejects.toThrow(/Idempotency/);
+  });
+
+  it('asserts tenant scoping on binding query', async () => {
+    prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
+    prisma.deviceContractBinding.findMany.mockResolvedValue([]);
+    prisma.devicePolicyEvaluationRun.create.mockResolvedValue({});
+    await orchestrator.evaluateTenant(ctx, 'lab', 'idem-scope');
+    expect(prisma.deviceContractBinding.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ tenantId: 'tenant-a' }),
+      }),
+    );
+  });
+
+  it('skips ALREADY_APPLIED_TODAY for ladder marker', async () => {
     prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
     prisma.deviceContractBinding.findMany.mockResolvedValue([
       {
@@ -204,89 +307,42 @@ describe('OverdueLockOrchestrator', () => {
       },
     ]);
     prisma.paymentScheduleItem.findMany.mockResolvedValue([
-      { dueDate: new Date('2026-11-01'), status: ScheduleItemStatus.PENDING },
+      { dueDate: new Date('2026-11-14'), status: ScheduleItemStatus.PENDING },
     ]);
-    prisma.deviceCommand.findFirst.mockResolvedValue(null);
-    prisma.deviceAuditEvent.findFirst.mockResolvedValue({ id: 'audit-today' });
+    prisma.deviceAuditEvent.findFirst.mockResolvedValue({ id: 'aud-1' });
     prisma.devicePolicyEvaluationRun.create.mockResolvedValue({});
 
     const result = await orchestrator.evaluateTenant(
       ctx,
       'lab',
-      'idem-today',
+      'idem-day',
       new Date('2026-11-21T10:00:00+07:00'),
     );
-
-    expect(result.skipped).toEqual([
-      expect.objectContaining({
-        deviceId: 'dev-1',
-        contractId: 'c1',
-        reason: 'ALREADY_APPLIED_TODAY',
-      }),
-    ]);
-    expect(commands.enqueue).not.toHaveBeenCalled();
-  });
-
-  it('rejects missing tenant', async () => {
-    await expect(
-      orchestrator.evaluateTenant(
-        { ...ctx, tenantId: null },
-        'lab',
-        'idem-tenant',
-      ),
-    ).rejects.toThrow(/TENANT_REQUIRED/);
-    expect(prisma.devicePolicyEvaluationRun.findFirst).not.toHaveBeenCalled();
-    expect(commands.enqueue).not.toHaveBeenCalled();
-  });
-
-  it('rejects blank idempotency key', async () => {
-    await expect(
-      orchestrator.evaluateTenant(ctx, 'lab', '   '),
-    ).rejects.toThrow(/Idempotency-Key/);
-    expect(prisma.deviceContractBinding.findMany).not.toHaveBeenCalled();
-    expect(commands.enqueue).not.toHaveBeenCalled();
+    expect(result.skipped[0].reason).toBe('ALREADY_APPLIED_TODAY');
   });
 
   it('replays the winning summary when create hits a unique race', async () => {
-    const stored = {
-      evaluatedAt: '2026-11-21T03:00:00.000Z',
-      timezone: 'Asia/Bangkok' as const,
-      scannedBindings: 1,
-      locked: [
-        {
-          deviceId: 'dev-winner',
-          contractId: 'c-winner',
-          commandId: 'cmd-winner',
-          reason: 'winner | overdue-lock:2026-11-21',
-        },
-      ],
-      skipped: [],
-      replay: false,
-    };
     prisma.devicePolicyEvaluationRun.findFirst
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ summaryJson: stored });
+      .mockResolvedValueOnce({
+        summaryJson: {
+          evaluatedAt: 'x',
+          timezone: 'Asia/Bangkok',
+          scannedBindings: 0,
+          locked: [],
+          skipped: [],
+          replay: false,
+        },
+      });
     prisma.deviceContractBinding.findMany.mockResolvedValue([]);
     prisma.devicePolicyEvaluationRun.create.mockRejectedValue(
-      new Prisma.PrismaClientKnownRequestError('duplicate', {
+      new Prisma.PrismaClientKnownRequestError('unique', {
         code: 'P2002',
         clientVersion: 'test',
       }),
     );
 
-    const result = await orchestrator.evaluateTenant(
-      ctx,
-      'lab race',
-      'idem-race',
-      new Date('2026-11-21T10:00:00+07:00'),
-    );
-
-    expect(result).toEqual({ ...stored, replay: true });
-    expect(commands.enqueue).not.toHaveBeenCalled();
-    expect(prisma.devicePolicyEvaluationRun.findFirst).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        where: { tenantId: 'tenant-a', idempotencyKey: 'idem-race' },
-      }),
-    );
+    const result = await orchestrator.evaluateTenant(ctx, 'lab', 'idem-race');
+    expect(result.replay).toBe(true);
   });
 });

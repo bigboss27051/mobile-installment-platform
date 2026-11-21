@@ -52,9 +52,11 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 4b (lab done + Pad E2E):** Staff `POST /api/v1/devices/policy/evaluate-overdue` (`devices.command`, `Idempotency-Key`, non-empty `reason`) runs tenant-scoped `OverdueLockOrchestrator`: ACTIVE Android bindings with unpaid schedule `dueDate` before Bangkok today → desired `LOCK` + enqueue `START_LOCK_TASK` (jump-to-LOCK; no REMINDER/RESTRICT ladder in this slice). D-063. **Pad 6 E2E:** backdated unpaid due → evaluate → `START_LOCK_TASK` acked / `mLockTaskModeState=LOCKED`; lab then cleared with staff `STOP_LOCK_TASK` → `NONE`. Plan: [2026-11-21-phase4b-overdue-auto-lock.md](../superpowers/plans/2026-11-21-phase4b-overdue-auto-lock.md).
 
-**Phase 4c (lab software):** Env-gated cron `OVERDUE_EVALUATE_CRON` (D-064): unset=disabled (logged); invalid expr fails boot; tick uses per-tenant system actor + Postgres advisory single-flight + structured logs; calls same `evaluateTenant`. Spec: [2026-11-21-phase4c-overdue-evaluate-cron-design.md](../superpowers/specs/2026-11-21-phase4c-overdue-evaluate-cron-design.md). Ladder / merchant thresholds / external alerting still deferred.
+**Phase 4c (lab software):** Env-gated cron `OVERDUE_EVALUATE_CRON` (D-064): unset=disabled (logged); invalid expr fails boot; tick uses per-tenant system actor + Postgres advisory single-flight + structured logs; calls same `evaluateTenant`. Spec: [2026-11-21-phase4c-overdue-evaluate-cron-design.md](../superpowers/specs/2026-11-21-phase4c-overdue-evaluate-cron-design.md).
 
-**Next:** Optional LAN HTTPS / Welcome QR; REMINDER→RESTRICT ladder later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Phase 4d (lab software):** Fixed overdue ladder D-065 — days from oldest unpaid past-due: ≥1 `REMINDER` (desired+audit only), ≥3 `RESTRICT`+suspend command, ≥7 `LOCK`+lock-task; escalate-only. Staff evaluate + cron share path. Spec: [2026-11-21-phase4d-overdue-ladder-design.md](../superpowers/specs/2026-11-21-phase4d-overdue-ladder-design.md). Merchant thresholds / human approval / REMINDER DPC / external alerting deferred.
+
+**Next:** Optional LAN HTTPS / Welcome QR; merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

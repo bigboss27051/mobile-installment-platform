@@ -6,9 +6,11 @@ import {
 } from '@nestjs/common';
 import {
   DesiredPresentation,
+  DeviceAuditAction,
   DeviceBindingStatus,
   DeviceCommandStatus,
   DeviceCommandType,
+  PlatformEnforcementState,
   Prisma,
   ScheduleItemStatus,
 } from '@prisma/client';
@@ -16,8 +18,10 @@ import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceCommandsService } from './device-commands.service';
 import {
-  isScheduleOverdue,
-  overdueLockMarker,
+  desiredRank,
+  overdueDaysFromSchedule,
+  overdueLadderMarker,
+  targetFromOverdueDays,
 } from './overdue-lock-policy';
 
 export type EvaluateOverdueSummary = {
@@ -27,7 +31,8 @@ export type EvaluateOverdueSummary = {
   locked: Array<{
     deviceId: string;
     contractId: string;
-    commandId: string;
+    commandId: string | null;
+    target: DesiredPresentation;
     reason: string;
   }>;
   skipped: Array<{
@@ -70,7 +75,6 @@ export class OverdueLockOrchestrator {
       };
     }
 
-    const marker = overdueLockMarker(now);
     const bindings = await this.prisma.deviceContractBinding.findMany({
       where: {
         tenantId,
@@ -96,38 +100,26 @@ export class OverdueLockOrchestrator {
         select: { dueDate: true, status: true },
       });
 
-      if (!isScheduleOverdue(items, now)) {
+      const days = overdueDaysFromSchedule(items, now);
+      const target = targetFromOverdueDays(days);
+      if (!target) {
         skipped.push({ deviceId, contractId, reason: 'NOT_OVERDUE' });
         continue;
       }
 
-      const desired =
+      const current =
         binding.device.policyState?.desiredPresentation ??
         DesiredPresentation.NONE;
-      if (desired === DesiredPresentation.LOCK) {
-        skipped.push({ deviceId, contractId, reason: 'ALREADY_LOCK' });
-        continue;
-      }
-
-      const openStart = await this.prisma.deviceCommand.findFirst({
-        where: {
-          tenantId,
-          deviceId,
-          type: DeviceCommandType.START_LOCK_TASK,
-          status: {
-            in: [DeviceCommandStatus.QUEUED, DeviceCommandStatus.SENT],
-          },
-        },
-      });
-      if (openStart) {
+      if (desiredRank(current) >= desiredRank(target)) {
         skipped.push({
           deviceId,
           contractId,
-          reason: 'OPEN_START_LOCK_TASK',
+          reason: 'ALREADY_AT_OR_ABOVE',
         });
         continue;
       }
 
+      const marker = overdueLadderMarker(target, now);
       const dayApplied = await this.prisma.deviceAuditEvent.findFirst({
         where: {
           tenantId,
@@ -145,14 +137,55 @@ export class OverdueLockOrchestrator {
       }
 
       const commandReason = `${reason} | ${marker}`;
+
+      if (target === DesiredPresentation.REMINDER) {
+        await this.applyReminderOnly(ctx, deviceId, commandReason);
+        locked.push({
+          deviceId,
+          contractId,
+          commandId: null,
+          target,
+          reason: commandReason,
+        });
+        continue;
+      }
+
+      const commandType =
+        target === DesiredPresentation.LOCK
+          ? DeviceCommandType.START_LOCK_TASK
+          : DeviceCommandType.START_PACKAGE_SUSPEND;
+
+      const open = await this.prisma.deviceCommand.findFirst({
+        where: {
+          tenantId,
+          deviceId,
+          type: commandType,
+          status: {
+            in: [DeviceCommandStatus.QUEUED, DeviceCommandStatus.SENT],
+          },
+        },
+      });
+      if (open) {
+        skipped.push({
+          deviceId,
+          contractId,
+          reason:
+            target === DesiredPresentation.LOCK
+              ? 'OPEN_START_LOCK_TASK'
+              : 'OPEN_START_PACKAGE_SUSPEND',
+        });
+        continue;
+      }
+
       const command = await this.commands.enqueue(ctx, deviceId, {
-        type: DeviceCommandType.START_LOCK_TASK,
+        type: commandType,
         reason: commandReason,
       });
       locked.push({
         deviceId,
         contractId,
         commandId: command.id,
+        target,
         reason: commandReason,
       });
     }
@@ -192,9 +225,42 @@ export class OverdueLockOrchestrator {
     }
 
     this.logger.log(
-      `overdue evaluate tenant=${tenantId} scanned=${bindings.length} locked=${locked.length}`,
+      `overdue evaluate tenant=${tenantId} scanned=${bindings.length} applied=${locked.length}`,
     );
     return summary;
+  }
+
+  private async applyReminderOnly(
+    ctx: TenantContext,
+    deviceId: string,
+    reason: string,
+  ) {
+    const tenantId = ctx.tenantId!;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.devicePolicyState.upsert({
+        where: { deviceId },
+        create: {
+          tenantId,
+          deviceId,
+          desiredPresentation: DesiredPresentation.REMINDER,
+          platformState: PlatformEnforcementState.NONE,
+          policyVersion: 1,
+        },
+        update: {
+          desiredPresentation: DesiredPresentation.REMINDER,
+          policyVersion: { increment: 1 },
+        },
+      });
+      await tx.deviceAuditEvent.create({
+        data: {
+          tenantId,
+          deviceId,
+          actorUserId: ctx.userId,
+          action: DeviceAuditAction.COMMAND,
+          reason: `REMINDER: ${reason}`,
+        },
+      });
+    });
   }
 
   private isUniqueConstraintViolation(error: unknown): boolean {
