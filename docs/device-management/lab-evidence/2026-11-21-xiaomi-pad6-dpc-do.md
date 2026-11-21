@@ -21,4 +21,6 @@
 
 **Phase 3b non-empty suspend (evening, `0.1.13-lab`):** Root cause of empty suspend was Android 11+ package visibility (DPC could not see user apps). Fix: `QUERY_ALL_PACKAGES` + `MATCH_ALL`. PolicyRecovery desired=`RESTRICT` on Pad 6 set `suspended=true` for `cn.wps.xiaomi.abroad.lite` and `com.miui.mediaeditor`; then cleared with desired=`NONE`. **E2E command loop:** poller acked `START_PACKAGE_SUSPEND` → `ACKED_SUCCESS` / `PACKAGES_SUSPENDED:3` with WPS `suspended=true`.
 
+**Phase 3f HTTPS agent (evening):** DPC `0.1.14-lab` + Nest `HTTPS_PORT=3443` with lab CA pin. Pad poller `apiBase=https://127.0.0.1:3443/api/v1` + `adb reverse tcp:3443` updated `last_heartbeat_at` (TLS). Direct LAN HTTPS from Pad not proven (Wi‑Fi subnet mismatch).
+
 **Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock.

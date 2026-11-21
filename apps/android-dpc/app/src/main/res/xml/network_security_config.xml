@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!--
+      Lab: cleartext for adb reverse; also trust pinned MIP Lab CA so HTTPS://<LAN-IP>:3443 works
+      without installing a user certificate. Remove @raw/mip_lab_ca for production builds.
+    -->
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
+            <certificates src="@raw/mip_lab_ca" />
         </trust-anchors>
     </base-config>
 </network-security-config>

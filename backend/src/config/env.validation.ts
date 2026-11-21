@@ -18,4 +18,7 @@ export const envValidationSchema = Joi.object({
   JWT_REFRESH_TTL: Joi.string().default('7d'),
   CUSTOMER_OTP_SANDBOX_CODE: Joi.string().default('123456'),
   MERCHANT_WEB_ORIGIN: Joi.string().default('http://localhost:5173'),
+  TLS_CERT_PATH: Joi.string().optional().allow(''),
+  TLS_KEY_PATH: Joi.string().optional().allow(''),
+  HTTPS_PORT: Joi.number().optional(),
 });

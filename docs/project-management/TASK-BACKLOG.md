@@ -49,5 +49,6 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R2-P3-005 | Non-empty RESTRICT: QUERY_ALL_PACKAGES + lab proof on Pad 6 | P0 | Android | DONE (WPS/mediaeditor suspended=true; lab-target optional) |
 | R2-P3-006 | Merchant Web device command enqueue (reason + devices.command) | P1 | Frontend | DONE (panel after bind; unit tests) |
 | R2-P3-007 | Staff GET /devices list + Merchant Web Devices page | P1 | Backend/Web | DONE (tenant isolation + masked IMEI) |
-| R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | IN_PROGRESS (SOP+checklist+REENROLL API done; lab wipe/re-prove needs wipe approval) |
+| R2-P3-008 | Lab HTTPS agent host (TLS listen + pinned lab CA + Pad heartbeat) | P0 | Backend/Android | DONE (adb-reverse HTTPS proven; LAN same-subnet optional) |
+| R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | BLOCKED on wipe approval (SOP+checklist+REENROLL API done) |
 | P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |

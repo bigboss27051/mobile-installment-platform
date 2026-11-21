@@ -23,4 +23,7 @@ docs/device-management/lab-evidence/**/*.json
 docs/device-management/lab-evidence/**/*.p8
 docs/device-management/lab-evidence/**/*.pem
 docs/device-management/lab-evidence/**/*.key
+# Lab HTTPS private keys (public CA may be pinned in DPC res/raw)
+/lab-certs/**
+!/lab-certs/README.md
 
