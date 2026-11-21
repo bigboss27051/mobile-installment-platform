@@ -48,9 +48,11 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Wipe/FRP → re-enroll (lab):** DO restored via sideload + `dpm set-device-owner` (Welcome QR optional).
 
-**Phase 4a (lab done + Pad E2E):** `PaymentUnlockOrchestrator` after **verified** sandbox webhook SUCCEEDED: if contract outstanding = 0 and ACTIVE Android binding with desired LOCK/RESTRICT → enqueue `STOP_*` with reason `payment-unlock pay:{txId}` (idempotent via audit marker). Payment success never fails if unlock throws. **Pad 6 E2E:** activate+bind → LOCK → sandbox pay outstanding `10600.00` → all installments PAID → `STOP_LOCK_TASK` acked → `mLockTaskModeState=NONE`. Activate after check-in reuses existing device (D-062). Plan: [2026-11-21-phase4-payment-to-unlock.md](../superpowers/plans/2026-11-21-phase4-payment-to-unlock.md). No auto-lock from overdue yet; iOS out of scope.
+**Phase 4a (lab done + Pad E2E):** `PaymentUnlockOrchestrator` after **verified** sandbox webhook SUCCEEDED: if contract outstanding = 0 and ACTIVE Android binding with desired LOCK/RESTRICT → enqueue `STOP_*` with reason `payment-unlock pay:{txId}` (idempotent via audit marker). Payment success never fails if unlock throws. **Pad 6 E2E:** activate+bind → LOCK → sandbox pay outstanding `10600.00` → all installments PAID → `STOP_LOCK_TASK` acked → `mLockTaskModeState=NONE`. Activate after check-in reuses existing device (D-062). Plan: [2026-11-21-phase4-payment-to-unlock.md](../superpowers/plans/2026-11-21-phase4-payment-to-unlock.md). iOS out of scope.
 
-**Next:** Optional LAN HTTPS / Welcome QR; Phase 4b overdue auto-lock later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Phase 4b (lab software done):** Staff `POST /api/v1/devices/policy/evaluate-overdue` (`devices.command`, `Idempotency-Key`, non-empty `reason`) runs tenant-scoped `OverdueLockOrchestrator`: ACTIVE Android bindings with unpaid schedule `dueDate` before Bangkok today → desired `LOCK` + enqueue `START_LOCK_TASK` (jump-to-LOCK; no REMINDER/RESTRICT ladder in this slice). D-063. Plan: [2026-11-21-phase4b-overdue-auto-lock.md](../superpowers/plans/2026-11-21-phase4b-overdue-auto-lock.md). Cron and merchant thresholds deferred.
+
+**Next:** Optional Pad E2E for Phase 4b; cron for overdue evaluate later; optional LAN HTTPS / Welcome QR. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

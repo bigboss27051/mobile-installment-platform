@@ -10,6 +10,7 @@ import { DeviceLocationService } from './device-location.service';
 import { DeviceRecoveryService } from './device-recovery.service';
 import { EnrollmentController } from './enrollment.controller';
 import { EnrollmentService } from './enrollment.service';
+import { OverdueLockOrchestrator } from './overdue-lock.orchestrator';
 import { PaymentUnlockOrchestrator } from './payment-unlock.orchestrator';
 import { MDM_PROVIDER } from './ports/mdm-provider.port';
 
@@ -28,6 +29,7 @@ import { MDM_PROVIDER } from './ports/mdm-provider.port';
     DeviceLifecycleService,
     DeviceRecoveryService,
     PaymentUnlockOrchestrator,
+    OverdueLockOrchestrator,
     { provide: MDM_PROVIDER, useClass: SandboxMdmAdapter },
   ],
   exports: [MDM_PROVIDER, PaymentUnlockOrchestrator],

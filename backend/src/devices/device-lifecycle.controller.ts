@@ -22,6 +22,8 @@ import { ActivateDeviceDto } from './dto/activate-device.dto';
 import { BindContractDto, UnbindContractDto } from './dto/bind-contract.dto';
 import { CreateRecoveryRequestDto } from './dto/create-recovery-request.dto';
 import { EnqueueDeviceCommandDto } from './dto/enqueue-device-command.dto';
+import { EvaluateOverdueDto } from './dto/evaluate-overdue.dto';
+import { OverdueLockOrchestrator } from './overdue-lock.orchestrator';
 
 @Controller('devices')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -30,6 +32,7 @@ export class DeviceLifecycleController {
     private readonly lifecycle: DeviceLifecycleService,
     private readonly commands: DeviceCommandsService,
     private readonly recovery: DeviceRecoveryService,
+    private readonly overdueLock: OverdueLockOrchestrator,
   ) {}
 
   @Post('activate')
@@ -44,6 +47,24 @@ export class DeviceLifecycleController {
     }
     const activation = await this.lifecycle.activate(user, dto, idempotencyKey);
     return { data: activation };
+  }
+
+  @Post('policy/evaluate-overdue')
+  @RequirePermissions('devices.command')
+  async evaluateOverdue(
+    @Body() dto: EvaluateOverdueDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @CurrentUser() user: TenantContext,
+  ) {
+    if (!idempotencyKey?.trim()) {
+      throw new BadRequestException('Idempotency-Key header is required.');
+    }
+    const data = await this.overdueLock.evaluateTenant(
+      user,
+      dto.reason,
+      idempotencyKey,
+    );
+    return { data };
   }
 
   @Get()

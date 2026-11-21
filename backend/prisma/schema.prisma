@@ -272,6 +272,7 @@ model Tenant {
   deviceContractBindings  DeviceContractBinding[]
   deviceAuditEvents       DeviceAuditEvent[]
   deviceCommands          DeviceCommand[]
+  devicePolicyEvaluationRuns DevicePolicyEvaluationRun[]
   devicePolicyStates      DevicePolicyState[]
   deviceRecoveryRequests  DeviceRecoveryRequest[]
   deviceLocationSamples   DeviceLocationSample[]
@@ -316,6 +317,7 @@ model User {
   deviceContractBindings    DeviceContractBinding[]
   deviceAuditEvents         DeviceAuditEvent[]
   deviceCommands            DeviceCommand[]
+  devicePolicyEvaluationRuns DevicePolicyEvaluationRun[]
   deviceRecoveryRequests    DeviceRecoveryRequest[]
 
   @@index([tenantId])
@@ -960,4 +962,20 @@ model DeviceAuditEvent {
 
   @@index([tenantId, deviceId, createdAt])
   @@map("device_audit_events")
+}
+
+model DevicePolicyEvaluationRun {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  idempotencyKey String   @map("idempotency_key")
+  actorUserId    String   @map("actor_user_id") @db.Uuid
+  reason         String
+  summaryJson    Json     @map("summary_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+  actor          User     @relation(fields: [actorUserId], references: [id])
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, createdAt])
+  @@map("device_policy_evaluation_runs")
 }

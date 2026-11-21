@@ -33,4 +33,6 @@
 
 **Phase 4a payment-to-unlock E2E (~21:36–21:39+07):** Activate after check-in (reuse existing `deviceId`; was blocked by `ALREADY_ACTIVATED`) + bind contract `205e6746-…` → device `705f8cff-…` `ACTIVE` / binding `ACTIVE`. `START_LOCK_TASK` → desired `LOCK` / `mLockTaskModeState=LOCKED`. Sandbox intent `10600.00` + signed webhook → all 6 schedule items `PAID` → `PaymentUnlockOrchestrator` enqueued `STOP_LOCK_TASK` reason `payment-unlock pay:82744e66-…` → poller `ACKED_SUCCESS` / `LOCK_TASK_STOPPED` / desired `NONE` / `mLockTaskModeState=NONE`. Agent path: HTTPS via `adb reverse :3443`.
 
-**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock, full Welcome QR re-prove, live Omise.
+**Phase 4b overdue auto-lock E2E (~21:56+07):** Lab backdated schedule seq1 to `PENDING` / due `2026-11-19`. Staff `POST /devices/policy/evaluate-overdue` → `locked` device `705f8cff-…` with `START_LOCK_TASK` reason `… | overdue-lock:2026-11-21`. Idempotency replay `replay: true`. Poller `ACKED_SUCCESS` / `LOCK_TASK_ACTIVE` / desired `LOCK` / `mLockTaskModeState=LOCKED` / `MangoLockActivity`. D-063.
+
+**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution, remote FRP unlock, full Welcome QR re-prove, live Omise, REMINDER/RESTRICT ladder, cron.

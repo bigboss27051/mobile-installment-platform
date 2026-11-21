@@ -147,8 +147,21 @@ Staff. Last heartbeat + freshness. `410` if never seen.
 Staff with **device restrict** permission for RESTRICT/LOCK (levels ≥3).  
 Body: `{ "type", "presentation?": "REMINDER|RESTRICT|LOCK|UNLOCK", "level?", "reason", "expiresAt" }`  
 `Idempotency-Key` required.  
-Creates `QUEUED` command; HTTP 201 ≠ executed.  
+Creates `QUEUED` command; HTTP 201 ≠ executed.
 iOS unsupported type → `422 UNSUPPORTED_CAPABILITY` (no silent no-op success).
+
+### POST `/devices/policy/evaluate-overdue`
+
+**Auth:** Staff JWT + tenant.
+**Authz:** `devices.command` (same as device commands).
+**Headers:** `Idempotency-Key` required — replay with the same key returns the stored summary without re-enqueueing.
+**Body:** `{ "reason": "non-empty staff reason" }`
+
+**Purpose:** Tenant batch overdue evaluation (Phase 4b lab). Scans ACTIVE Android device–contract bindings; for each contract with at least one unpaid schedule item whose `dueDate` is strictly before today (Asia/Bangkok), enqueues `START_LOCK_TASK` and sets desired presentation to `LOCK`. Skips bindings that are not overdue, already `LOCK`, have an open `START_LOCK_TASK`, or already received an overdue lock for the Bangkok calendar day.
+
+**Response `200`:** `{ "data": { "evaluatedAt", "timezone": "Asia/Bangkok", "scannedBindings", "locked": [{ "deviceId", "contractId", "commandId", "reason" }], "skipped": [{ "deviceId", "contractId", "reason" }], "replay"?: true } }`
+
+Does not unlock (that remains payment-verified Phase 4a). No cron in this slice; staff-triggered only.
 
 ### POST `/devices/agent/heartbeat` (device-agent)
 
