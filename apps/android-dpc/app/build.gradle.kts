@@ -14,8 +14,8 @@ android {
         applicationId = "com.mip.dpc"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0-lab"
+        versionCode = 2
+        versionName = "0.1.1-lab"
         buildConfigField("String", "API_BASE_URL", "\"$mipApiBaseUrl\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
