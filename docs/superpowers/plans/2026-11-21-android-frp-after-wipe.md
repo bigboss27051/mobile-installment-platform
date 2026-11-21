@@ -63,9 +63,10 @@
 
 ### Task 6: Lab re-prove (ask before wipe)
 
-- [ ] After FRP cleared on Pad 6 (or on FRP-free spare): full QR → DO → check-in → agent token
-- [ ] Update lab-evidence; still no production claim
-- **Note (2026-11-21 evening):** `adb` still reports Pad 6 Device Owner `com.mip.dpc` and 0 Google accounts — full wipe/FRP re-prove needs explicit wipe approval again.
+- [x] Wipe **approved** (2026-11-21) and started: DPC `LabWipeActivity` → `wipeDevice` (`0.1.15-lab`); device dropped `adb`
+- [ ] Confirm Setup Wizard / **FRP** on Pad (operator); unlock prior Google account out of band (no platform bypass)
+- [ ] After FRP cleared: full QR → DO → check-in → agent token; update lab-evidence; still no production claim
+
 
 ## Acceptance
 
