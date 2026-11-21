@@ -5,6 +5,10 @@ data class EnrollmentExtras(
     val enrollmentToken: String?,
     val enrollmentEndpoint: String?,
 ) {
+    fun isCheckInReady(): Boolean {
+        return !enrollmentToken.isNullOrBlank() && !enrollmentEndpoint.isNullOrBlank()
+    }
+
     companion object {
         const val SESSION_KEY = "enrollmentSessionId"
         const val TOKEN_KEY = "enrollmentToken"

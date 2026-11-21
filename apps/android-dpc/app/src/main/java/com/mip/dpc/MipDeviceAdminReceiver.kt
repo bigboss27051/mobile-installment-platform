@@ -17,6 +17,10 @@ class MipDeviceAdminReceiver : DeviceAdminReceiver() {
     }
 
     private fun launchCheckIn(context: Context, source: Intent) {
+        val extras = EnrollmentExtras.fromBundle(
+            LabProvisioningActivity.readAdminExtras(source.extras),
+        )
+        EnrollmentExtrasStore(context).save(extras)
         val launch = Intent(context, LabProvisioningActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             source.extras?.let { putExtras(it) }

@@ -11,6 +11,11 @@ import android.os.Bundle
 class GetProvisioningModeActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val extras = EnrollmentExtras.fromBundle(
+            LabProvisioningActivity.readAdminExtras(intent.extras),
+        )
+        EnrollmentExtrasStore(this).save(extras)
+
         val allowed = intent.getIntArrayExtra(DevicePolicyManager.EXTRA_PROVISIONING_ALLOWED_PROVISIONING_MODES)
         val decision = ProvisioningModeDecision.forAllowedModes(allowed)
         if (decision == null) {

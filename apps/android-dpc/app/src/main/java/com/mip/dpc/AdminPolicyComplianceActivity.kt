@@ -3,17 +3,20 @@ package com.mip.dpc
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.LinearLayout
 import android.widget.TextView
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
 import kotlin.concurrent.thread
 
 /**
  * Android 12+ post-provisioning step. Must finish with RESULT_OK or Setup Wizard fails.
+ * Persists/restores enrollment extras and attempts check-in before finishing (with timeout).
  */
 class AdminPolicyComplianceActivity : Activity() {
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var finished = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -22,9 +25,14 @@ class AdminPolicyComplianceActivity : Activity() {
             packageName = packageName,
             isDeviceOwner = dpm.isDeviceOwnerApp(packageName),
         )
-        val extras = EnrollmentExtras.fromBundle(
+        val store = EnrollmentExtrasStore(this)
+        val fromIntent = EnrollmentExtras.fromBundle(
             LabProvisioningActivity.readAdminExtras(intent.extras),
         )
+        if (fromIntent.isCheckInReady()) {
+            store.save(fromIntent)
+        }
+        val extras = EnrollmentExtrasResolver.resolve(fromIntent, store.load())
         val call = CheckInCall.plan(extras, status)
 
         val root = LinearLayout(this).apply {
@@ -40,41 +48,35 @@ class AdminPolicyComplianceActivity : Activity() {
         root.addView(resultView)
         setContentView(root)
 
-        // Setup Wizard requires RESULT_OK promptly. Do not block on network check-in.
         if (call == null) {
             resultView.text = "No HTTPS enrollment extras; finishing provisioning."
             finishOk()
             return
         }
 
-        resultView.text = "Finishing provisioning; check-in in background…"
-        finishOk()
+        resultView.text = "Checking in…"
+        mainHandler.postDelayed({ finishOk() }, CHECK_IN_TIMEOUT_MS)
         thread {
-            postCheckIn(call)
+            val message = CheckInHttp.post(call)
+            store.clear()
+            runOnUiThread {
+                resultView.text = message
+                finishOk()
+            }
         }
     }
 
     private fun finishOk() {
+        if (finished || isFinishing) {
+            return
+        }
+        finished = true
+        mainHandler.removeCallbacksAndMessages(null)
         setResult(RESULT_OK)
         finish()
     }
 
-    private fun postCheckIn(call: CheckInCall): String {
-        val connection = URL(call.url).openConnection() as HttpURLConnection
-        return try {
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.setRequestProperty("X-Enrollment-Token", call.enrollmentToken)
-            connection.doOutput = true
-            OutputStreamWriter(connection.outputStream).use { it.write(call.body) }
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val response = stream?.bufferedReader()?.readText().orEmpty()
-            "$code $response"
-        } catch (error: Exception) {
-            error.message ?: "check-in failed"
-        } finally {
-            connection.disconnect()
-        }
+    companion object {
+        private const val CHECK_IN_TIMEOUT_MS = 20_000L
     }
 }

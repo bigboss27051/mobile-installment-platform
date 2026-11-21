@@ -6,9 +6,6 @@ import android.os.Bundle
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
 import kotlin.concurrent.thread
 
 class LabProvisioningActivity : AppCompatActivity() {
@@ -20,7 +17,12 @@ class LabProvisioningActivity : AppCompatActivity() {
             packageName = packageName,
             isDeviceOwner = dpm.isDeviceOwnerApp(packageName),
         )
-        val extras = EnrollmentExtras.fromBundle(readAdminExtras(intent.extras))
+        val store = EnrollmentExtrasStore(this)
+        val fromIntent = EnrollmentExtras.fromBundle(readAdminExtras(intent.extras))
+        if (fromIntent.isCheckInReady()) {
+            store.save(fromIntent)
+        }
+        val extras = EnrollmentExtrasResolver.resolve(fromIntent, store.load())
         val call = CheckInCall.plan(extras, status)
 
         val root = LinearLayout(this).apply {
@@ -44,28 +46,10 @@ class LabProvisioningActivity : AppCompatActivity() {
 
         if (call != null) {
             thread {
-                val message = postCheckIn(call)
+                val message = CheckInHttp.post(call)
+                store.clear()
                 runOnUiThread { resultView.text = message }
             }
-        }
-    }
-
-    private fun postCheckIn(call: CheckInCall): String {
-        val connection = URL(call.url).openConnection() as HttpURLConnection
-        return try {
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.setRequestProperty("X-Enrollment-Token", call.enrollmentToken)
-            connection.doOutput = true
-            OutputStreamWriter(connection.outputStream).use { it.write(call.body) }
-            val code = connection.responseCode
-            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-            val response = stream?.bufferedReader()?.readText().orEmpty()
-            "$code $response"
-        } catch (error: Exception) {
-            error.message ?: "check-in failed"
-        } finally {
-            connection.disconnect()
         }
     }
 
