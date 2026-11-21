@@ -1,4 +1,4 @@
-# Current Phase: **Phase 2 check-in code shipped** — lab phone still required
+# Current Phase: **Phase 3a Lock Task command loop (lab)**
 
 **Previous:** R1f Merchant Web + Customer Android critical paths — **COMPLETE** on `develop`
 
@@ -18,7 +18,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 2 software (QR contract + check-in code, done):** Android QR extras name the project DPC from `DPC_COMPONENT_NAME`, `DPC_DOWNLOAD_URL`, `DPC_PACKAGE_CHECKSUM`, and `DPC_ENROLLMENT_ENDPOINT`. Missing or invalid settings leave the session unissued (`DPC_QR_NOT_CONFIGURED`). `POST /qr` rotates an `enc_` token and stores only the hash while status is `WAITING_FOR_DEVICE` or `QR_GENERATED`. Merchant Web can issue that QR again when the page is not holding a payload. `POST /api/v1/devices/enroll/check-in` accepts that token from a `QR_GENERATED` session and moves it to `ENROLLING` when `deviceOwner` is true. `apps/android-dpc` reads the QR extras and posts that check-in. Lab APK **0.1.2-lab** persists enrollment extras at `GET_PROVISIONING_MODE` / admin-enabled and check-ins from `ADMIN_POLICY_COMPLIANCE` before `RESULT_OK` (20s timeout). **Lab evidence (Xiaomi Pad 6 / pipa, Android 14):** QR Device Owner with **0.1.1-lab** succeeded; device check-in from installed **0.1.2-lab** via `LabProvisioningActivity` moved session `0d2141fb-…` → `ENROLLING` / device `705f8cff-…`. Full QR wipe re-test of auto compliance check-in still optional. **Ask before factory-resetting any phone.** Not production Device Owner / financing approval.
 
-**Next:** optional wipe + QR re-test of end-to-end auto check-in, or start Phase 3 locking prototype only after product accepts Pad 6 evidence. **Do not** claim production Device Owner.
+**Phase 3a (lab, in progress):** `device_commands` + `device_policy_states`; staff `POST /devices/:id/commands` (`devices.command`); agent poll/ack with `dat_` token from check-in; DPC `0.1.3-lab` Lock Task Mode (`MangoLockActivity`, not `lockNow()`). **Pad 6 evidence:** `START_LOCK_TASK` → `ACKED_SUCCESS` / `LOCK_TASK` / `mLockTaskModeState=LOCKED`.
+
+**Next:** harden agent auth/tunnel for shop path; package suspend (RESTRICT); reboot recovery; payment-to-unlock later. **Do not** claim production Device Owner or financing lock.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

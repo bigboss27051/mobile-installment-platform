@@ -176,6 +176,37 @@ enum DeviceAuditAction {
   BIND
   UNBIND
   CHECK_IN
+  COMMAND
+}
+
+enum DeviceCommandType {
+  START_LOCK_TASK
+  STOP_LOCK_TASK
+}
+
+enum DeviceCommandStatus {
+  QUEUED
+  SENT
+  ACKED_SUCCESS
+  ACKED_FAILED
+  EXPIRED
+  UNSUPPORTED
+}
+
+enum DesiredPresentation {
+  NONE
+  REMINDER
+  RESTRICT
+  LOCK
+}
+
+enum PlatformEnforcementState {
+  NONE
+  PACKAGES_SUSPENDED
+  LOCK_TASK
+  SINGLE_APP_MODE
+  UNSUPPORTED
+  PENDING
 }
 
 model Tenant {
@@ -213,6 +244,8 @@ model Tenant {
   deviceActivations       DeviceActivation[]
   deviceContractBindings  DeviceContractBinding[]
   deviceAuditEvents       DeviceAuditEvent[]
+  deviceCommands          DeviceCommand[]
+  devicePolicyStates      DevicePolicyState[]
 
   @@map("tenants")
 }
@@ -253,6 +286,7 @@ model User {
   deviceActivations         DeviceActivation[]
   deviceContractBindings    DeviceContractBinding[]
   deviceAuditEvents         DeviceAuditEvent[]
+  deviceCommands            DeviceCommand[]
 
   @@index([tenantId])
   @@map("users")
@@ -730,6 +764,7 @@ model Device {
   platform             DevicePlatform
   status               DeviceLifecycleStatus @default(PENDING_ENROLL)
   hardwareFingerprint  String                @map("hardware_fingerprint")
+  agentTokenHash       String?               @unique @map("agent_token_hash")
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
   tenant               Tenant                @relation(fields: [tenantId], references: [id])
@@ -738,11 +773,50 @@ model Device {
   activation           DeviceActivation?
   bindings             DeviceContractBinding[]
   auditEvents          DeviceAuditEvent[]
+  commands             DeviceCommand[]
+  policyState          DevicePolicyState?
 
   @@unique([tenantId, hardwareFingerprint])
   @@unique([tenantId, imeiUnitId])
   @@index([tenantId, status])
   @@map("devices")
+}
+
+model DeviceCommand {
+  id           String              @id @default(uuid()) @db.Uuid
+  tenantId     String              @map("tenant_id") @db.Uuid
+  deviceId     String              @map("device_id") @db.Uuid
+  type         DeviceCommandType
+  status       DeviceCommandStatus @default(QUEUED)
+  reason       String
+  actorUserId  String              @map("actor_user_id") @db.Uuid
+  expiresAt    DateTime            @map("expires_at")
+  resultCode   String?             @map("result_code")
+  ackedAt      DateTime?           @map("acked_at")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+  device       Device              @relation(fields: [deviceId], references: [id])
+  actor        User                @relation(fields: [actorUserId], references: [id])
+
+  @@index([tenantId, deviceId, status])
+  @@index([deviceId, status, expiresAt])
+  @@map("device_commands")
+}
+
+model DevicePolicyState {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  tenantId            String                   @map("tenant_id") @db.Uuid
+  deviceId            String                   @unique @map("device_id") @db.Uuid
+  desiredPresentation DesiredPresentation      @default(NONE) @map("desired_presentation")
+  platformState       PlatformEnforcementState @default(NONE) @map("platform_state")
+  policyVersion       Int                      @default(1) @map("policy_version")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+  tenant              Tenant                   @relation(fields: [tenantId], references: [id])
+  device              Device                   @relation(fields: [deviceId], references: [id])
+
+  @@index([tenantId, deviceId])
+  @@map("device_policy_states")
 }
 
 model DeviceActivation {

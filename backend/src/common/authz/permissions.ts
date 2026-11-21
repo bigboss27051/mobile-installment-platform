@@ -7,6 +7,7 @@ export const PERMISSIONS = [
   'devices.activate',
   'devices.bind',
   'devices.unbind',
+  'devices.command',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

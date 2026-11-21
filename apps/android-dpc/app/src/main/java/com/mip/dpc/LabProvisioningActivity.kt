@@ -46,9 +46,16 @@ class LabProvisioningActivity : AppCompatActivity() {
 
         if (call != null) {
             thread {
-                val message = CheckInHttp.post(call)
+                val result = CheckInHttp.post(call)
+                if (!result.agentToken.isNullOrBlank() && !result.apiBase.isNullOrBlank()) {
+                    AgentTokenStore(this).save(
+                        agentToken = result.agentToken,
+                        apiBase = result.apiBase,
+                        deviceId = result.deviceId.orEmpty(),
+                    )
+                }
                 store.clear()
-                runOnUiThread { resultView.text = message }
+                runOnUiThread { resultView.text = result.message }
             }
         }
     }

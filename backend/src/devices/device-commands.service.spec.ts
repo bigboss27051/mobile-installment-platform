@@ -1,0 +1,166 @@
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  DeviceCommandStatus,
+  DeviceCommandType,
+  PlatformEnforcementState,
+} from '@prisma/client';
+import { DeviceCommandsService } from './device-commands.service';
+import { hashDeviceAgentToken } from './device-agent-token';
+
+describe('DeviceCommandsService', () => {
+  const prisma = {
+    device: {
+      findFirst: jest.fn(),
+    },
+    deviceCommand: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+      update: jest.fn(),
+    },
+    devicePolicyState: {
+      upsert: jest.fn(),
+    },
+    deviceAuditEvent: { create: jest.fn() },
+    $transaction: jest.fn(),
+  };
+
+  const service = new DeviceCommandsService(prisma as never);
+  const user = {
+    userId: 'user-1',
+    tenantId: 'tenant-a',
+    role: 'MERCHANT_OWNER',
+  } as never;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    prisma.$transaction.mockImplementation(
+      async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
+    );
+  });
+
+  it('rejects enqueue without a reason', async () => {
+    await expect(
+      service.enqueue(user, 'dev-1', {
+        type: DeviceCommandType.START_LOCK_TASK,
+        reason: '  ',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('enqueues START_LOCK_TASK for a tenant device', async () => {
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+    });
+    prisma.deviceCommand.create.mockResolvedValue({
+      id: 'cmd-1',
+      type: DeviceCommandType.START_LOCK_TASK,
+      status: DeviceCommandStatus.QUEUED,
+      reason: 'lab lock',
+    });
+    prisma.devicePolicyState.upsert.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+
+    const result = await service.enqueue(user, 'dev-1', {
+      type: DeviceCommandType.START_LOCK_TASK,
+      reason: 'lab lock',
+    });
+
+    expect(result.id).toBe('cmd-1');
+    expect(prisma.deviceCommand.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId: 'tenant-a',
+          deviceId: 'dev-1',
+          type: DeviceCommandType.START_LOCK_TASK,
+          reason: 'lab lock',
+          status: DeviceCommandStatus.QUEUED,
+        }),
+      }),
+    );
+  });
+
+  it('denies enqueue for another tenant device', async () => {
+    prisma.device.findFirst.mockResolvedValue(null);
+    await expect(
+      service.enqueue(user, 'dev-x', {
+        type: DeviceCommandType.START_LOCK_TASK,
+        reason: 'nope',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('lists queued commands for a valid agent token and marks SENT', async () => {
+    const raw = 'dat_lab_token';
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      agentTokenHash: hashDeviceAgentToken(raw),
+    });
+    prisma.deviceCommand.findMany.mockResolvedValue([
+      {
+        id: 'cmd-1',
+        type: DeviceCommandType.START_LOCK_TASK,
+        status: DeviceCommandStatus.QUEUED,
+        reason: 'lab',
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    ]);
+    prisma.deviceCommand.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await service.pollForAgent(raw);
+    expect(result.deviceId).toBe('dev-1');
+    expect(result.commands).toHaveLength(1);
+    expect(prisma.deviceCommand.updateMany).toHaveBeenCalled();
+  });
+
+  it('rejects a missing agent token', async () => {
+    await expect(service.pollForAgent('')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+  });
+
+  it('acks START_LOCK_TASK success and sets platform LOCK_TASK', async () => {
+    const raw = 'dat_lab_token';
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      agentTokenHash: hashDeviceAgentToken(raw),
+    });
+    prisma.deviceCommand.findFirst.mockResolvedValue({
+      id: 'cmd-1',
+      deviceId: 'dev-1',
+      tenantId: 'tenant-a',
+      type: DeviceCommandType.START_LOCK_TASK,
+      status: DeviceCommandStatus.SENT,
+    });
+    prisma.deviceCommand.update.mockResolvedValue({
+      id: 'cmd-1',
+      status: DeviceCommandStatus.ACKED_SUCCESS,
+    });
+    prisma.devicePolicyState.upsert.mockResolvedValue({});
+
+    const result = await service.ackForAgent(raw, 'cmd-1', {
+      status: DeviceCommandStatus.ACKED_SUCCESS,
+      platformState: PlatformEnforcementState.LOCK_TASK,
+      resultCode: 'LOCK_TASK_ACTIVE',
+    });
+
+    expect(result.status).toBe(DeviceCommandStatus.ACKED_SUCCESS);
+    expect(prisma.devicePolicyState.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          platformState: PlatformEnforcementState.LOCK_TASK,
+          desiredPresentation: 'LOCK',
+        }),
+      }),
+    );
+  });
+});

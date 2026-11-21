@@ -14,14 +14,19 @@ import { PermissionsGuard } from '../common/authz/permissions.guard';
 import { RequirePermissions } from '../common/authz/require-permissions.decorator';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
+import { DeviceCommandsService } from './device-commands.service';
 import { DeviceLifecycleService } from './device-lifecycle.service';
 import { ActivateDeviceDto } from './dto/activate-device.dto';
 import { BindContractDto, UnbindContractDto } from './dto/bind-contract.dto';
+import { EnqueueDeviceCommandDto } from './dto/enqueue-device-command.dto';
 
 @Controller('devices')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class DeviceLifecycleController {
-  constructor(private readonly lifecycle: DeviceLifecycleService) {}
+  constructor(
+    private readonly lifecycle: DeviceLifecycleService,
+    private readonly commands: DeviceCommandsService,
+  ) {}
 
   @Post('activate')
   @RequirePermissions('devices.activate')
@@ -83,5 +88,16 @@ export class DeviceLifecycleController {
     }
     const binding = await this.lifecycle.unbindContract(user, id, dto, idempotencyKey);
     return { data: binding };
+  }
+
+  @Post(':id/commands')
+  @RequirePermissions('devices.command')
+  async enqueueCommand(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: EnqueueDeviceCommandDto,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const command = await this.commands.enqueue(user, id, dto);
+    return { data: command };
   }
 }

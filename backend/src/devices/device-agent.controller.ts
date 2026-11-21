@@ -2,15 +2,23 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Headers,
+  Param,
+  ParseUUIDPipe,
   Post,
 } from '@nestjs/common';
 import { DeviceCheckInService } from './device-check-in.service';
+import { DeviceCommandsService } from './device-commands.service';
+import { AckDeviceCommandDto } from './dto/ack-device-command.dto';
 import { CheckInDeviceDto } from './dto/check-in-device.dto';
 
 @Controller('devices')
 export class DeviceAgentController {
-  constructor(private readonly checkInService: DeviceCheckInService) {}
+  constructor(
+    private readonly checkInService: DeviceCheckInService,
+    private readonly commands: DeviceCommandsService,
+  ) {}
 
   @Post('enroll/check-in')
   async checkIn(
@@ -26,6 +34,24 @@ export class DeviceAgentController {
       throw new BadRequestException('ENROLLMENT_TOKEN_REQUIRED');
     }
     const data = await this.checkInService.checkIn(token, dto);
+    return { data };
+  }
+
+  @Get('agent/commands')
+  async pollCommands(
+    @Headers('x-device-agent-token') agentToken: string | undefined,
+  ) {
+    const data = await this.commands.pollForAgent(agentToken ?? '');
+    return { data };
+  }
+
+  @Post('agent/commands/:id/ack')
+  async ackCommand(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: AckDeviceCommandDto,
+    @Headers('x-device-agent-token') agentToken: string | undefined,
+  ) {
+    const data = await this.commands.ackForAgent(agentToken ?? '', id, dto);
     return { data };
   }
 }

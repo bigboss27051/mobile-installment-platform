@@ -11,4 +11,6 @@
 
 **Follow-up (0.1.2-lab):** DPC persists extras and check-ins before `ADMIN_POLICY_COMPLIANCE` `RESULT_OK`. Verified on-device check-in by launching `LabProvisioningActivity` with enrollment extras (session `0d2141fb-…` → `ENROLLING`, device `705f8cff-…`) while Device Owner remained `com.mip.dpc`. Full factory-reset QR path for auto compliance check-in not re-run in this note.
 
-**Not claimed:** production Device Owner, financing lock, Phase 3 kiosk, Play-signed distribution.
+**Phase 3a lab (same day):** DPC `0.1.3-lab` + `device_commands`. With agent token + `adb reverse`, poller executed `START_LOCK_TASK` → command `ACKED_SUCCESS` / `LOCK_TASK_ACTIVE`, `device_policy_states.platform_state=LOCK_TASK`, `dumpsys` `mLockTaskModeState=LOCKED`, `MangoLockActivity` resumed. Used Lock Task Mode (not `lockNow()`).
+
+**Not claimed:** production Device Owner, financing lock, shop-ready command transport, Play-signed distribution.
