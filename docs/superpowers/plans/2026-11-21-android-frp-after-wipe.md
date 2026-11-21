@@ -65,7 +65,7 @@
 
 - [x] Wipe **approved** (2026-11-21) and started: DPC `LabWipeActivity` → `wipeDevice` (`0.1.15-lab`); device dropped `adb`
 - [x] Post-wipe: Setup completed; **Accounts: 0**; **FRP UI not shown** this run; DO/`com.mip.dpc` gone; `REENROLL` APPROVED
-- [ ] Reinstall DPC (needs MIUI Install via USB allow) → `dpm set-device-owner` or full QR path → check-in; still no production claim
+- [x] Reinstall DPC (MIUI Install via USB / AdbInstall allow) → `dpm set-device-owner` → check-in + HTTPS heartbeat + `START_LOCK_TASK`/`STOP_LOCK_TASK`; full Welcome QR path still optional; still no production claim
 
 
 ## Acceptance

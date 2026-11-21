@@ -102,7 +102,14 @@ describe('DeviceRecoveryService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           status: EnrollmentSessionStatus.CANCELLED,
+          deviceId: null,
         }),
+      }),
+    );
+    expect(prisma.deviceEnrollmentSession.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ deviceId: 'dev-1' }),
+        data: expect.objectContaining({ deviceId: null }),
       }),
     );
     expect(prisma.device.update).toHaveBeenCalledWith(

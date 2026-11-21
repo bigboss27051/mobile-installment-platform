@@ -24,9 +24,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Merchant Web FRP checklist (done):** Android enroll page requires three staff attestations before create session / Issue QR (FRP cleared or N/A, new QR after wipe, no remote bypass) — D-060 copy; cannot clear FRP from UI.
 
-**REENROLL API (done):** `POST /api/v1/devices/:id/recovery-requests` `{ type: REENROLL, reason }` cancels open sessions, clears `agentTokenHash`, expires open lock commands, resets policy to `NONE`, audits `RECOVERY`. Create enrollment no longer blocked by stale `RECOVERY_REQUIRED` sessions.
+**REENROLL API (done):** `POST /api/v1/devices/:id/recovery-requests` `{ type: REENROLL, reason }` cancels open sessions, clears `agentTokenHash`, expires open lock commands, resets policy to `NONE`, audits `RECOVERY`. Create enrollment no longer blocked by stale `RECOVERY_REQUIRED` sessions. **Fix (2026-11-21):** REENROLL also clears `device_id` on cancelled/historical sessions so unique `(device_id)` does not block the next check-in (`INTERNAL_ERROR`).
 
-**Lab note:** Pad 6 still shows Device Owner via adb — full wipe→FRP→QR re-prove needs **explicit wipe approval** (Task 6).
+**Lab note:** Pad 6 Device Owner restored post-wipe via sideload + `dpm set-device-owner` (not full Welcome QR). Full wipe→FRP→QR re-prove still needs **explicit wipe approval**.
 
 **Phase 3b (lab):** Commands `START_PACKAGE_SUSPEND` / `STOP_PACKAGE_SUSPEND` → desired `RESTRICT` / `NONE`. DPC `0.1.4-lab` uses `setPackagesSuspended` (allowlist keeps dialer/messages/`com.mip.dpc`). Pad 6: poller `ACKED_SUCCESS` with `NO_PACKAGES_TO_SUSPEND:0` and honest `platform_state=NONE` (no non-system targets on this image). Plan: `docs/superpowers/plans/2026-11-21-phase3b-package-suspend.md`.
 
@@ -44,9 +44,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 3f (lab HTTPS):** Nest dual listen HTTP + HTTPS (`TLS_*` / `HTTPS_PORT`); `scripts/generate-lab-https-certs.sh`; DPC `0.1.14-lab` pins lab CA. **Pad 6:** agent heartbeat over `https://127.0.0.1:3443` via `adb reverse` updated `last_heartbeat_at`. LAN Wi‑Fi HTTPS still optional when Pad/Mac share L2 + firewall allows `:3443`. Docs: [AGENT-HTTPS-LAB.md](../device-management/AGENT-HTTPS-LAB.md).
 
-**Wipe/FRP (lab):** Wipe approved + `wipeDevice` completed. After reconnect: **DO gone**, setup complete, **0 Google accounts**, **no FRP UI this run**. `REENROLL` API done. Blocked on MIUI USB install allow to reinstall DPC → `dpm set-device-owner` (accounts=0) or second wipe for full QR Welcome path.
+**Wipe/FRP → re-enroll (lab, same evening):** Wipe approved + `wipeDevice` completed. Post-wipe: DO gone; FRP UI absent this run; staff signed Google+Xiaomi then removed both for DO. MIUI **Install via USB** / AdbInstall allow → DPC `0.1.15-lab` installed → `dpm set-device-owner com.mip.dpc/.MipDeviceAdminReceiver` → new session check-in → agent HTTPS heartbeat via `adb reverse` → `START_LOCK_TASK` / `STOP_LOCK_TASK` `ACKED_SUCCESS`. Full Welcome 6-tap QR path not re-run.
 
-**Next:** enable **Install via USB** on Pad → install DPC → set Device Owner → check-in. Then payment-to-unlock when command loop + HTTPS stay solid. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Next:** keep command loop + HTTPS solid; payment-to-unlock only when that stays green. Optional: same-subnet LAN HTTPS; full QR Welcome after another approved wipe. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

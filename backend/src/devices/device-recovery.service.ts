@@ -71,6 +71,19 @@ export class DeviceRecoveryService {
         data: {
           status: EnrollmentSessionStatus.CANCELLED,
           lastErrorCode: 'RECOVERY_REENROLL',
+          // Release unique(device_id) so a new session can check-in to the same device.
+          deviceId: null,
+        },
+      });
+      // Detach any historical row still holding this device_id (e.g. COMPLETED/CANCELLED).
+      await tx.deviceEnrollmentSession.updateMany({
+        where: {
+          tenantId,
+          deviceId: device.id,
+        },
+        data: {
+          deviceId: null,
+          lastErrorCode: 'RECOVERY_REENROLL',
         },
       });
       // Also cancel open sessions for same IMEI/contract that are not yet device-bound
