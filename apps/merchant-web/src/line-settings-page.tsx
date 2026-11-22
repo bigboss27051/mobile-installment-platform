@@ -263,7 +263,7 @@ export function LineSettingsPage({
               autoComplete="off"
             />
           </FormField>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" disabled={saving}>
               {t('line.save')}
             </Button>
@@ -304,7 +304,7 @@ export function LineSettingsPage({
         <Typography variant="body2" color="text.secondary">
           {t('line.webhookSignature')}
         </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
           <Button type="button" variant="secondary" disabled={!webhookUrl} onClick={() => void onCopyWebhook()}>
             {copied === 'webhook' ? t('line.copied') : t('line.copyWebhook')}
           </Button>
@@ -353,7 +353,7 @@ export function LineSettingsPage({
                 ))}
               </Select>
             </FormField>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
               <Button
                 type="button"
                 disabled={reminderBusy || !reminderContractId || config.status !== 'CONNECTED'}

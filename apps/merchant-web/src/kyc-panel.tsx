@@ -178,7 +178,7 @@ export function KycPanel({
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             />
           </FormField>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" variant="secondary">
               {t('kyc.upload')}
             </Button>

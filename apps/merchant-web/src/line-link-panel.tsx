@@ -124,7 +124,7 @@ export function LineLinkPanel({
               {status.displayName ? ` (${status.displayName})` : ''}
             </p>
           ) : null}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="button" disabled={busy} onClick={() => void createInvite()}>
               {t('line.createInvite')}
             </Button>

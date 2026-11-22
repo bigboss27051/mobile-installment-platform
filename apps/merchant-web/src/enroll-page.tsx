@@ -345,7 +345,7 @@ export function EnrollPage({
             </label>
           </Box>
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
+            direction={{ xs: 'column', md: 'row' }}
             spacing={1}
             sx={{ mt: 2, gridColumn: '1 / -1' }}
           >
@@ -382,7 +382,7 @@ export function EnrollPage({
           {session.lastErrorCode ? (
             <Alert tone="error">{session.lastErrorCode}</Alert>
           ) : null}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="button" variant="secondary" onClick={() => void refreshSession()}>
               {t('enroll.refresh')}
             </Button>
@@ -469,7 +469,7 @@ export function EnrollPage({
                 onChange={(e) => setReason(e.target.value)}
               />
             </FormField>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
               <Button type="submit" variant="primary">
                 {t('enroll.activateBind')}
               </Button>

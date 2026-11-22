@@ -326,7 +326,7 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
               autoComplete="current-password"
             />
           </FormField>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" variant="primary">
               {t('login.submit')}
             </Button>
@@ -425,7 +425,7 @@ function ProductsPage({
             <Input id="product-brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
           </FormField>
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
+            direction={{ xs: 'column', md: 'row' }}
             spacing={1}
             sx={{ mt: 2, gridColumn: '1 / -1' }}
           >
@@ -491,7 +491,7 @@ function ProductsPage({
             <Input id="variant-price" value={price} onChange={(e) => setPrice(e.target.value)} />
           </FormField>
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
+            direction={{ xs: 'column', md: 'row' }}
             spacing={1}
             sx={{ mt: 2, gridColumn: '1 / -1' }}
           >
@@ -682,7 +682,7 @@ function InventoryPage({
             />
           </FormField>
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
+            direction={{ xs: 'column', md: 'row' }}
             spacing={1}
             sx={{ mt: 2, gridColumn: '1 / -1' }}
           >
@@ -822,7 +822,7 @@ function CustomersPage({
             </FormField>
           </Box>
           <Stack
-            direction={{ xs: 'column', sm: 'row' }}
+            direction={{ xs: 'column', md: 'row' }}
             spacing={1}
             sx={{ mt: 2, gridColumn: '1 / -1' }}
           >
@@ -1044,7 +1044,7 @@ function ApplicationsPage({
               />
             </FormField>
           </Box>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" variant="primary">
               {t('applications.create')}
             </Button>
@@ -1229,7 +1229,7 @@ function ContractsPage({
               ))}
             </Select>
           </FormField>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" variant="primary">
               {t('contracts.create')}
             </Button>
@@ -1356,7 +1356,7 @@ function ContractsPage({
                 onChange={(e) => setAmount(e.target.value)}
               />
             </FormField>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
               <Button type="submit" variant="primary">
                 {t('contracts.createIntent')}
               </Button>
