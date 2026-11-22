@@ -282,6 +282,29 @@ export class DeviceCommandsService {
     });
   }
 
+  async registerPushTokenForAgent(
+    rawToken: string,
+    input: { token: string },
+  ) {
+    const fcmToken = input.token?.trim();
+    if (!fcmToken) {
+      throw new BadRequestException('FCM_TOKEN_REQUIRED');
+    }
+    const device = await this.requireAgentDevice(rawToken);
+    const stamped = new Date();
+    const updated = await this.prisma.device.update({
+      where: { id: device.id },
+      data: {
+        fcmToken,
+        fcmTokenUpdatedAt: stamped,
+      },
+    });
+    return {
+      deviceId: device.id,
+      fcmTokenUpdatedAt: (updated.fcmTokenUpdatedAt ?? stamped).toISOString(),
+    };
+  }
+
   private async requireAgentDevice(rawToken: string) {
     const token = rawToken?.trim();
     if (!token) {

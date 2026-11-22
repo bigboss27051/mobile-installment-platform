@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "128598471636",
+    "project_id": "mip-dev-9f7aa",
+    "storage_bucket": "mip-dev-9f7aa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:128598471636:android:6447a4b8d8460f16ac5c41",
+        "android_client_info": {
+          "package_name": "com.mip.dpc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAj6yUaWdxu61_7xXf_To5_VHXe1jyr3n8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

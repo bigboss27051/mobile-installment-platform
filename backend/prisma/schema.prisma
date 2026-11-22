@@ -832,6 +832,8 @@ model Device {
   status               DeviceLifecycleStatus @default(PENDING_ENROLL)
   hardwareFingerprint  String                @map("hardware_fingerprint")
   agentTokenHash           String?               @unique @map("agent_token_hash")
+  fcmToken                 String?               @map("fcm_token")
+  fcmTokenUpdatedAt        DateTime?             @map("fcm_token_updated_at")
   lastHeartbeatAt          DateTime?             @map("last_heartbeat_at")
   lastLocationLat          Decimal?              @map("last_location_lat") @db.Decimal(10, 7)
   lastLocationLng          Decimal?              @map("last_location_lng") @db.Decimal(10, 7)

@@ -13,6 +13,7 @@ import { DeviceCommandsService } from './device-commands.service';
 import { AckDeviceCommandDto } from './dto/ack-device-command.dto';
 import { AgentHeartbeatDto } from './dto/agent-heartbeat.dto';
 import { CheckInDeviceDto } from './dto/check-in-device.dto';
+import { RegisterPushTokenDto } from './dto/register-push-token.dto';
 
 @Controller('devices')
 export class DeviceAgentController {
@@ -52,6 +53,18 @@ export class DeviceAgentController {
     @Headers('x-device-agent-token') agentToken: string | undefined,
   ) {
     const data = await this.commands.heartbeatForAgent(agentToken ?? '', dto);
+    return { data };
+  }
+
+  @Post('agent/push-token')
+  async registerPushToken(
+    @Body() dto: RegisterPushTokenDto,
+    @Headers('x-device-agent-token') agentToken: string | undefined,
+  ) {
+    const data = await this.commands.registerPushTokenForAgent(
+      agentToken ?? '',
+      dto,
+    );
     return { data };
   }
 

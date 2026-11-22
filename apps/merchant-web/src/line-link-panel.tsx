@@ -18,6 +18,15 @@ type Invite = {
   instruction: string;
 };
 
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function LineLinkPanel({
   customerId,
   onError,
@@ -31,6 +40,7 @@ export function LineLinkPanel({
   const [status, setStatus] = useState<LinkStatus | null>(null);
   const [invite, setInvite] = useState<Invite | null>(null);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   async function refresh() {
     try {
@@ -46,12 +56,14 @@ export function LineLinkPanel({
 
   useEffect(() => {
     setInvite(null);
+    setCopied(false);
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
 
   async function createInvite() {
     setBusy(true);
+    setCopied(false);
     try {
       const data = await apiRequest<Invite>(
         `/api/v1/line/customers/${customerId}/link-invites`,
@@ -82,12 +94,25 @@ export function LineLinkPanel({
     }
   }
 
+  async function copyInviteMessage() {
+    if (!invite) return;
+    const message = `LINK ${invite.token}`;
+    const ok = await copyText(message);
+    if (ok) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } else {
+      onError(t('line.copyFailed'));
+    }
+  }
+
   return (
     <Section title={t('line.linkSection')}>
       {!status ? (
         <Spinner />
       ) : (
         <>
+          <p>{t('line.linkHelp')}</p>
           <p>
             {t('line.linkStatus')}:{' '}
             <strong>{status.linked ? t('line.linked') : t('line.unlinked')}</strong>
@@ -115,10 +140,16 @@ export function LineLinkPanel({
           </div>
           {invite ? (
             <Alert tone="info">
-              <p>{invite.instruction}</p>
+              <p>{t('line.inviteExplain')}</p>
               <p>
-                {t('line.tokenOnce')}: <code>{invite.token}</code>
+                <code>LINK {invite.token}</code>
               </p>
+              <p>
+                {t('line.tokenExpires')}: {new Date(invite.expiresAt).toLocaleString()}
+              </p>
+              <Button type="button" variant="secondary" onClick={() => void copyInviteMessage()}>
+                {copied ? t('line.copied') : t('line.copyLinkCommand')}
+              </Button>
             </Alert>
           ) : null}
         </>

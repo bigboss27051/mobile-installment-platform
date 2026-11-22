@@ -98,6 +98,20 @@
   gap: var(--mip-space-2);
   margin-top: var(--mip-space-4);
 }
+.mip-setup-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: var(--mip-space-2, 8px);
+  line-height: 1.45;
+}
+
+.mip-muted {
+  color: var(--mip-text-muted, #64748b);
+  font-size: 0.875rem;
+  margin: 0 0 var(--mip-space-3, 12px);
+}
+
 .mip-inline-actions {
   display: flex;
   flex-wrap: wrap;
