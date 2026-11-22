@@ -204,6 +204,15 @@ enum DeviceAuditAction {
   COMMAND
   RECOVERY
   LOCATION_READ
+  POLICY_SETTINGS
+  LOCK_APPROVAL
+}
+
+enum DeviceLockApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 enum DeviceLocationSource {
@@ -308,6 +317,8 @@ model Tenant {
   lineNotificationTemplates LineNotificationTemplate[]
   lineNotificationDeliveries LineNotificationDelivery[]
   lineAuditEvents         LineAuditEvent[]
+  devicePolicySettings    TenantDevicePolicySettings?
+  deviceLockApprovals     DeviceLockApproval[]
 
   @@map("tenants")
 }
@@ -351,6 +362,7 @@ model User {
   deviceCommands            DeviceCommand[]
   devicePolicyEvaluationRuns DevicePolicyEvaluationRun[]
   deviceRecoveryRequests    DeviceRecoveryRequest[]
+  resolvedLockApprovals     DeviceLockApproval[] @relation("LockApprovalResolver")
 
   @@index([tenantId])
   @@map("users")
@@ -852,6 +864,7 @@ model Device {
   policyState              DevicePolicyState?
   recoveryRequests         DeviceRecoveryRequest[]
   locationSamples          DeviceLocationSample[]
+  lockApprovals            DeviceLockApproval[]
 
   @@unique([tenantId, hardwareFingerprint])
   @@unique([tenantId, imeiUnitId])
@@ -988,13 +1001,13 @@ model DeviceContractBinding {
 model DeviceAuditEvent {
   id          String            @id @default(uuid()) @db.Uuid
   tenantId    String            @map("tenant_id") @db.Uuid
-  deviceId    String            @map("device_id") @db.Uuid
+  deviceId    String?           @map("device_id") @db.Uuid
   actorUserId String            @map("actor_user_id") @db.Uuid
   action      DeviceAuditAction
   reason      String
   createdAt   DateTime          @default(now()) @map("created_at")
   tenant      Tenant            @relation(fields: [tenantId], references: [id])
-  device      Device            @relation(fields: [deviceId], references: [id])
+  device      Device?           @relation(fields: [deviceId], references: [id])
   actor       User              @relation(fields: [actorUserId], references: [id])
 
   @@index([tenantId, deviceId, createdAt])
@@ -1015,6 +1028,44 @@ model DevicePolicyEvaluationRun {
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId, createdAt])
   @@map("device_policy_evaluation_runs")
+}
+
+model TenantDevicePolicySettings {
+  tenantId                String   @id @map("tenant_id") @db.Uuid
+  reminderAfterDays       Int      @default(1) @map("reminder_after_days")
+  restrictAfterDays       Int      @default(3) @map("restrict_after_days")
+  lockAfterDays           Int      @default(7) @map("lock_after_days")
+  autoEvaluateCronEnabled Boolean  @default(true) @map("auto_evaluate_cron_enabled")
+  requireLockApproval     Boolean  @default(true) @map("require_lock_approval")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_device_policy_settings")
+}
+
+model DeviceLockApproval {
+  id                    String                   @id @default(uuid()) @db.Uuid
+  tenantId              String                   @map("tenant_id") @db.Uuid
+  deviceId              String                   @map("device_id") @db.Uuid
+  contractId            String                   @map("contract_id") @db.Uuid
+  status                DeviceLockApprovalStatus @default(PENDING)
+  overdueDays           Int                      @map("overdue_days")
+  reason                String
+  requestedAt           DateTime                 @default(now()) @map("requested_at")
+  resolvedAt            DateTime?                @map("resolved_at")
+  resolvedByUserId      String?                  @map("resolved_by_user_id") @db.Uuid
+  resolveIdempotencyKey String?                  @map("resolve_idempotency_key")
+  createdAt             DateTime                 @default(now()) @map("created_at")
+  updatedAt             DateTime                 @updatedAt @map("updated_at")
+  tenant                Tenant                   @relation(fields: [tenantId], references: [id])
+  device                Device                   @relation(fields: [deviceId], references: [id])
+  resolvedBy            User?                    @relation("LockApprovalResolver", fields: [resolvedByUserId], references: [id])
+
+  @@unique([tenantId, resolveIdempotencyKey])
+  @@index([tenantId, status, requestedAt])
+  @@index([deviceId, status])
+  @@map("device_lock_approvals")
 }
 
 model LineChannelConfig {

@@ -19,12 +19,24 @@ describe('OverdueLockOrchestrator', () => {
     deviceCommand: { findFirst: jest.fn() },
     deviceAuditEvent: { findFirst: jest.fn(), create: jest.fn() },
     devicePolicyState: { upsert: jest.fn() },
+    deviceLockApproval: { findFirst: jest.fn(), create: jest.fn() },
     $transaction: jest.fn(),
   };
   const commands = { enqueue: jest.fn() };
+  const policySettings = {
+    getOrCreateInternal: jest.fn(),
+  };
+  const defaultSettings = {
+    reminderAfterDays: 1,
+    restrictAfterDays: 3,
+    lockAfterDays: 7,
+    autoEvaluateCronEnabled: true,
+    requireLockApproval: false,
+  };
   const orchestrator = new OverdueLockOrchestrator(
     prisma as never,
     commands as never,
+    policySettings as never,
   );
   const ctx = {
     tenantId: 'tenant-a',
@@ -37,6 +49,7 @@ describe('OverdueLockOrchestrator', () => {
     prisma.$transaction.mockImplementation(
       async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
     );
+    policySettings.getOrCreateInternal.mockResolvedValue(defaultSettings);
   });
 
   it('replays stored summary for same idempotency key', async () => {
@@ -344,5 +357,117 @@ describe('OverdueLockOrchestrator', () => {
 
     const result = await orchestrator.evaluateTenant(ctx, 'lab', 'idem-race');
     expect(result.replay).toBe(true);
+  });
+
+  it('uses custom lockAfterDays so day 7 stays RESTRICT', async () => {
+    policySettings.getOrCreateInternal.mockResolvedValue({
+      ...defaultSettings,
+      lockAfterDays: 10,
+    });
+    prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
+    prisma.deviceContractBinding.findMany.mockResolvedValue([
+      {
+        deviceId: 'dev-1',
+        contractId: 'c1',
+        device: {
+          id: 'dev-1',
+          platform: 'ANDROID',
+          policyState: { desiredPresentation: DesiredPresentation.NONE },
+        },
+      },
+    ]);
+    prisma.paymentScheduleItem.findMany.mockResolvedValue([
+      { dueDate: new Date('2026-11-14'), status: ScheduleItemStatus.PENDING },
+    ]);
+    prisma.deviceAuditEvent.findFirst.mockResolvedValue(null);
+    prisma.deviceCommand.findFirst.mockResolvedValue(null);
+    commands.enqueue.mockResolvedValue({ id: 'cmd-sus' });
+    prisma.devicePolicyEvaluationRun.create.mockResolvedValue({});
+
+    const result = await orchestrator.evaluateTenant(
+      ctx,
+      'lab',
+      'idem-custom',
+      new Date('2026-11-21T10:00:00+07:00'),
+    );
+    expect(result.locked[0].target).toBe(DesiredPresentation.RESTRICT);
+    expect(commands.enqueue).toHaveBeenCalledWith(
+      expect.anything(),
+      'dev-1',
+      expect.objectContaining({
+        type: DeviceCommandType.START_PACKAGE_SUSPEND,
+      }),
+    );
+  });
+
+  it('creates PENDING lock approval instead of enqueue when requireLockApproval', async () => {
+    policySettings.getOrCreateInternal.mockResolvedValue({
+      ...defaultSettings,
+      requireLockApproval: true,
+    });
+    prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
+    prisma.deviceContractBinding.findMany.mockResolvedValue([
+      {
+        deviceId: 'dev-1',
+        contractId: 'c1',
+        device: {
+          id: 'dev-1',
+          platform: 'ANDROID',
+          policyState: { desiredPresentation: DesiredPresentation.NONE },
+        },
+      },
+    ]);
+    prisma.paymentScheduleItem.findMany.mockResolvedValue([
+      { dueDate: new Date('2026-11-14'), status: ScheduleItemStatus.PENDING },
+    ]);
+    prisma.deviceAuditEvent.findFirst.mockResolvedValue(null);
+    prisma.deviceLockApproval.findFirst.mockResolvedValue(null);
+    prisma.deviceLockApproval.create.mockResolvedValue({ id: 'appr-1' });
+    prisma.devicePolicyEvaluationRun.create.mockResolvedValue({});
+
+    const result = await orchestrator.evaluateTenant(
+      ctx,
+      'lab',
+      'idem-appr',
+      new Date('2026-11-21T10:00:00+07:00'),
+    );
+
+    expect(result.skipped[0].reason).toBe('LOCK_PENDING_APPROVAL');
+    expect(prisma.deviceLockApproval.create).toHaveBeenCalled();
+    expect(commands.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('skips LOCK_ALREADY_PENDING when approval exists', async () => {
+    policySettings.getOrCreateInternal.mockResolvedValue({
+      ...defaultSettings,
+      requireLockApproval: true,
+    });
+    prisma.devicePolicyEvaluationRun.findFirst.mockResolvedValue(null);
+    prisma.deviceContractBinding.findMany.mockResolvedValue([
+      {
+        deviceId: 'dev-1',
+        contractId: 'c1',
+        device: {
+          id: 'dev-1',
+          platform: 'ANDROID',
+          policyState: { desiredPresentation: DesiredPresentation.NONE },
+        },
+      },
+    ]);
+    prisma.paymentScheduleItem.findMany.mockResolvedValue([
+      { dueDate: new Date('2026-11-14'), status: ScheduleItemStatus.PENDING },
+    ]);
+    prisma.deviceAuditEvent.findFirst.mockResolvedValue(null);
+    prisma.deviceLockApproval.findFirst.mockResolvedValue({ id: 'appr-open' });
+    prisma.devicePolicyEvaluationRun.create.mockResolvedValue({});
+
+    const result = await orchestrator.evaluateTenant(
+      ctx,
+      'lab',
+      'idem-appr2',
+      new Date('2026-11-21T10:00:00+07:00'),
+    );
+    expect(result.skipped[0].reason).toBe('LOCK_ALREADY_PENDING');
+    expect(prisma.deviceLockApproval.create).not.toHaveBeenCalled();
   });
 });

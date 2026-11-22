@@ -68,12 +68,23 @@ export function overdueDaysFromSchedule(
   return Math.floor((end - start) / 86_400_000);
 }
 
+export type OverdueLadderThresholds = {
+  reminderAfterDays: number;
+  restrictAfterDays: number;
+  lockAfterDays: number;
+};
+
 export function targetFromOverdueDays(
   days: number,
+  thresholds: OverdueLadderThresholds = {
+    reminderAfterDays: LAB_REMINDER_DAYS,
+    restrictAfterDays: LAB_RESTRICT_DAYS,
+    lockAfterDays: LAB_LOCK_DAYS,
+  },
 ): DesiredPresentation | null {
-  if (days >= LAB_LOCK_DAYS) return DesiredPresentation.LOCK;
-  if (days >= LAB_RESTRICT_DAYS) return DesiredPresentation.RESTRICT;
-  if (days >= LAB_REMINDER_DAYS) return DesiredPresentation.REMINDER;
+  if (days >= thresholds.lockAfterDays) return DesiredPresentation.LOCK;
+  if (days >= thresholds.restrictAfterDays) return DesiredPresentation.RESTRICT;
+  if (days >= thresholds.reminderAfterDays) return DesiredPresentation.REMINDER;
   return null;
 }
 

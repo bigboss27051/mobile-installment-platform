@@ -9,6 +9,7 @@ export const PERMISSIONS = [
   'devices.unbind',
   'devices.command',
   'devices.location.read',
+  'devices.policy.config',
   'line.config',
   'line.link',
   'line.notify',
@@ -19,7 +20,7 @@ export type Permission = (typeof PERMISSIONS)[number];
 const OWNER_PERMS: Permission[] = [...PERMISSIONS];
 
 const STAFF_PERMS: Permission[] = PERMISSIONS.filter(
-  (p) => p !== 'devices.unbind',
+  (p) => p !== 'devices.unbind' && p !== 'devices.policy.config',
 );
 
 export function permissionsForRole(

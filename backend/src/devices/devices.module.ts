@@ -12,6 +12,8 @@ import { DeviceLocationService } from './device-location.service';
 import { DeviceRecoveryService } from './device-recovery.service';
 import { EnrollmentController } from './enrollment.controller';
 import { EnrollmentService } from './enrollment.service';
+import { DeviceLockApprovalService } from './device-lock-approval.service';
+import { DevicePolicySettingsService } from './device-policy-settings.service';
 import { OverdueLockCronService } from './overdue-lock-cron.service';
 import { OverdueLockSystemActorService } from './overdue-lock-system-actor.service';
 import { OverdueLockOrchestrator } from './overdue-lock.orchestrator';
@@ -34,6 +36,8 @@ import { MDM_PROVIDER } from './ports/mdm-provider.port';
     DeviceLifecycleService,
     DeviceRecoveryService,
     PaymentUnlockOrchestrator,
+    DevicePolicySettingsService,
+    DeviceLockApprovalService,
     OverdueLockOrchestrator,
     OverdueLockSystemActorService,
     OverdueLockCronService,

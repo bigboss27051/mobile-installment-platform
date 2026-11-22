@@ -33,6 +33,9 @@ describe('DeviceRecoveryService', () => {
     deviceAuditEvent: {
       create: jest.fn(),
     },
+    deviceLockApproval: {
+      updateMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
@@ -98,6 +101,7 @@ describe('DeviceRecoveryService', () => {
       deviceId: 'dev-1',
     });
     prisma.deviceAuditEvent.create.mockResolvedValue({});
+    prisma.deviceLockApproval.updateMany.mockResolvedValue({ count: 0 });
 
     const result = await service.request(user, 'dev-1', {
       type: DeviceRecoveryType.REENROLL,
@@ -105,6 +109,7 @@ describe('DeviceRecoveryService', () => {
     });
 
     expect(result.id).toBe('rec-1');
+    expect(prisma.deviceLockApproval.updateMany).toHaveBeenCalled();
     expect(prisma.deviceEnrollmentSession.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

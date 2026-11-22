@@ -233,3 +233,42 @@ describe('merchant error notice and logout confirm', () => {
     });
   });
 });
+
+describe('session expired redirect', () => {
+  let root: Root;
+  const fetchMock = vi.fn();
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    document.body.innerHTML = '';
+    localStorage.clear();
+    fetchMock.mockClear();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows login with session-expired message after a mid-session 401', async () => {
+    localStorage.setItem('mip.staff.accessToken', 'expired-token');
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockImplementation(() =>
+      jsonResponse(401, { error: { message: 'Unauthorized' } }),
+    );
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <App />
+        </I18nProvider>,
+      );
+    });
+
+    expect(localStorage.getItem('mip.staff.accessToken')).toBeNull();
+    expect(container.textContent).toContain('เข้าสู่ระบบร้านค้า');
+    expect(container.textContent).toContain('เซสชันหมดอายุ — กรุณาเข้าสู่ระบบอีกครั้ง');
+    expect(container.textContent).not.toContain('ยังไม่มีสัญญา');
+  });
+});

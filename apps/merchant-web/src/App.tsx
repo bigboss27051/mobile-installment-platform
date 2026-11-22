@@ -10,12 +10,14 @@ import {
   getAccessToken,
   login,
   setAccessToken,
+  subscribeAuthExpired,
 } from './api';
 import { DevicesPage } from './devices-page';
 import { EnrollPage } from './enroll-page';
 import { KycPanel } from './kyc-panel';
 import { LineLinkPanel } from './line-link-panel';
 import { LineSettingsPage } from './line-settings-page';
+import { PolicyPage } from './policy-page';
 import { LanguageSwitch, useI18n } from './i18n-context';
 import {
   Alert,
@@ -39,6 +41,7 @@ type AppPage =
   | 'applications'
   | 'contracts'
   | 'devices'
+  | 'policy'
   | 'enroll'
   | 'line';
 
@@ -55,6 +58,7 @@ const PAGES: AppPage[] = [
   'applications',
   'contracts',
   'devices',
+  'policy',
   'enroll',
   'line',
 ];
@@ -105,17 +109,29 @@ async function runAction(
 export function App() {
   const { t, apiError } = useI18n();
   const [token, setToken] = useState<string | null>(getAccessToken());
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [page, setPage] = useState<AppPage>('contracts');
   const [error, setError] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
 
+  useEffect(() => {
+    return subscribeAuthExpired(() => {
+      setToken(null);
+      setSessionExpired(true);
+      setError(null);
+      setLogoutOpen(false);
+    });
+  }, []);
+
   if (!token) {
     return (
       <LoginForm
+        sessionExpired={sessionExpired}
         onLoggedIn={(accessToken) => {
           setAccessToken(accessToken);
           setToken(accessToken);
+          setSessionExpired(false);
         }}
       />
     );
@@ -268,6 +284,7 @@ export function App() {
         ) : null}
         {page === 'contracts' ? <ContractsPage onError={setError} apiError={apiError} /> : null}
         {page === 'devices' ? <DevicesPage onError={setError} apiError={apiError} /> : null}
+        {page === 'policy' ? <PolicyPage onError={setError} apiError={apiError} /> : null}
         {page === 'enroll' ? <EnrollPage onError={setError} apiError={apiError} /> : null}
         {page === 'line' ? <LineSettingsPage onError={setError} apiError={apiError} /> : null}
       </Box>
@@ -275,7 +292,13 @@ export function App() {
   );
 }
 
-function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
+function LoginForm({
+  onLoggedIn,
+  sessionExpired = false,
+}: {
+  onLoggedIn: (token: string) => void;
+  sessionExpired?: boolean;
+}) {
   const { t, apiError } = useI18n();
   const [email, setEmail] = useState('owner@example.com');
   const [password, setPassword] = useState('Password1!');
@@ -307,6 +330,7 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
         <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
           {t('login.title')}
         </Typography>
+        {sessionExpired ? <Alert tone="error">{t('login.sessionExpired')}</Alert> : null}
         <Stack component="form" spacing={2} sx={{ maxWidth: MIP_TOKENS.formMax }} onSubmit={onSubmit}>
           <FormField label={t('login.email')} htmlFor="login-email" required>
             <Input

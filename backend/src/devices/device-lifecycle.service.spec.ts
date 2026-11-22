@@ -44,7 +44,14 @@ describe('DeviceLifecycleService', () => {
   };
 
   const locations = new DeviceLocationService(prisma as never);
-  const service = new DeviceLifecycleService(prisma as never, locations);
+  const lockApprovals = {
+    cancelPendingForDevice: jest.fn().mockResolvedValue(0),
+  };
+  const service = new DeviceLifecycleService(
+    prisma as never,
+    locations,
+    lockApprovals as never,
+  );
   const tenantCtx = {
     tenantId: 'tenant-a',
     userId: 'user-1',

@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -17,12 +18,16 @@ import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { DeviceCommandsService } from './device-commands.service';
 import { DeviceLifecycleService } from './device-lifecycle.service';
+import { DeviceLockApprovalService } from './device-lock-approval.service';
+import { DevicePolicySettingsService } from './device-policy-settings.service';
 import { DeviceRecoveryService } from './device-recovery.service';
 import { ActivateDeviceDto } from './dto/activate-device.dto';
 import { BindContractDto, UnbindContractDto } from './dto/bind-contract.dto';
 import { CreateRecoveryRequestDto } from './dto/create-recovery-request.dto';
 import { EnqueueDeviceCommandDto } from './dto/enqueue-device-command.dto';
 import { EvaluateOverdueDto } from './dto/evaluate-overdue.dto';
+import { ResolveLockApprovalDto } from './dto/resolve-lock-approval.dto';
+import { UpdateDevicePolicySettingsDto } from './dto/update-device-policy-settings.dto';
 import { OverdueLockOrchestrator } from './overdue-lock.orchestrator';
 
 @Controller('devices')
@@ -33,6 +38,8 @@ export class DeviceLifecycleController {
     private readonly commands: DeviceCommandsService,
     private readonly recovery: DeviceRecoveryService,
     private readonly overdueLock: OverdueLockOrchestrator,
+    private readonly policySettings: DevicePolicySettingsService,
+    private readonly lockApprovals: DeviceLockApprovalService,
   ) {}
 
   @Post('activate')
@@ -65,6 +72,74 @@ export class DeviceLifecycleController {
       idempotencyKey,
     );
     return { data };
+  }
+
+  @Get('policy/settings')
+  @RequirePermissions('devices.policy.config')
+  async getPolicySettings(@CurrentUser() user: TenantContext) {
+    return { data: await this.policySettings.getOrCreate(user) };
+  }
+
+  @Put('policy/settings')
+  @RequirePermissions('devices.policy.config')
+  async putPolicySettings(
+    @Body() dto: UpdateDevicePolicySettingsDto,
+    @CurrentUser() user: TenantContext,
+  ) {
+    return { data: await this.policySettings.update(user, dto) };
+  }
+
+  @Get('policy/lock-approvals')
+  @RequirePermissions('devices.command')
+  async listLockApprovals(
+    @CurrentUser() user: TenantContext,
+    @Query('status') status?: string,
+  ) {
+    return {
+      data: await this.lockApprovals.list(user, status ?? 'PENDING'),
+    };
+  }
+
+  @Post('policy/lock-approvals/:approvalId/approve')
+  @RequirePermissions('devices.command')
+  async approveLock(
+    @Param('approvalId', ParseUUIDPipe) approvalId: string,
+    @Body() dto: ResolveLockApprovalDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @CurrentUser() user: TenantContext,
+  ) {
+    if (!idempotencyKey?.trim()) {
+      throw new BadRequestException('Idempotency-Key header is required.');
+    }
+    return {
+      data: await this.lockApprovals.approve(
+        user,
+        approvalId,
+        dto.reason,
+        idempotencyKey,
+      ),
+    };
+  }
+
+  @Post('policy/lock-approvals/:approvalId/reject')
+  @RequirePermissions('devices.command')
+  async rejectLock(
+    @Param('approvalId', ParseUUIDPipe) approvalId: string,
+    @Body() dto: ResolveLockApprovalDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @CurrentUser() user: TenantContext,
+  ) {
+    if (!idempotencyKey?.trim()) {
+      throw new BadRequestException('Idempotency-Key header is required.');
+    }
+    return {
+      data: await this.lockApprovals.reject(
+        user,
+        approvalId,
+        dto.reason,
+        idempotencyKey,
+      ),
+    };
   }
 
   @Get()

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { apiRequest, apiUpload, setAccessToken } from './api';
+import { apiRequest, apiUpload, login, setAccessToken, subscribeAuthExpired } from './api';
 
 describe('merchant api client', () => {
   afterEach(() => {
@@ -37,6 +37,62 @@ describe('merchant api client', () => {
       status: 401,
     });
     expect(localStorage.getItem('mip.staff.accessToken')).toBeNull();
+  });
+
+  it('notifies auth-expired listeners on 401 for authenticated requests', async () => {
+    setAccessToken('expired');
+    const listener = vi.fn();
+    const unsubscribe = subscribeAuthExpired(listener);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { message: 'Unauthorized' } }),
+      }),
+    );
+
+    await expect(apiRequest('/api/v1/contracts')).rejects.toMatchObject({ status: 401 });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem('mip.staff.accessToken')).toBeNull();
+    unsubscribe();
+  });
+
+  it('does not notify auth-expired on login 401', async () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeAuthExpired(listener);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { message: 'Unauthorized' } }),
+      }),
+    );
+
+    await expect(login('bad@example.com', 'wrong')).rejects.toMatchObject({ status: 401 });
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it('notifies auth-expired listeners on 401 for uploads', async () => {
+    setAccessToken('expired');
+    const listener = vi.fn();
+    const unsubscribe = subscribeAuthExpired(listener);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { message: 'Unauthorized' } }),
+      }),
+    );
+
+    await expect(apiUpload('/api/v1/kyc-cases/case-1/documents', new FormData())).rejects.toMatchObject({
+      status: 401,
+    });
+    expect(listener).toHaveBeenCalledTimes(1);
+    unsubscribe();
   });
 
   it('sends Idempotency-Key on enrollment session create', async () => {
