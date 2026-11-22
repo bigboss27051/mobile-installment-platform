@@ -229,87 +229,91 @@ export function LineSettingsPage({
 
       <Section title={t('line.connectSection')}>
         <form onSubmit={onSave}>
-          <FormField label={t('line.channelId')} htmlFor="line-channel-id" required>
-            <Input
-              id="line-channel-id"
-              value={channelId}
-              onChange={(e) => setChannelId(e.target.value)}
+          <Stack spacing={2}>
+            <FormField label={t('line.channelId')} htmlFor="line-channel-id" required>
+              <Input
+                id="line-channel-id"
+                value={channelId}
+                onChange={(e) => setChannelId(e.target.value)}
+                required
+                autoComplete="off"
+              />
+            </FormField>
+            <FormField
+              label={t('line.channelSecret')}
+              htmlFor="line-channel-secret"
               required
-              autoComplete="off"
-            />
-          </FormField>
-          <FormField
-            label={t('line.channelSecret')}
-            htmlFor="line-channel-secret"
-            required
-            helperText={t('line.secretHelper')}
-          >
-            <Input
-              id="line-channel-secret"
-              type="password"
-              value={channelSecret}
-              onChange={(e) => setChannelSecret(e.target.value)}
-              required
-              autoComplete="off"
-            />
-          </FormField>
-          <FormField label={t('line.accessToken')} htmlFor="line-access-token" required>
-            <Input
-              id="line-access-token"
-              type="password"
-              value={accessToken}
-              onChange={(e) => setAccessToken(e.target.value)}
-              required
-              autoComplete="off"
-            />
-          </FormField>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
-            <Button type="submit" disabled={saving}>
-              {t('line.save')}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={saving || config.status === 'DISCONNECTED'}
-              onClick={() => void onDisconnect()}
+              helperText={t('line.secretHelper')}
             >
-              {t('line.disconnect')}
-            </Button>
+              <Input
+                id="line-channel-secret"
+                type="password"
+                value={channelSecret}
+                onChange={(e) => setChannelSecret(e.target.value)}
+                required
+                autoComplete="off"
+              />
+            </FormField>
+            <FormField label={t('line.accessToken')} htmlFor="line-access-token" required>
+              <Input
+                id="line-access-token"
+                type="password"
+                value={accessToken}
+                onChange={(e) => setAccessToken(e.target.value)}
+                required
+                autoComplete="off"
+              />
+            </FormField>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+              <Button type="submit" disabled={saving}>
+                {t('line.save')}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={saving || config.status === 'DISCONNECTED'}
+                onClick={() => void onDisconnect()}
+              >
+                {t('line.disconnect')}
+              </Button>
+            </Stack>
           </Stack>
         </form>
       </Section>
 
       <Section title={t('line.webhookSection')}>
         <p>{t('line.webhookHelp')}</p>
-        <FormField
-          label={t('line.apiOrigin')}
-          htmlFor="line-api-origin"
-          helperText={t('line.apiOriginHelper')}
-        >
-          <Input
-            id="line-api-origin"
-            value={apiOrigin}
-            onChange={(e) => {
-              const next = e.target.value.trim().replace(/\/$/, '');
-              setApiOrigin(next);
-              localStorage.setItem('mip.line.apiOrigin', next);
-            }}
-            placeholder="https://api.your-shop.example"
-            autoComplete="off"
-          />
-        </FormField>
-        <FormField label={t('line.webhookUrl')} htmlFor="line-webhook-url">
-          <Input id="line-webhook-url" value={webhookUrl} readOnly />
-        </FormField>
-        <Typography variant="body2" color="text.secondary">
-          {t('line.webhookSignature')}
-        </Typography>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
-          <Button type="button" variant="secondary" disabled={!webhookUrl} onClick={() => void onCopyWebhook()}>
-            {copied === 'webhook' ? t('line.copied') : t('line.copyWebhook')}
-          </Button>
+        <Stack spacing={2}>
+          <FormField
+            label={t('line.apiOrigin')}
+            htmlFor="line-api-origin"
+            helperText={t('line.apiOriginHelper')}
+          >
+            <Input
+              id="line-api-origin"
+              value={apiOrigin}
+              onChange={(e) => {
+                const next = e.target.value.trim().replace(/\/$/, '');
+                setApiOrigin(next);
+                localStorage.setItem('mip.line.apiOrigin', next);
+              }}
+              placeholder="https://api.your-shop.example"
+              autoComplete="off"
+            />
+          </FormField>
+          <FormField label={t('line.webhookUrl')} htmlFor="line-webhook-url">
+            <Input id="line-webhook-url" value={webhookUrl} readOnly />
+          </FormField>
+          <Typography variant="body2" color="text.secondary">
+            {t('line.webhookSignature')}
+          </Typography>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+            <Button type="button" variant="secondary" disabled={!webhookUrl} onClick={() => void onCopyWebhook()}>
+              {copied === 'webhook' ? t('line.copied') : t('line.copyWebhook')}
+            </Button>
+          </Stack>
+          {!tenant?.id ? <Alert tone="error">{t('line.tenantMissing')}</Alert> : null}
         </Stack>
-        {!tenant?.id ? <Alert tone="error">{t('line.tenantMissing')}</Alert> : null}
       </Section>
 
       <Section title={t('line.commandsSection')}>
