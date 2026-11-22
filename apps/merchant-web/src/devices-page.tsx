@@ -45,7 +45,7 @@ export function DevicesPage({
         {rows === null ? (
           <Spinner />
         ) : rows.length === 0 ? (
-          <EmptyState title={t('devices.empty')} />
+          <EmptyState>{t('devices.empty')}</EmptyState>
         ) : (
           <Table>
             <thead>

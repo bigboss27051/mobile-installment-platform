@@ -1,9 +1,13 @@
+import TableContainer from '@mui/material/TableContainer';
+import MuiTable from '@mui/material/Table';
 import type { TableHTMLAttributes } from 'react';
 
-export function Table(props: TableHTMLAttributes<HTMLTableElement>) {
+export function Table({ className, children, ...rest }: TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="mip-table-wrap">
-      <table {...props} className={['mip-table', props.className].filter(Boolean).join(' ')} />
-    </div>
+    <TableContainer sx={{ overflowX: 'auto' }}>
+      <MuiTable size="small" className={className} {...rest}>
+        {children}
+      </MuiTable>
+    </TableContainer>
   );
 }

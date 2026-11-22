@@ -30,7 +30,7 @@ export function Button({
   onClick,
   autoFocus,
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'color'> & {
   variant?: Variant;
   loading?: boolean;
   children: ReactNode;

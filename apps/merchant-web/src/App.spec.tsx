@@ -89,14 +89,14 @@ describe('merchant error notice and logout confirm', () => {
     await act(async () => {
       buttonByText(container.querySelector('nav') as ParentNode, 'ออกจากระบบ')?.click();
     });
-    const dialog = container.querySelector('[role="alertdialog"]');
+    const dialog = document.querySelector('[role="alertdialog"]');
     expect(dialog?.textContent).toContain('ออกจากระบบ?');
     expect(localStorage.getItem('mip.staff.accessToken')).toBe('token');
 
     await act(async () => {
       buttonByText(dialog as ParentNode, 'อยู่ต่อ')?.click();
     });
-    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     expect(container.textContent).not.toContain('เข้าสู่ระบบร้านค้า');
     expect(localStorage.getItem('mip.staff.accessToken')).toBe('token');
     expect(container.textContent).toContain('สร้างสัญญา');
@@ -121,7 +121,7 @@ describe('merchant error notice and logout confirm', () => {
     await act(async () => {
       buttonByText(container.querySelector('nav') as ParentNode, 'ออกจากระบบ')?.click();
     });
-    const dialog = container.querySelector('[role="alertdialog"]');
+    const dialog = document.querySelector('[role="alertdialog"]');
     await act(async () => {
       buttonByText(dialog as ParentNode, 'ออกจากระบบ')?.click();
     });
