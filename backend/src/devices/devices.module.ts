@@ -5,6 +5,7 @@ import { SandboxMdmAdapter } from './adapters/sandbox-mdm.adapter';
 import { DeviceAgentController } from './device-agent.controller';
 import { DeviceCheckInService } from './device-check-in.service';
 import { DeviceCommandsService } from './device-commands.service';
+import { FcmPushAdapter } from './fcm-push.adapter';
 import { DeviceLifecycleController } from './device-lifecycle.controller';
 import { DeviceLifecycleService } from './device-lifecycle.service';
 import { DeviceLocationService } from './device-location.service';
@@ -28,6 +29,7 @@ import { MDM_PROVIDER } from './ports/mdm-provider.port';
     EnrollmentService,
     DeviceCheckInService,
     DeviceLocationService,
+    FcmPushAdapter,
     DeviceCommandsService,
     DeviceLifecycleService,
     DeviceRecoveryService,

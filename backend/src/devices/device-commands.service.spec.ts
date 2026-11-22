@@ -46,9 +46,14 @@ describe('DeviceCommandsService', () => {
     clearForDevice: jest.fn(),
   };
 
+  const fcm = {
+    sendPollNow: jest.fn().mockResolvedValue(undefined),
+  };
+
   const service = new DeviceCommandsService(
     prisma as never,
     locations as never,
+    fcm as never,
   );
   const user = {
     userId: 'user-1',
@@ -58,6 +63,7 @@ describe('DeviceCommandsService', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    fcm.sendPollNow.mockResolvedValue(undefined);
     prisma.$transaction.mockImplementation(
       async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
     );
@@ -92,6 +98,7 @@ describe('DeviceCommandsService', () => {
       id: 'dev-1',
       tenantId: 'tenant-a',
       platform: 'ANDROID',
+      fcmToken: 'fcm-lock-token',
     });
     prisma.deviceCommand.create.mockResolvedValue({
       id: 'cmd-1',
@@ -119,6 +126,51 @@ describe('DeviceCommandsService', () => {
         }),
       }),
     );
+    expect(fcm.sendPollNow).toHaveBeenCalledWith('fcm-lock-token');
+  });
+
+  it('does not call FCM on STOP_LOCK_TASK enqueue', async () => {
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      fcmToken: 'fcm-should-not-fire',
+    });
+    prisma.deviceCommand.create.mockResolvedValue({ id: 'cmd-stop' });
+    prisma.devicePolicyState.upsert.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+    locations.clearForDevice.mockResolvedValue(undefined);
+
+    await service.enqueue(user, 'dev-1', {
+      type: DeviceCommandType.STOP_LOCK_TASK,
+      reason: 'paid',
+    });
+
+    expect(fcm.sendPollNow).not.toHaveBeenCalled();
+  });
+
+  it('still returns command when FCM sendPollNow rejects', async () => {
+    fcm.sendPollNow.mockRejectedValueOnce(new Error('FCM down'));
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      fcmToken: 'fcm-err',
+    });
+    prisma.deviceCommand.create.mockResolvedValue({
+      id: 'cmd-1',
+      type: DeviceCommandType.START_LOCK_TASK,
+    });
+    prisma.devicePolicyState.upsert.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+
+    const result = await service.enqueue(user, 'dev-1', {
+      type: DeviceCommandType.START_LOCK_TASK,
+      reason: 'lab lock',
+    });
+
+    expect(result.id).toBe('cmd-1');
+    expect(fcm.sendPollNow).toHaveBeenCalled();
   });
 
   it('denies enqueue for another tenant device', async () => {
@@ -203,6 +255,7 @@ describe('DeviceCommandsService', () => {
       id: 'dev-1',
       tenantId: 'tenant-a',
       platform: 'ANDROID',
+      fcmToken: 'fcm-restrict',
     });
     prisma.deviceCommand.create.mockResolvedValue({
       id: 'cmd-suspend',
@@ -224,6 +277,7 @@ describe('DeviceCommandsService', () => {
         }),
       }),
     );
+    expect(fcm.sendPollNow).toHaveBeenCalledWith('fcm-restrict');
   });
 
   it('records heartbeat for a valid agent token', async () => {

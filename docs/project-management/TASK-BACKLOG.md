@@ -59,6 +59,7 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | DONE (lab: wipe → reinstall DO via dpm + check-in + HTTPS HB + lock loop; full Welcome QR optional; REENROLL clears device_id) |
 | R2-P4-006 | LAN HTTPS lab: Pad agent heartbeat over Wi‑Fi to host `:3443` without adb reverse | P0 | Android/Backend | DONE (Pad 6 2026-11-22; `192.168.68.110` → `192.168.68.108`; `0.1.17-lab`; not production DO) |
 | R2-P4-007 | Welcome QR lab: post-wipe QR Device Owner + LAN HTTPS check-in (`ENROLLING`) | P1 | Android/Docs | DONE (Pad 6 2026-11-22; DO via QR/`0.1.17-lab`; check-in via LabProvisioning after DO; not production) |
+| R2-P4-008 | WorkManager + FCM poller: WM periodic/OneTime + FCM wake on restrictive enqueue; push-token API | P0 | Android/Backend | DONE (Pad 6 E2E 2026-11-22; `0.1.18-lab`; FCM POLL_NOW → CommandPollWorker; not production DO) |
 | P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |
 | R3-P0-001 | LINE sandbox: schema + NotificationChannelPort + adapter + webhook idempotency (D-066) | P0 | Backend | DONE (unit) |
 | R3-P0-002 | LINE customer link invites + consume via LINK token | P0 | Backend | DONE (unit) |

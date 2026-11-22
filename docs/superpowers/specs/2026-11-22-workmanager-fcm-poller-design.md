@@ -1,7 +1,7 @@
 # WorkManager + FCM Poller (Approach B) Design
 
 **Date:** 2026-11-22  
-**Status:** Approved — awaiting implementation plan  
+**Status:** Implemented (lab Pad 6 E2E 2026-11-22; DPC `0.1.18-lab`)  
 **Parent:** R2 Android lab agent transport  
 **Depends on:** Phase 3a–3d command/heartbeat loop, LAN HTTPS agent (lab), Device Owner check-in  
 **Scope choice:** User approved **Approach 1** — Periodic WorkManager + FCM wake on restrictive enqueue only (not every command; not FCM-only)

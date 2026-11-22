@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -17,6 +18,7 @@ import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashDeviceAgentToken } from './device-agent-token';
 import { DeviceLocationService } from './device-location.service';
+import { FcmPushAdapter } from './fcm-push.adapter';
 
 const OPEN_STATUSES: DeviceCommandStatus[] = [
   DeviceCommandStatus.QUEUED,
@@ -41,9 +43,12 @@ export function desiredPresentationForCommand(
 
 @Injectable()
 export class DeviceCommandsService {
+  private readonly logger = new Logger(DeviceCommandsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly locations: DeviceLocationService,
+    private readonly fcm: FcmPushAdapter,
   ) {}
 
   async enqueue(
@@ -71,7 +76,7 @@ export class DeviceCommandsService {
 
     const desired = desiredPresentationForCommand(input.type);
 
-    return this.prisma.$transaction(async (tx) => {
+    const command = await this.prisma.$transaction(async (tx) => {
       const command = await tx.deviceCommand.create({
         data: {
           tenantId,
@@ -112,6 +117,22 @@ export class DeviceCommandsService {
       }
       return command;
     });
+
+    if (
+      (input.type === DeviceCommandType.START_LOCK_TASK ||
+        input.type === DeviceCommandType.START_PACKAGE_SUSPEND) &&
+      device.fcmToken?.trim()
+    ) {
+      void this.fcm.sendPollNow(device.fcmToken).catch((err) => {
+        this.logger.warn(
+          `FCM sendPollNow failed for device ${device.id}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      });
+    }
+
+    return command;
   }
 
   async policyForAgent(rawToken: string) {

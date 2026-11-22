@@ -53,6 +53,8 @@ class LabProvisioningActivity : AppCompatActivity() {
                         apiBase = result.apiBase,
                         deviceId = result.deviceId.orEmpty(),
                     )
+                    CommandPollScheduler.ensurePeriodic(applicationContext)
+                    PushTokenClient.registerIfPossible(applicationContext)
                 }
                 store.clear()
                 runOnUiThread { resultView.text = result.message }

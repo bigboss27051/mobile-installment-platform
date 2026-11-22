@@ -95,6 +95,14 @@
             android:exported="true"
             android:foregroundServiceType="shortService" />
 
+        <service
+            android:name=".MipFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".MipDeviceAdminReceiver"
             android:exported="true"

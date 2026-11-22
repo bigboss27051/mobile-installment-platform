@@ -14,6 +14,15 @@ import android.widget.TextView
 class MangoLockActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent.getBooleanExtra(EXTRA_CLEAR_LOCK, false)) {
+            try {
+                stopLockTask()
+            } catch (_: Exception) {
+                // already stopped
+            }
+            finish()
+            return
+        }
         val reason = intent.getStringExtra(EXTRA_REASON).orEmpty()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -46,5 +55,7 @@ class MangoLockActivity : Activity() {
 
     companion object {
         const val EXTRA_REASON = "reason"
+        /** When true, exit Lock Task and finish (used from WorkManager / non-Activity context). */
+        const val EXTRA_CLEAR_LOCK = "clearLock"
     }
 }

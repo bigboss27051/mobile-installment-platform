@@ -1,11 +1,13 @@
-# MIP DPC (`0.1.17-lab`)
+# MIP DPC (`0.1.18-lab`)
 
 Lab Android Device Policy Controller (`com.mip.dpc`). **Not** production Device Owner / financing approval.
 
 ## What it does (lab)
 
 - Reads enrollment extras from Enterprise QR / provisioning and POSTs check-in
-- Polls agent commands; acks Lock Task (`MangoLockActivity`) and package suspend
+- **Command delivery:** `CommandPollWorker` (WorkManager periodic + FCM `POLL_NOW` OneTime) via shared `CommandExecutor`; foreground `CommandPollActivity` optional for lab debugging
+- Registers FCM via `PushTokenClient` → `POST /devices/agent/push-token`
+- Polls/acks Lock Task (`MangoLockActivity`) and package suspend
 - Reboot recovery via preferred HOME alias + policy GET
 - Heartbeat (HTTPS preferred; lab CA pin) + soft location only under `RESTRICT` / `LOCK`
 - **REMINDER:** overdue notification only — device stays usable (no suspend / lock-task)

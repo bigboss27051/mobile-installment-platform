@@ -29,9 +29,14 @@ describe('DeviceCommandsService — registerPushToken', () => {
     clearForDevice: jest.fn(),
   };
 
+  const fcm = {
+    sendPollNow: jest.fn(),
+  };
+
   const service = new DeviceCommandsService(
     prisma as never,
     locations as never,
+    fcm as never,
   );
 
   beforeEach(() => {

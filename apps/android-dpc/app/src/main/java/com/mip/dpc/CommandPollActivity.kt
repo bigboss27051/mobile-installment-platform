@@ -1,9 +1,6 @@
 package com.mip.dpc
 
 import android.app.Activity
-import android.app.admin.DevicePolicyManager
-import android.content.ComponentName
-import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -12,7 +9,7 @@ import android.widget.TextView
 import kotlin.concurrent.thread
 
 /**
- * Lab poller for queued lock-task commands. Not a production heartbeat/FCM path.
+ * Lab poller for queued lock-task commands. UI tick; work runs via [CommandExecutor].
  */
 class CommandPollActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
@@ -45,129 +42,18 @@ class CommandPollActivity : Activity() {
     }
 
     private fun pollOnce() {
-        val session = AgentTokenStore(this).load()
-        if (session == null) {
-            statusView.text = "No agent token. Re-check-in first."
-            return
-        }
         thread {
-            val cache = PolicyCacheStore(this)
-            val remote = PolicyClient.fetch(session)
-            if (remote != null) {
-                cache.save(
-                    remote.desiredPresentation,
-                    remote.platformState,
-                    remote.policyVersion,
-                )
-            }
-            val policy = cache.load()
-            val location = SoftLocationReader.readIfAllowed(this, policy.desiredPresentation)
-            val hbOk = HeartbeatClient.post(
-                session,
-                policyVersion = policy.policyVersion,
-                location = location,
-            )
-            val commands = CommandClient.poll(session)
+            val result = CommandExecutor.runOnce(this)
             runOnUiThread {
-                statusView.text =
-                    "HB=${if (hbOk) "ok" else "fail"}; loc=${if (location != null) location.source else "none"}; polled ${commands.size} command(s)."
-            }
-            for (command in commands) {
-                handle(session, command)
+                statusView.text = if (result.noSession) {
+                    "No agent token. Re-check-in first."
+                } else {
+                    "HB=${if (result.heartbeatOk) "ok" else "fail"}; " +
+                        "loc=${result.locationSource ?: "none"}; " +
+                        "polled ${result.commandCount} command(s)."
+                }
             }
         }
-    }
-
-    private fun handle(session: AgentTokenStore.AgentSession, command: PendingCommand) {
-        val dpm = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
-        val admin = ComponentName(this, MipDeviceAdminReceiver::class.java)
-        when (command.type) {
-            "START_LOCK_TASK" -> {
-                if (!dpm.isDeviceOwnerApp(packageName)) {
-                    CommandClient.ack(
-                        session,
-                        command.id,
-                        status = "UNSUPPORTED",
-                        platformState = "UNSUPPORTED",
-                        resultCode = "NOT_DEVICE_OWNER",
-                    )
-                    return
-                }
-                runOnUiThread {
-                    startActivity(
-                        Intent(this, MangoLockActivity::class.java)
-                            .putExtra(MangoLockActivity.EXTRA_REASON, command.reason),
-                    )
-                }
-                LockHomeHelper.enableLockHome(this, dpm, admin)
-                CommandClient.ack(
-                    session,
-                    command.id,
-                    status = "ACKED_SUCCESS",
-                    platformState = "LOCK_TASK",
-                    resultCode = "LOCK_TASK_ACTIVE",
-                )
-                PolicyCacheStore(this).save("LOCK", "LOCK_TASK", bumpVersion())
-            }
-            "STOP_LOCK_TASK" -> {
-                LockHomeHelper.clearLockHome(this, dpm, admin)
-                runOnUiThread {
-                    try {
-                        stopLockTask()
-                    } catch (_: Exception) {
-                        // already stopped
-                    }
-                }
-                CommandClient.ack(
-                    session,
-                    command.id,
-                    status = "ACKED_SUCCESS",
-                    platformState = "NONE",
-                    resultCode = "LOCK_TASK_STOPPED",
-                )
-                PolicyCacheStore(this).save("NONE", "NONE", bumpVersion())
-            }
-            "START_PACKAGE_SUSPEND" -> {
-                val result = PackageSuspendHelper.suspendNonEssential(this, dpm, admin)
-                CommandClient.ack(
-                    session,
-                    command.id,
-                    status = if (result.ok) "ACKED_SUCCESS" else "UNSUPPORTED",
-                    platformState = result.platformState,
-                    resultCode = "${result.resultCode}:${result.affectedCount}",
-                )
-                if (result.ok) {
-                    PolicyCacheStore(this).save("RESTRICT", result.platformState, bumpVersion())
-                }
-            }
-            "STOP_PACKAGE_SUSPEND" -> {
-                val result = PackageSuspendHelper.unsuspendAll(this, dpm, admin)
-                CommandClient.ack(
-                    session,
-                    command.id,
-                    status = if (result.ok) "ACKED_SUCCESS" else "UNSUPPORTED",
-                    platformState = result.platformState,
-                    resultCode = "${result.resultCode}:${result.affectedCount}",
-                )
-                if (result.ok) {
-                    PolicyCacheStore(this).save("NONE", result.platformState, bumpVersion())
-                }
-            }
-            else -> {
-                CommandClient.ack(
-                    session,
-                    command.id,
-                    status = "UNSUPPORTED",
-                    platformState = "UNSUPPORTED",
-                    resultCode = "UNKNOWN_COMMAND",
-                )
-            }
-        }
-    }
-
-    private fun bumpVersion(): Int {
-        val store = PolicyCacheStore(this)
-        return store.load().policyVersion + 1
     }
 
     companion object {

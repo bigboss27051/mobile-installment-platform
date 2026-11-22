@@ -64,6 +64,8 @@ class AdminPolicyComplianceActivity : Activity() {
                     apiBase = result.apiBase,
                     deviceId = result.deviceId.orEmpty(),
                 )
+                CommandPollScheduler.ensurePeriodic(applicationContext)
+                PushTokenClient.registerIfPossible(applicationContext)
             }
             store.clear()
             runOnUiThread {
