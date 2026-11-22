@@ -1,3 +1,6 @@
+import Box from '@mui/material/Box';
+import FormHelperText from '@mui/material/FormHelperText';
+import InputLabel from '@mui/material/InputLabel';
 import type { ReactNode } from 'react';
 
 export type FormFieldProps = {
@@ -17,22 +20,32 @@ export function FormField({
   error,
   children,
 }: FormFieldProps) {
-  const message = error ? (
-    <p className="mip-field__error" role="alert">
-      {error}
-    </p>
-  ) : helperText ? (
-    <p className="mip-field__helper">{helperText}</p>
-  ) : null;
-
   return (
-    <div className="mip-field">
-      <label className="mip-field__label" htmlFor={htmlFor}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <InputLabel
+        htmlFor={htmlFor}
+        required={required}
+        sx={{
+          position: 'static',
+          transform: 'none',
+          fontSize: 14,
+          fontWeight: 500,
+          color: 'text.primary',
+          mb: 0,
+        }}
+      >
         {label}
-        {required ? <span className="mip-field__required"> *</span> : null}
-      </label>
+      </InputLabel>
       {children}
-      {message}
-    </div>
+      {error ? (
+        <FormHelperText error component="p" role="alert" sx={{ m: 0 }}>
+          {error}
+        </FormHelperText>
+      ) : helperText ? (
+        <FormHelperText component="p" sx={{ m: 0 }}>
+          {helperText}
+        </FormHelperText>
+      ) : null}
+    </Box>
   );
 }
