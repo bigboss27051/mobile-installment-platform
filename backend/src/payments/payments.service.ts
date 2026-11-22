@@ -29,6 +29,7 @@ import { allocateFifo } from '../common/payments/allocate-fifo';
 import { parseThbMoneyString } from '../common/schedule/money';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PaymentUnlockOrchestrator } from '../devices/payment-unlock.orchestrator';
+import { LineNotifyService } from '../line/line-notify.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 type PaymentIntentRecord = Prisma.PaymentIntentGetPayload<
@@ -90,6 +91,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     @Inject(PAYMENT_GATEWAY) private readonly gateway: PaymentGatewayPort,
     private readonly paymentUnlock: PaymentUnlockOrchestrator,
+    private readonly lineNotify: LineNotifyService,
   ) {}
 
   async createIntent(
@@ -398,6 +400,19 @@ export class PaymentsService {
           this.logger.error(
             `payment-unlock failed tx=${summary.data.transactionId}`,
             unlockError instanceof Error ? unlockError.stack : undefined,
+          );
+        }
+        try {
+          await this.lineNotify.onVerifiedPayment({
+            tenantId: summary.data.tenantId as string,
+            contractId: summary.data.contractId as string,
+            paymentTransactionId: summary.data.transactionId,
+            amount: summary.data.amount,
+          });
+        } catch (lineError: unknown) {
+          this.logger.error(
+            `line-notify failed tx=${summary.data.transactionId}`,
+            lineError instanceof Error ? lineError.stack : undefined,
           );
         }
       }

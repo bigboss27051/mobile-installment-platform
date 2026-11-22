@@ -23,4 +23,6 @@ export const envValidationSchema = Joi.object({
   HTTPS_PORT: Joi.number().optional(),
   /** Empty/unset = overdue evaluate cron disabled. Invalid cron fails boot. */
   OVERDUE_EVALUATE_CRON: Joi.string().optional().allow(''),
+  /** Optional; falls back to NATIONAL_ID_ENCRYPTION_KEY for LINE credential encryption. */
+  LINE_CREDENTIALS_ENCRYPTION_KEY: Joi.string().min(32).optional().allow(''),
 });

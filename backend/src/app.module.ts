@@ -17,6 +17,8 @@ import { PortalModule } from './portal/portal.module';
 import { PlansModule } from './plans/plans.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './common/storage/storage.module';
+import { NotificationsModule } from './common/notifications/notifications.module';
+import { LineModule } from './line/line.module';
 import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
@@ -27,6 +29,7 @@ import { TenantsModule } from './tenants/tenants.module';
       validationSchema: envValidationSchema,
     }),
     AuthzModule,
+    NotificationsModule,
     HealthModule,
     PrismaModule,
     TenantsModule,
@@ -43,6 +46,7 @@ import { TenantsModule } from './tenants/tenants.module';
     PortalModule,
     StorageModule,
     OcrModule,
+    LineModule,
   ],
 })
 export class AppModule {}

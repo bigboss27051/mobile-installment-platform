@@ -9,6 +9,8 @@ import {
 import { DevicesPage } from './devices-page';
 import { EnrollPage } from './enroll-page';
 import { KycPanel } from './kyc-panel';
+import { LineLinkPanel } from './line-link-panel';
+import { LineSettingsPage } from './line-settings-page';
 import { LanguageSwitch, useI18n } from './i18n-context';
 import {
   Alert,
@@ -31,7 +33,8 @@ type AppPage =
   | 'applications'
   | 'contracts'
   | 'devices'
-  | 'enroll';
+  | 'enroll'
+  | 'line';
 
 type TenantMe = {
   name: string;
@@ -47,6 +50,7 @@ const PAGES: AppPage[] = [
   'contracts',
   'devices',
   'enroll',
+  'line',
 ];
 
 async function runAction(
@@ -156,6 +160,7 @@ export function App() {
         {page === 'contracts' ? <ContractsPage onError={setError} apiError={apiError} /> : null}
         {page === 'devices' ? <DevicesPage onError={setError} apiError={apiError} /> : null}
         {page === 'enroll' ? <EnrollPage onError={setError} apiError={apiError} /> : null}
+        {page === 'line' ? <LineSettingsPage onError={setError} apiError={apiError} /> : null}
       </div>
     </div>
   );
@@ -702,13 +707,20 @@ function CustomersPage({
         )}
       </Section>
       {selectedId ? (
-        <KycPanel
-          customerId={selectedId}
-          customerName={rows.find((row) => row.id === selectedId)?.fullName ?? ''}
-          onError={onError}
-          apiError={apiError}
-          onUpdated={refresh}
-        />
+        <>
+          <KycPanel
+            customerId={selectedId}
+            customerName={rows.find((row) => row.id === selectedId)?.fullName ?? ''}
+            onError={onError}
+            apiError={apiError}
+            onUpdated={refresh}
+          />
+          <LineLinkPanel
+            customerId={selectedId}
+            onError={onError}
+            apiError={apiError}
+          />
+        </>
       ) : null}
     </Page>
   );

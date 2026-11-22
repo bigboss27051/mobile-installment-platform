@@ -53,10 +53,14 @@ describe('PaymentsService', () => {
       commandIds: [],
     }),
   };
+  const lineNotify = {
+    onVerifiedPayment: jest.fn().mockResolvedValue(undefined),
+  };
   const service = new PaymentsService(
     prisma as never,
     gateway as never,
     paymentUnlock as never,
+    lineNotify as never,
   );
 
   const tenantCtx = {

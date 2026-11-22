@@ -61,7 +61,7 @@ flowchart LR
 | Push | FCM/APNs | R3 |
 | SMS | Thai SMS provider | consent required |
 | Email | SMTP/API | transactional |
-| LINE | LINE Messaging API | consent required |
+| LINE | LINE Messaging API | R3-P0 **sandbox** adapter + per-tenant config (D-066); production BLOCKED until provider + consent templates |
 
 ## Failure Handling
 

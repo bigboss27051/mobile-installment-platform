@@ -1,0 +1,128 @@
+import { useEffect, useState } from 'react';
+import { ApiError, apiRequest } from './api';
+import { useI18n } from './i18n-context';
+import { Alert, Button, Section, Spinner } from './ui';
+
+type LinkStatus = {
+  customerId: string;
+  linked: boolean;
+  lineUserIdMasked: string | null;
+  displayName: string | null;
+  linkedAt: string | null;
+};
+
+type Invite = {
+  customerId: string;
+  token: string;
+  expiresAt: string;
+  instruction: string;
+};
+
+export function LineLinkPanel({
+  customerId,
+  onError,
+  apiError,
+}: {
+  customerId: string;
+  onError: (message: string | null) => void;
+  apiError: (message: string) => string;
+}) {
+  const { t } = useI18n();
+  const [status, setStatus] = useState<LinkStatus | null>(null);
+  const [invite, setInvite] = useState<Invite | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() {
+    try {
+      const data = await apiRequest<LinkStatus>(
+        `/api/v1/line/customers/${customerId}/link`,
+      );
+      setStatus(data);
+      onError(null);
+    } catch (err) {
+      onError(err instanceof ApiError ? apiError(err.message) : t('line.linkLoadFailed'));
+    }
+  }
+
+  useEffect(() => {
+    setInvite(null);
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
+
+  async function createInvite() {
+    setBusy(true);
+    try {
+      const data = await apiRequest<Invite>(
+        `/api/v1/line/customers/${customerId}/link-invites`,
+        { method: 'POST', body: '{}' },
+      );
+      setInvite(data);
+      onError(null);
+    } catch (err) {
+      onError(err instanceof ApiError ? apiError(err.message) : t('line.inviteFailed'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unlink() {
+    setBusy(true);
+    try {
+      await apiRequest(`/api/v1/line/customers/${customerId}/unlink`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: 'merchant_web_unlink' }),
+      });
+      setInvite(null);
+      await refresh();
+    } catch (err) {
+      onError(err instanceof ApiError ? apiError(err.message) : t('line.unlinkFailed'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Section title={t('line.linkSection')}>
+      {!status ? (
+        <Spinner />
+      ) : (
+        <>
+          <p>
+            {t('line.linkStatus')}:{' '}
+            <strong>{status.linked ? t('line.linked') : t('line.unlinked')}</strong>
+          </p>
+          {status.linked ? (
+            <p>
+              {t('line.lineUser')}: {status.lineUserIdMasked}
+              {status.displayName ? ` (${status.displayName})` : ''}
+            </p>
+          ) : null}
+          <div className="mip-form-actions">
+            <Button type="button" disabled={busy} onClick={() => void createInvite()}>
+              {t('line.createInvite')}
+            </Button>{' '}
+            {status.linked ? (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => void unlink()}
+              >
+                {t('line.unlink')}
+              </Button>
+            ) : null}
+          </div>
+          {invite ? (
+            <Alert tone="info">
+              <p>{invite.instruction}</p>
+              <p>
+                {t('line.tokenOnce')}: <code>{invite.token}</code>
+              </p>
+            </Alert>
+          ) : null}
+        </>
+      )}
+    </Section>
+  );
+}

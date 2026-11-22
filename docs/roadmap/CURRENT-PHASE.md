@@ -60,6 +60,8 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Welcome QR (lab, 2026-11-22):** Human-approved wipe → Pad 6 DO via Welcome QR (`0.1.17-lab`, not `dpm set-device-owner`) → session `a68aa503-…` `ENROLLING` after LabProvisioning check-in to LAN HTTPS; agent heartbeat over Wi‑Fi without `adb reverse`. Evidence: [2026-11-22-xiaomi-pad6-lan-https-welcome-qr.md](../device-management/lab-evidence/2026-11-22-xiaomi-pad6-lan-https-welcome-qr.md). Auto compliance check-in alone did not flip status this run.
 
+**Parallel track (R3-P0, D-066):** LINE installment comms sandbox — tenant OA config, webhook, customer linking, read-only installment replies, payment confirmation / manual reminder templates. Spec/plan: `docs/superpowers/specs/2026-11-22-r3-p0-line-installment-comms-design.md`, `docs/superpowers/plans/2026-11-22-r3-p0-line-installment-comms.md`. Production LINE remains BLOCKED. Does not replace R2 device work.
+
 **Next:** WorkManager poller (Approach B) later; merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.

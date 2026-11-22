@@ -69,6 +69,31 @@ enum KycDocumentType {
 enum ConsentType {
   PDPA_PROCESSING
   MARKETING
+  LINE_MESSAGING
+}
+
+enum LineChannelStatus {
+  DISCONNECTED
+  CONNECTED
+  ERROR
+}
+
+enum LineLinkStatus {
+  ACTIVE
+  UNLINKED
+}
+
+enum LineDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum LineNotifyType {
+  PAYMENT_CONFIRMATION
+  PAYMENT_REMINDER
+  CONTRACT_INFO
 }
 
 enum KycReviewDecision {
@@ -276,6 +301,13 @@ model Tenant {
   devicePolicyStates      DevicePolicyState[]
   deviceRecoveryRequests  DeviceRecoveryRequest[]
   deviceLocationSamples   DeviceLocationSample[]
+  lineChannelConfig       LineChannelConfig?
+  lineCustomerLinks       LineCustomerLink[]
+  lineLinkingTokens       LineLinkingToken[]
+  lineWebhookEvents       LineWebhookEvent[]
+  lineNotificationTemplates LineNotificationTemplate[]
+  lineNotificationDeliveries LineNotificationDelivery[]
+  lineAuditEvents         LineAuditEvent[]
 
   @@map("tenants")
 }
@@ -343,6 +375,9 @@ model Customer {
   createdPaymentIntents PaymentIntent[]
   otpChallenges         CustomerOtpChallenge[]
   deviceActivations     DeviceActivation[]
+  lineCustomerLinks     LineCustomerLink[]
+  lineLinkingTokens     LineLinkingToken[]
+  lineNotificationDeliveries LineNotificationDelivery[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, nationalIdHash])
@@ -978,4 +1013,119 @@ model DevicePolicyEvaluationRun {
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId, createdAt])
   @@map("device_policy_evaluation_runs")
+}
+
+model LineChannelConfig {
+  id               String            @id @default(uuid()) @db.Uuid
+  tenantId         String            @unique @map("tenant_id") @db.Uuid
+  channelId        String            @map("channel_id")
+  channelSecretEnc String            @map("channel_secret_enc")
+  accessTokenEnc   String            @map("access_token_enc")
+  status           LineChannelStatus @default(DISCONNECTED)
+  lastWebhookAt    DateTime?         @map("last_webhook_at")
+  lastError        String?           @map("last_error")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+
+  @@map("line_channel_configs")
+}
+
+model LineCustomerLink {
+  id          String         @id @default(uuid()) @db.Uuid
+  tenantId    String         @map("tenant_id") @db.Uuid
+  customerId  String         @map("customer_id") @db.Uuid
+  lineUserId  String         @map("line_user_id")
+  status      LineLinkStatus @default(ACTIVE)
+  linkedAt    DateTime       @default(now()) @map("linked_at")
+  unlinkedAt  DateTime?      @map("unlinked_at")
+  displayName String?        @map("display_name")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  tenant      Tenant         @relation(fields: [tenantId], references: [id])
+  customer    Customer       @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId])
+  @@index([tenantId, lineUserId])
+  @@map("line_customer_links")
+}
+
+model LineLinkingToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  customerId  String    @map("customer_id") @db.Uuid
+  tokenHash   String    @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at")
+  createdById String?   @map("created_by_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  customer    Customer  @relation(fields: [customerId], references: [id])
+
+  @@unique([tenantId, tokenHash])
+  @@index([tenantId, customerId])
+  @@map("line_linking_tokens")
+}
+
+model LineWebhookEvent {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String?   @map("tenant_id") @db.Uuid
+  providerEventId String    @unique @map("provider_event_id")
+  eventType       String    @map("event_type")
+  rawJson         Json      @map("raw_json")
+  processedAt     DateTime? @map("processed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  tenant          Tenant?   @relation(fields: [tenantId], references: [id])
+
+  @@map("line_webhook_events")
+}
+
+model LineNotificationTemplate {
+  id        String         @id @default(uuid()) @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  type      LineNotifyType
+  body      String
+  enabled   Boolean        @default(true)
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  tenant    Tenant         @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, type])
+  @@map("line_notification_templates")
+}
+
+model LineNotificationDelivery {
+  id                String             @id @default(uuid()) @db.Uuid
+  tenantId          String             @map("tenant_id") @db.Uuid
+  customerId        String             @map("customer_id") @db.Uuid
+  contractId        String?            @map("contract_id") @db.Uuid
+  type              LineNotifyType
+  status            LineDeliveryStatus @default(PENDING)
+  idempotencyKey    String             @map("idempotency_key")
+  providerMessageId String?            @map("provider_message_id")
+  errorMessage      String?            @map("error_message")
+  bodyRendered      String?            @map("body_rendered")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  customer          Customer           @relation(fields: [customerId], references: [id])
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, customerId])
+  @@map("line_notification_deliveries")
+}
+
+model LineAuditEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  customerId  String?  @map("customer_id") @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  action      String
+  reason      String?
+  metaJson    Json?    @map("meta_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("line_audit_events")
 }

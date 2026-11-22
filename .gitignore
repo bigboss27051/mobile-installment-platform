@@ -27,3 +27,7 @@ docs/device-management/lab-evidence/**/*.key
 /lab-certs/**
 !/lab-certs/README.md
 
+
+# Firebase / GCP service account keys (never commit)
+*firebase-adminsdk*.json
+*-firebase-adminsdk-*.json

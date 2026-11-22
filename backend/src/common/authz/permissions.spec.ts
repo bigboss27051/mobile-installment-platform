@@ -14,6 +14,9 @@ describe('permissionsForRole', () => {
         'devices.unbind',
         'devices.command',
         'devices.location.read',
+        'line.config',
+        'line.link',
+        'line.notify',
       ]),
     );
     expect(hasPermission(PlatformRole.MERCHANT_OWNER, 'devices.unbind')).toBe(
