@@ -17,6 +17,7 @@ import {
 } from '@prisma/client';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeviceLockApprovalService } from './device-lock-approval.service';
 import { DeviceLocationService } from './device-location.service';
 
 const ACTIVATABLE_SESSION_STATUSES: EnrollmentSessionStatus[] = [
@@ -34,6 +35,7 @@ export class DeviceLifecycleService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly locations: DeviceLocationService,
+    private readonly lockApprovals: DeviceLockApprovalService,
   ) {}
 
   async activate(
@@ -500,6 +502,11 @@ export class DeviceLifecycleService {
       });
       return unbound;
     });
+    await this.lockApprovals.cancelPendingForDevice(
+      tenantId,
+      device.id,
+      `cancel:unbind ${reason}`,
+    );
     return updated;
   }
 

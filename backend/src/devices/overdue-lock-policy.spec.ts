@@ -71,6 +71,14 @@ describe('overdue-lock-policy', () => {
     expect(targetFromOverdueDays(7)).toBe(DesiredPresentation.LOCK);
   });
 
+  it('maps overdue days with custom thresholds', () => {
+    const t = { reminderAfterDays: 2, restrictAfterDays: 5, lockAfterDays: 10 };
+    expect(targetFromOverdueDays(1, t)).toBeNull();
+    expect(targetFromOverdueDays(2, t)).toBe(DesiredPresentation.REMINDER);
+    expect(targetFromOverdueDays(5, t)).toBe(DesiredPresentation.RESTRICT);
+    expect(targetFromOverdueDays(10, t)).toBe(DesiredPresentation.LOCK);
+  });
+
   it('ranks desired presentations for escalate-only', () => {
     expect(desiredRank(DesiredPresentation.NONE)).toBeLessThan(
       desiredRank(DesiredPresentation.REMINDER),

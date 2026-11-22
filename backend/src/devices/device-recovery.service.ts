@@ -9,6 +9,7 @@ import {
   DeviceAuditAction,
   DeviceCommandStatus,
   DeviceLifecycleStatus,
+  DeviceLockApprovalStatus,
   DeviceRecoveryStatus,
   DeviceRecoveryType,
   EnrollmentSessionStatus,
@@ -137,6 +138,18 @@ export class DeviceRecoveryService {
         },
       });
       await this.locations.clearForDevice(tx, device.id);
+      await tx.deviceLockApproval.updateMany({
+        where: {
+          tenantId,
+          deviceId: device.id,
+          status: DeviceLockApprovalStatus.PENDING,
+        },
+        data: {
+          status: DeviceLockApprovalStatus.CANCELLED,
+          resolvedAt: new Date(),
+          reason: `cancel:recovery ${reason}`,
+        },
+      });
       const recovery = await tx.deviceRecoveryRequest.create({
         data: {
           tenantId,

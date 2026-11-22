@@ -10,6 +10,7 @@ import {
   DeviceBindingStatus,
   DeviceCommandStatus,
   DeviceCommandType,
+  DeviceLockApprovalStatus,
   PlatformEnforcementState,
   Prisma,
   ScheduleItemStatus,
@@ -17,6 +18,7 @@ import {
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceCommandsService } from './device-commands.service';
+import { DevicePolicySettingsService } from './device-policy-settings.service';
 import {
   desiredRank,
   overdueDaysFromSchedule,
@@ -50,6 +52,7 @@ export class OverdueLockOrchestrator {
   constructor(
     private readonly prisma: PrismaService,
     private readonly commands: DeviceCommandsService,
+    private readonly policySettings: DevicePolicySettingsService,
   ) {}
 
   async evaluateTenant(
@@ -74,6 +77,13 @@ export class OverdueLockOrchestrator {
         replay: true,
       };
     }
+
+    const settings = await this.policySettings.getOrCreateInternal(tenantId);
+    const thresholds = {
+      reminderAfterDays: settings.reminderAfterDays,
+      restrictAfterDays: settings.restrictAfterDays,
+      lockAfterDays: settings.lockAfterDays,
+    };
 
     const bindings = await this.prisma.deviceContractBinding.findMany({
       where: {
@@ -101,7 +111,7 @@ export class OverdueLockOrchestrator {
       });
 
       const days = overdueDaysFromSchedule(items, now);
-      const target = targetFromOverdueDays(days);
+      const target = targetFromOverdueDays(days, thresholds);
       if (!target) {
         skipped.push({ deviceId, contractId, reason: 'NOT_OVERDUE' });
         continue;
@@ -146,6 +156,43 @@ export class OverdueLockOrchestrator {
           commandId: null,
           target,
           reason: commandReason,
+        });
+        continue;
+      }
+
+      if (
+        target === DesiredPresentation.LOCK &&
+        settings.requireLockApproval
+      ) {
+        const openApproval = await this.prisma.deviceLockApproval.findFirst({
+          where: {
+            tenantId,
+            deviceId,
+            status: DeviceLockApprovalStatus.PENDING,
+          },
+        });
+        if (openApproval) {
+          skipped.push({
+            deviceId,
+            contractId,
+            reason: 'LOCK_ALREADY_PENDING',
+          });
+          continue;
+        }
+        await this.prisma.deviceLockApproval.create({
+          data: {
+            tenantId,
+            deviceId,
+            contractId,
+            status: DeviceLockApprovalStatus.PENDING,
+            overdueDays: days,
+            reason: commandReason,
+          },
+        });
+        skipped.push({
+          deviceId,
+          contractId,
+          reason: 'LOCK_PENDING_APPROVAL',
         });
         continue;
       }

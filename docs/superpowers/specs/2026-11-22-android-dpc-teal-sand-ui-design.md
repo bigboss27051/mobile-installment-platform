@@ -1,7 +1,7 @@
 # Android DPC Teal/Sand UI Design
 
 **Date:** 2026-11-22  
-**Status:** Implemented (DPC `0.1.19-lab`; Pad visual acceptance pending)  
+**Status:** Implemented + Pad visual accepted (DPC `0.1.19-lab`; Xiaomi Pad 6 2026-11-22)  
 **Parent:** R2 Android DPC lab — usable shop-facing Lock / Reminder presentation  
 **Depends on:** Existing Lock Task Mode (`MangoLockActivity`), `ReminderNotifier`, Device Owner lab activities  
 **Scope choice:** User approved **Approach 1** — XML layouts + shared theme resources (not programmatic-only, not Compose)

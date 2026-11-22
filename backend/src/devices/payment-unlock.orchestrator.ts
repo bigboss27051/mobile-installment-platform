@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeviceCommandsService } from './device-commands.service';
+import { DeviceLockApprovalService } from './device-lock-approval.service';
 import {
   desiredFromOutstanding,
   unlockCommandsForDesired,
@@ -28,6 +29,7 @@ export class PaymentUnlockOrchestrator {
   constructor(
     private readonly prisma: PrismaService,
     private readonly commands: DeviceCommandsService,
+    private readonly lockApprovals: DeviceLockApprovalService,
   ) {}
 
   async onVerifiedPayment(input: VerifiedPaymentUnlockInput): Promise<{
@@ -84,6 +86,12 @@ export class PaymentUnlockOrchestrator {
         commandIds: [],
       };
     }
+
+    await this.lockApprovals.cancelPendingForDevice(
+      input.tenantId,
+      binding.deviceId,
+      `cancel:payment-unlock pay:${input.paymentTransactionId}`,
+    );
 
     const desired =
       binding.device.policyState?.desiredPresentation ??

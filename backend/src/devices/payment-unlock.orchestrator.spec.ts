@@ -10,13 +10,18 @@ describe('PaymentUnlockOrchestrator', () => {
   const commands = {
     enqueue: jest.fn(),
   };
+  const lockApprovals = {
+    cancelPendingForDevice: jest.fn().mockResolvedValue(0),
+  };
   const orchestrator = new PaymentUnlockOrchestrator(
     prisma as never,
     commands as never,
+    lockApprovals as never,
   );
 
   beforeEach(() => {
     jest.resetAllMocks();
+    lockApprovals.cancelPendingForDevice.mockResolvedValue(0);
   });
 
   it('no-ops when outstanding remains', async () => {

@@ -64,7 +64,11 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **WorkManager + FCM poller (lab, 2026-11-22):** DPC `0.1.18-lab` — periodic `CommandPollWorker` + FCM `POLL_NOW` on restrictive enqueue only; backend `devices.fcm_token` + `POST …/agent/push-token` + `FcmPushAdapter`. **Pad 6 E2E:** after `am force-stop` (no `CommandPollActivity`), staff `START_LOCK_TASK` → backend FCM wake → WM worker `ACKED_SUCCESS` / `MangoLockActivity` / HB over LAN HTTPS. Evidence: [2026-11-22-workmanager-fcm-poller.md](../device-management/lab-evidence/2026-11-22-workmanager-fcm-poller.md). Still lab only.
 
-**Next:** merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Teal/Sand DPC UI (lab, 2026-11-22):** DPC `0.1.19-lab` — Lock split Teal/Sand (TH+EN, emergency 112, optional amount/contract), Reminder notification copy, lab shell sand palette. **Pad 6 visual accepted** (screenshots under `docs/device-management/lab-evidence/2026-11-22-dpc-teal-sand-*.png`). MIUI may silence DPC notifications until `POST_NOTIFICATION` / app importance is allowed. Still lab only.
+
+**Phase 4e (lab software, 2026-11-22):** Merchant policy settings (D-067) — `TenantDevicePolicySettings` + `DeviceLockApproval` queue; OWNER `devices.policy.config` GET/PUT thresholds + cron/`requireLockApproval` toggles; evaluate uses tenant days; LOCK with approval on → PENDING (no enqueue) until staff approve → `START_LOCK_TASK`; cron skips `autoEvaluateCronEnabled=false`; Merchant Web **นโยบาย** page. Spec/plan: `docs/superpowers/specs/2026-11-22-merchant-policy-settings-design.md`, `docs/superpowers/plans/2026-11-22-merchant-policy-settings.md`. Still lab only.
+
+**Next:** optional Pad E2E of policy thresholds + approval queue. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

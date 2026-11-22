@@ -52,4 +52,16 @@ describe('permissionsForRole', () => {
     expect(permissionsForRole(null)).toEqual([]);
     expect(hasPermission(null, 'devices.enroll')).toBe(false);
   });
+
+  it('gives devices.policy.config to OWNER but not STAFF', () => {
+    expect(
+      hasPermission(PlatformRole.MERCHANT_OWNER, 'devices.policy.config'),
+    ).toBe(true);
+    expect(
+      hasPermission(PlatformRole.MERCHANT_STAFF, 'devices.policy.config'),
+    ).toBe(false);
+    expect(
+      hasPermission(PlatformRole.SUPER_ADMIN, 'devices.policy.config'),
+    ).toBe(true);
+  });
 });

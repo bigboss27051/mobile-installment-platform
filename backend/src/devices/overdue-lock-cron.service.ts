@@ -87,11 +87,24 @@ export class OverdueLockCronService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('overdue evaluate tick START');
     try {
       const tenants = await this.prisma.tenant.findMany({
-        select: { id: true },
+        select: {
+          id: true,
+          devicePolicySettings: {
+            select: { autoEvaluateCronEnabled: true },
+          },
+        },
         orderBy: { createdAt: 'asc' },
       });
       let lockedDevices = 0;
       for (const tenant of tenants) {
+        const cronEnabled =
+          tenant.devicePolicySettings?.autoEvaluateCronEnabled ?? true;
+        if (!cronEnabled) {
+          this.logger.log(
+            `overdue evaluate tenant=${tenant.id} SKIP_CRON_DISABLED`,
+          );
+          continue;
+        }
         const actor = await this.actors.ensureForTenant(tenant.id);
         const ctx: TenantContext = {
           tenantId: tenant.id,
