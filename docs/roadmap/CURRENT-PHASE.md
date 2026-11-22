@@ -58,7 +58,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Android lab completeness A (2026-11-22):** DPC `0.1.17-lab` — REMINDER notification (usable device) + LOCK emergency `ACTION_DIAL` `tel:112` with dialer lock-task allowlist; Customer Flutter pays portal `outstandingBalance` (no hardcoded 100); `GET /me/contracts/:id` returns `outstandingBalance`. Spec/plan: `docs/superpowers/specs/2026-11-22-android-lab-completeness-a-design.md`. Still lab only.
 
-**Next:** Optional **Welcome QR** re-prove (gated — **ask before wipe**); WorkManager poller (Approach B) later; merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Welcome QR (lab, 2026-11-22):** Human-approved wipe → Pad 6 DO via Welcome QR (`0.1.17-lab`, not `dpm set-device-owner`) → session `a68aa503-…` `ENROLLING` after LabProvisioning check-in to LAN HTTPS; agent heartbeat over Wi‑Fi without `adb reverse`. Evidence: [2026-11-22-xiaomi-pad6-lan-https-welcome-qr.md](../device-management/lab-evidence/2026-11-22-xiaomi-pad6-lan-https-welcome-qr.md). Auto compliance check-in alone did not flip status this run.
+
+**Next:** WorkManager poller (Approach B) later; merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

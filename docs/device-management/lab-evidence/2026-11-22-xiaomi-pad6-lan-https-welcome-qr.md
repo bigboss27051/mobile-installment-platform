@@ -53,12 +53,18 @@ Operator must confirm FRP unlock capability before approving wipe.
 
 ---
 
-## Welcome QR after wipe — **deferred**
+## Welcome QR after wipe — **proven 2026-11-22**
 
-Full **Welcome QR** Device Owner re-enroll (factory wipe → FRP gate if applicable → 6-tap Setup Wizard scan → check-in `ENROLLING`) was **not** run in this session.
+Human approved wipe (“อนุมัติ”). Path:
 
-**Reason:** Wipe requires **explicit human approval** per lab SOP ([FRP-AND-REENROLL.md](../FRP-AND-REENROLL.md)). No wipe was performed for this evidence note.
+1. `LabWipeActivity` `confirm=true` → factory reset (Pad dropped off `adb`).
+2. Pre-wipe inventory had **Accounts: 0**; after Setup, operator reached **Home** with USB debugging re-enabled.
+3. **Device Owner via Welcome QR** (not `dpm set-device-owner`): `dpm list-owners` → `com.mip.dpc/.MipDeviceAdminReceiver` (DeviceOwner, Affiliated); DPC **0.1.17-lab** from GitHub release `v0.1.17-lab-dpc`.
+4. Session `a68aa503-ad74-4f13-920a-08097a014066` stayed `QR_GENERATED` until **post-DO** `LabProvisioningActivity` check-in with rotated `enc_` + LAN endpoint → **`ENROLLING`**.
+5. Agent prefs: `apiBase=https://192.168.68.108:3443/api/v1`; `adb reverse` empty; poller `HB=ok`; `last_heartbeat_at` `14:05:58` → `14:18:55` (UTC in DB).
 
-**When approved:** Follow `docs/superpowers/plans/2026-11-22-lan-https-welcome-qr-lab.md` Task 6; use LAN HTTPS `DPC_ENROLLMENT_ENDPOINT` (`https://192.168.68.108:3443/api/v1/devices/enroll/check-in`). Append Welcome QR pass/fail here; update `CURRENT-PHASE.md` and backlog `R2-P4-007`.
+**REENROLL:** recovery `a46cf099-…` APPROVED before new QR.
 
-**Not claimed:** production Device Owner, financing lock, Welcome QR path, shop-ready distribution.
+**Note:** Auto check-in during Setup Wizard compliance did not move the session alone this run; lab completed check-in with `LabProvisioningActivity` after DO was already present. Still **not** the `dpm set-device-owner` shortcut.
+
+**Not claimed:** production Device Owner, financing lock, shop-ready distribution.
