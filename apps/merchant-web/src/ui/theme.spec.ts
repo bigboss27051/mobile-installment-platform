@@ -14,5 +14,6 @@ describe('mipTheme', () => {
     expect(MIP_TOKENS.inputHeight).toBe(44);
     expect(mipTheme.palette.primary.main).toBe('#1d4ed8');
     expect(mipTheme.shape.borderRadius).toBe(6);
+    expect(mipTheme.breakpoints.values.md).toBe(768);
   });
 });

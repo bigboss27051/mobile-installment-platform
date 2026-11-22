@@ -19,6 +19,15 @@ export const MIP_TOKENS = {
 } as const;
 
 export const mipTheme = createTheme({
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: 600,
+      md: 768,
+      lg: 1200,
+      xl: 1536,
+    },
+  },
   palette: {
     primary: { main: MIP_TOKENS.primary },
     error: { main: MIP_TOKENS.error },
