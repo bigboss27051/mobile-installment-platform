@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useState } from 'react';
+import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest, apiUpload } from './api';
 import { useI18n } from './i18n-context';
 import { Button, FormField, Input, Section, Select, Spinner } from './ui';
+import { MIP_TOKENS } from './ui/theme';
 
 const DOC_TYPES = ['ID_FRONT', 'ID_BACK', 'SELFIE', 'OTHER'] as const;
 
@@ -147,7 +149,12 @@ export function KycPanel({
         </Button>
       ) : null}
       {!loading && canEdit ? (
-        <form className="mip-form-grid" onSubmit={(event) => void upload(event)}>
+        <Stack
+          component="form"
+          spacing={2}
+          sx={{ maxWidth: MIP_TOKENS.formMax }}
+          onSubmit={(event) => void upload(event)}
+        >
           <FormField label={t('kyc.docType')} htmlFor="kyc-doc-type">
             <Select
               id="kyc-doc-type"
@@ -171,12 +178,12 @@ export function KycPanel({
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
             />
           </FormField>
-          <div className="mip-form-actions">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" variant="secondary">
               {t('kyc.upload')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Stack>
       ) : null}
       <p>{t('kyc.documents')}</p>
       {(kycCase?.documents.length ?? 0) === 0 ? (

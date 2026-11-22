@@ -1,4 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest, withIdempotency } from './api';
 import {
   canIssueEnrollmentQr,
@@ -13,6 +16,7 @@ import {
 import { DeviceStatusPanel } from './device-status-panel';
 import { useI18n } from './i18n-context';
 import { Alert, Button, FormField, Input, Page, Section, Select } from './ui';
+import { MIP_TOKENS } from './ui/theme';
 
 type EnrollmentSession = {
   id: string;
@@ -290,7 +294,16 @@ export function EnrollPage({
       </Section>
 
       <Section>
-        <form className="mip-form-grid mip-form-grid--2" onSubmit={createSession}>
+        <Box
+          component="form"
+          onSubmit={createSession}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 2,
+            maxWidth: MIP_TOKENS.formMax,
+          }}
+        >
           <FormField label={t('enroll.contractId')} htmlFor="enroll-contract-id" required>
             <Select
               id="enroll-contract-id"
@@ -320,7 +333,7 @@ export function EnrollPage({
               <option value="IOS">{t('enroll.ios')}</option>
             </Select>
           </FormField>
-          <div className="mip-form-grid__span">
+          <Box sx={{ gridColumn: '1 / -1' }}>
             <label className="check-row">
               <input
                 type="checkbox"
@@ -330,28 +343,46 @@ export function EnrollPage({
               />
               {t('enroll.consent')}
             </label>
-          </div>
-          <div className="mip-form-actions mip-form-grid__span">
+          </Box>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ mt: 2, gridColumn: '1 / -1' }}
+          >
             <Button type="submit" variant="primary">
               {t('enroll.createSession')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Box>
       </Section>
 
       {session && viewStatus ? (
         <Section>
-          <p>
-            <span className={`chip chip-${statusTone(viewStatus)}`}>
-              {t(`enroll.state.${viewStatus}`)}
-            </span>
-          </p>
+          <Box sx={{ mb: 1 }}>
+            <Chip
+              size="small"
+              label={t(`enroll.state.${viewStatus}`)}
+              sx={{
+                height: 'auto',
+                borderRadius: `${MIP_TOKENS.radius}px`,
+                fontSize: 12,
+                fontWeight: 400,
+                ...{
+                  ok: { bgcolor: '#dcfce7', color: '#166534' },
+                  warn: { bgcolor: '#fef3c7', color: '#92400e' },
+                  bad: { bgcolor: '#fee2e2', color: MIP_TOKENS.error },
+                  idle: { bgcolor: '#e2e8f0', color: MIP_TOKENS.text },
+                }[statusTone(viewStatus)],
+                '& .MuiChip-label': { px: 1.25, py: '2px' },
+              }}
+            />
+          </Box>
           <p>{t('enroll.sessionId', { id: session.id })}</p>
           <p>{t('enroll.expires', { at: session.expiresAt })}</p>
           {session.lastErrorCode ? (
             <Alert tone="error">{session.lastErrorCode}</Alert>
           ) : null}
-          <div className="mip-form-actions">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="button" variant="secondary" onClick={() => void refreshSession()}>
               {t('enroll.refresh')}
             </Button>
@@ -375,7 +406,7 @@ export function EnrollPage({
                 {t('enroll.newSession')}
               </Button>
             ) : null}
-          </div>
+          </Stack>
         </Section>
       ) : null}
 
@@ -393,8 +424,10 @@ export function EnrollPage({
 
       {session && viewStatus && canStaffActivate(viewStatus) ? (
         <Section>
-          <form
-            className="mip-form-grid"
+          <Stack
+            component="form"
+            spacing={2}
+            sx={{ maxWidth: MIP_TOKENS.formMax }}
             onSubmit={async (event) => {
               event.preventDefault();
               try {
@@ -436,13 +469,13 @@ export function EnrollPage({
                 onChange={(e) => setReason(e.target.value)}
               />
             </FormField>
-            <div className="mip-form-actions">
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
               <Button type="submit" variant="primary">
                 {t('enroll.activateBind')}
               </Button>
-            </div>
+            </Stack>
             {deviceId ? <p>{t('enroll.bound', { id: deviceId })}</p> : null}
-          </form>
+          </Stack>
         </Section>
       ) : null}
 

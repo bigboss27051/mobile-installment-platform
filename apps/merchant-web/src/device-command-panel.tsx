@@ -1,7 +1,9 @@
 import { FormEvent, useState } from 'react';
+import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
 import { useI18n } from './i18n-context';
 import { Alert, Button, FormField, Input, Section, Select } from './ui';
+import { MIP_TOKENS } from './ui/theme';
 
 const COMMAND_TYPES = [
   'START_LOCK_TASK',
@@ -57,7 +59,7 @@ export function DeviceCommandPanel({
       {lastId ? (
         <Alert tone="success">{t('deviceCommand.queued', { id: lastId })}</Alert>
       ) : null}
-      <form className="mip-form-grid" onSubmit={onSubmit}>
+      <Stack component="form" spacing={2} sx={{ maxWidth: MIP_TOKENS.formMax }} onSubmit={onSubmit}>
         <FormField label={t('deviceCommand.type')} htmlFor="device-cmd-type" required>
           <Select
             id="device-cmd-type"
@@ -79,12 +81,12 @@ export function DeviceCommandPanel({
             placeholder={t('deviceCommand.reasonPlaceholder')}
           />
         </FormField>
-        <div className="mip-form-actions">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
           <Button type="submit" variant="primary" disabled={busy}>
             {busy ? t('deviceCommand.submitting') : t('deviceCommand.submit')}
           </Button>
-        </div>
-      </form>
+        </Stack>
+      </Stack>
     </Section>
   );
 }

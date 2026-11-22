@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
 import { useI18n } from './i18n-context';
 import { Alert, Button, Section, Spinner } from './ui';
@@ -123,10 +124,10 @@ export function LineLinkPanel({
               {status.displayName ? ` (${status.displayName})` : ''}
             </p>
           ) : null}
-          <div className="mip-form-actions">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="button" disabled={busy} onClick={() => void createInvite()}>
               {t('line.createInvite')}
-            </Button>{' '}
+            </Button>
             {status.linked ? (
               <Button
                 type="button"
@@ -137,7 +138,7 @@ export function LineLinkPanel({
                 {t('line.unlink')}
               </Button>
             ) : null}
-          </div>
+          </Stack>
           {invite ? (
             <Alert tone="info">
               <p>{t('line.inviteExplain')}</p>

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
 import { DeviceCommandPanel } from './device-command-panel';
 import { useI18n } from './i18n-context';
 import { Alert, Section } from './ui';
+import { MIP_TOKENS } from './ui/theme';
 
 export type LastKnownLocation = {
   lat: number;
@@ -77,7 +79,7 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
       <Section title={t('deviceStatus.title')}>
         {error ? <Alert tone="error">{error}</Alert> : null}
         {dash ? (
-          <dl className="mip-form-grid">
+          <Stack component="dl" spacing={2} sx={{ maxWidth: MIP_TOKENS.formMax }}>
             <div>
               <dt>{t('deviceStatus.id')}</dt>
               <dd>{dash.id}</dd>
@@ -124,7 +126,7 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
               <dt>{t('deviceStatus.imei')}</dt>
               <dd>{dash.maskedImei ?? '—'}</dd>
             </div>
-          </dl>
+          </Stack>
         ) : !error ? (
           <p>{t('deviceStatus.loading')}</p>
         ) : null}

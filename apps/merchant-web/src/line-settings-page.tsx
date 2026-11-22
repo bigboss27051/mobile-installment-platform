@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { ApiError, apiRequest, withIdempotency } from './api';
 import { useI18n } from './i18n-context';
 import { buildLineWebhookUrl, resolveApiOrigin } from './line-webhook-url';
@@ -261,7 +263,7 @@ export function LineSettingsPage({
               autoComplete="off"
             />
           </FormField>
-          <div className="mip-form-actions">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" disabled={saving}>
               {t('line.save')}
             </Button>
@@ -273,7 +275,7 @@ export function LineSettingsPage({
             >
               {t('line.disconnect')}
             </Button>
-          </div>
+          </Stack>
         </form>
       </Section>
 
@@ -299,12 +301,14 @@ export function LineSettingsPage({
         <FormField label={t('line.webhookUrl')} htmlFor="line-webhook-url">
           <Input id="line-webhook-url" value={webhookUrl} readOnly />
         </FormField>
-        <p className="mip-muted">{t('line.webhookSignature')}</p>
-        <div className="mip-form-actions">
+        <Typography variant="body2" color="text.secondary">
+          {t('line.webhookSignature')}
+        </Typography>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
           <Button type="button" variant="secondary" disabled={!webhookUrl} onClick={() => void onCopyWebhook()}>
             {copied === 'webhook' ? t('line.copied') : t('line.copyWebhook')}
           </Button>
-        </div>
+        </Stack>
         {!tenant?.id ? <Alert tone="error">{t('line.tenantMissing')}</Alert> : null}
       </Section>
 
@@ -349,7 +353,7 @@ export function LineSettingsPage({
                 ))}
               </Select>
             </FormField>
-            <div className="mip-form-actions">
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
               <Button
                 type="button"
                 disabled={reminderBusy || !reminderContractId || config.status !== 'CONNECTED'}
@@ -357,7 +361,7 @@ export function LineSettingsPage({
               >
                 {t('line.sendReminder')}
               </Button>
-            </div>
+            </Stack>
             {config.status !== 'CONNECTED' ? (
               <Alert tone="info">{t('line.reminderNeedConnect')}</Alert>
             ) : null}
