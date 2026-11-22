@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.os.Bundle
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 
@@ -20,8 +21,17 @@ class MangoLockActivity : Activity() {
         }
         root.addView(
             TextView(this).apply {
-                text = "MIP Lock (lab)\nLock Task Mode active.\nEmergency calling must remain available.\n$reason"
+                text =
+                    "MIP Lock (lab)\nLock Task Mode active.\nEmergency calling must remain available.\n$reason"
                 textSize = 18f
+            },
+        )
+        root.addView(
+            Button(this).apply {
+                text = "Emergency call (112)"
+                setOnClickListener {
+                    startActivity(EmergencyDial.intent())
+                }
             },
         )
         setContentView(root)
@@ -29,7 +39,7 @@ class MangoLockActivity : Activity() {
         val dpm = getSystemService(DEVICE_POLICY_SERVICE) as DevicePolicyManager
         val admin = ComponentName(this, MipDeviceAdminReceiver::class.java)
         if (dpm.isDeviceOwnerApp(packageName)) {
-            dpm.setLockTaskPackages(admin, arrayOf(packageName))
+            dpm.setLockTaskPackages(admin, EmergencyDial.lockTaskPackages(packageName))
             startLockTask()
         }
     }

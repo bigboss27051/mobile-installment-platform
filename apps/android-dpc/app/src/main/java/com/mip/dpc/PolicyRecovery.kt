@@ -8,7 +8,7 @@ import android.os.Handler
 import android.os.Looper
 
 /**
- * Re-applies the last **authorized** desired presentation after reboot.
+ * Re-applies the last **authorized** desired presentation after reboot / policy fetch.
  * Does not escalate and does not invent overdue locks.
  */
 object PolicyRecovery {
@@ -21,8 +21,9 @@ object PolicyRecovery {
         val app = context.applicationContext
         return when (desiredPresentation) {
             "LOCK" -> {
+                ReminderNotifier.cancel(app)
                 PackageSuspendHelper.unsuspendAll(app, dpm, admin)
-                dpm.setLockTaskPackages(admin, arrayOf(app.packageName))
+                dpm.setLockTaskPackages(admin, EmergencyDial.lockTaskPackages(app.packageName))
                 LockHomeHelper.enableLockHome(app, dpm, admin)
                 Handler(Looper.getMainLooper()).post {
                     app.startActivity(
@@ -31,17 +32,25 @@ object PolicyRecovery {
                             .putExtra(MangoLockActivity.EXTRA_REASON, "reboot-recovery"),
                     )
                 }
-                "REAPPLIED_LOCK"
+                ReminderPolicy.resultCode("LOCK")
             }
             "RESTRICT" -> {
+                ReminderNotifier.cancel(app)
                 LockHomeHelper.clearLockHome(app, dpm, admin)
                 val result = PackageSuspendHelper.suspendNonEssential(app, dpm, admin)
-                if (result.ok) "REAPPLIED_RESTRICT" else result.resultCode
+                if (result.ok) ReminderPolicy.resultCode("RESTRICT") else result.resultCode
             }
-            else -> {
+            "REMINDER" -> {
                 LockHomeHelper.clearLockHome(app, dpm, admin)
                 PackageSuspendHelper.unsuspendAll(app, dpm, admin)
-                "REAPPLIED_NONE"
+                ReminderNotifier.show(app)
+                ReminderPolicy.resultCode("REMINDER")
+            }
+            else -> {
+                ReminderNotifier.cancel(app)
+                LockHomeHelper.clearLockHome(app, dpm, admin)
+                PackageSuspendHelper.unsuspendAll(app, dpm, admin)
+                ReminderPolicy.resultCode("NONE")
             }
         }
     }

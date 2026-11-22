@@ -56,7 +56,9 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 4d (lab software):** Fixed overdue ladder D-065 — days from oldest unpaid past-due: ≥1 `REMINDER` (desired+audit only), ≥3 `RESTRICT`+suspend command, ≥7 `LOCK`+lock-task; escalate-only. Staff evaluate + cron share path. Spec: [2026-11-21-phase4d-overdue-ladder-design.md](../superpowers/specs/2026-11-21-phase4d-overdue-ladder-design.md). Merchant thresholds / human approval / REMINDER DPC / external alerting deferred.
 
-**Next:** Optional LAN HTTPS / Welcome QR; merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Android lab completeness A (2026-11-22):** DPC `0.1.17-lab` — REMINDER notification (usable device) + LOCK emergency `ACTION_DIAL` `tel:112` with dialer lock-task allowlist; Customer Flutter pays portal `outstandingBalance` (no hardcoded 100); `GET /me/contracts/:id` returns `outstandingBalance`. Spec/plan: `docs/superpowers/specs/2026-11-22-android-lab-completeness-a-design.md`. Still lab only.
+
+**Next:** Optional LAN HTTPS / Welcome QR; WorkManager poller (Approach B) later; merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

@@ -1,14 +1,22 @@
-# MIP DPC
+# MIP DPC (`0.1.17-lab`)
 
-Lab Android Device Policy Controller (`com.mip.dpc`). It reads `enrollmentSessionId`, `enrollmentToken`, and `enrollmentEndpoint` from the provisioning extras and POSTs check-in. It does not lock the device.
+Lab Android Device Policy Controller (`com.mip.dpc`). **Not** production Device Owner / financing approval.
+
+## What it does (lab)
+
+- Reads enrollment extras from Enterprise QR / provisioning and POSTs check-in
+- Polls agent commands; acks Lock Task (`MangoLockActivity`) and package suspend
+- Reboot recovery via preferred HOME alias + policy GET
+- Heartbeat (HTTPS preferred; lab CA pin) + soft location only under `RESTRICT` / `LOCK`
+- **REMINDER:** overdue notification only — device stays usable (no suspend / lock-task)
+- **LOCK:** Lock Task Mode + **Emergency call (112)** via `ACTION_DIAL` (dialer packages allowlisted)
+- Lab-only wipe activity requires human `confirm=true` — does not clear Google FRP
 
 Admin component: `com.mip.dpc/com.mip.dpc.MipDeviceAdminReceiver`
 
-Android 12+ QR Device Owner also requires exported activities for `GET_PROVISIONING_MODE` (fully managed) and `ADMIN_POLICY_COMPLIANCE` (finish with `RESULT_OK`). Without those, Setup Wizard shows "Can't set up device" after the organisation screen.
+## Setup notes
 
-Enrollment extras are persisted at `GET_PROVISIONING_MODE` / admin-enabled so `ADMIN_POLICY_COMPLIANCE` can still check in if the compliance intent omits the bundle. Check-in runs before `RESULT_OK`, with a short timeout so Setup Wizard is not blocked forever.
-
-Set `DPC_COMPONENT_NAME` to that component. The check-in URL in the QR must be HTTPS. Do not factory-reset a phone without asking. A successful build is not a production Device Owner claim.
+Android 12+ QR Device Owner needs exported `GET_PROVISIONING_MODE` and `ADMIN_POLICY_COMPLIANCE`. Set `DPC_*` env on the API. Do not factory-reset a phone without asking. Do not put Wi-Fi passwords or secrets in the QR.
 
 ```bash
 cd apps/android-dpc

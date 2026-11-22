@@ -59,6 +59,50 @@ describe('PortalService', () => {
     );
   });
 
+  it('returns outstandingBalance on contract detail', async () => {
+    prisma.contract.findFirst.mockResolvedValue({
+      id: 'c1',
+      status: ContractStatus.ACTIVE,
+      principal: new Prisma.Decimal('12000.00'),
+      downPayment: new Prisma.Decimal('2000.00'),
+      financedAmount: new Prisma.Decimal('10000.00'),
+      termMonths: 10,
+      interestMethod: 'FLAT',
+      annualRate: new Prisma.Decimal('12.00'),
+      currency: 'THB',
+    });
+    prisma.paymentScheduleItem.findMany.mockResolvedValue([
+      {
+        id: 's1',
+        seq: 1,
+        dueDate: new Date('2026-10-01T00:00:00.000Z'),
+        principalDue: new Prisma.Decimal('900.00'),
+        interestDue: new Prisma.Decimal('100.00'),
+        feesDue: new Prisma.Decimal('0.00'),
+        totalDue: new Prisma.Decimal('1000.00'),
+        amountPaid: new Prisma.Decimal('250.00'),
+        status: 'PARTIAL',
+      },
+      {
+        id: 's2',
+        seq: 2,
+        dueDate: new Date('2026-11-01T00:00:00.000Z'),
+        principalDue: new Prisma.Decimal('900.00'),
+        interestDue: new Prisma.Decimal('100.00'),
+        feesDue: new Prisma.Decimal('0.00'),
+        totalDue: new Prisma.Decimal('1000.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+        status: 'DUE',
+      },
+    ]);
+    prisma.paymentIntent.findMany.mockResolvedValue([]);
+
+    const result = await service.getContract(customerCtx, 'c1');
+
+    expect(result.outstandingBalance).toBe('1750.00');
+    expect(result.scheduleItems).toHaveLength(2);
+  });
+
   it('returns lock presentation without claiming MDM Single App Mode', async () => {
     prisma.tenant.findFirst.mockResolvedValue({ name: 'Anaheim Shop' });
     prisma.contract.findFirst.mockResolvedValue({
