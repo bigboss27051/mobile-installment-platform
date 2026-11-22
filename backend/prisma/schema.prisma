@@ -69,6 +69,20 @@ enum KycDocumentType {
 enum ConsentType {
   PDPA_PROCESSING
   MARKETING
+  LINE_NOTIFICATIONS
+}
+
+enum LineNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum LineNotificationKind {
+  DUE_REMINDER
+  OVERDUE_REMINDER
+  PAYMENT_CONFIRMATION
 }
 
 enum KycReviewDecision {
@@ -213,6 +227,11 @@ model Tenant {
   deviceActivations       DeviceActivation[]
   deviceContractBindings  DeviceContractBinding[]
   deviceAuditEvents       DeviceAuditEvent[]
+  lineIntegration         TenantLineIntegration?
+  customerLineLinks       CustomerLineLink[]
+  lineLinkChallenges      LineLinkChallenge[]
+  lineWebhookEvents       LineWebhookEvent[]
+  lineNotifications       LineNotificationOutbox[]
 
   @@map("tenants")
 }
@@ -277,6 +296,9 @@ model Customer {
   createdPaymentIntents PaymentIntent[]
   otpChallenges         CustomerOtpChallenge[]
   deviceActivations     DeviceActivation[]
+  lineLink              CustomerLineLink?
+  lineLinkChallenges    LineLinkChallenge[]
+  lineNotifications     LineNotificationOutbox[]
 
   @@unique([tenantId, phone])
   @@index([tenantId, nationalIdHash])
@@ -297,6 +319,87 @@ model CustomerOtpChallenge {
 
   @@index([tenantId, phone, createdAt])
   @@map("customer_otp_challenges")
+}
+
+model TenantLineIntegration {
+  id                         String   @id @default(uuid()) @db.Uuid
+  tenantId                   String   @unique @map("tenant_id") @db.Uuid
+  channelAccessTokenEncrypted String   @map("channel_access_token_encrypted")
+  channelSecretEncrypted      String   @map("channel_secret_encrypted")
+  officialAccountUrl          String   @map("official_account_url")
+  enabled                    Boolean  @default(true)
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+  tenant                     Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@map("tenant_line_integrations")
+}
+
+model CustomerLineLink {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  customerId String    @unique @map("customer_id") @db.Uuid
+  lineUserId String    @map("line_user_id")
+  linkedAt   DateTime  @default(now()) @map("linked_at")
+  revokedAt  DateTime? @map("revoked_at")
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  customer   Customer  @relation(fields: [customerId], references: [id])
+
+  @@unique([tenantId, lineUserId])
+  @@index([tenantId, customerId, revokedAt])
+  @@map("customer_line_links")
+}
+
+model LineLinkChallenge {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  customerId String    @map("customer_id") @db.Uuid
+  codeHash   String    @map("code_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  customer   Customer  @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId, customerId, createdAt])
+  @@index([tenantId, codeHash, expiresAt])
+  @@map("line_link_challenges")
+}
+
+model LineWebhookEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  eventId   String   @map("event_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, eventId])
+  @@index([tenantId, createdAt])
+  @@map("line_webhook_events")
+}
+
+model LineNotificationOutbox {
+  id             String                @id @default(uuid()) @db.Uuid
+  tenantId       String                @map("tenant_id") @db.Uuid
+  customerId     String                @map("customer_id") @db.Uuid
+  kind           LineNotificationKind
+  status         LineNotificationStatus @default(PENDING)
+  idempotencyKey String                @map("idempotency_key")
+  payload        Json                  @map("payload_json")
+  attempts       Int                   @default(0)
+  nextAttemptAt  DateTime              @default(now()) @map("next_attempt_at")
+  lockedUntil    DateTime?             @map("locked_until")
+  sentAt         DateTime?             @map("sent_at")
+  lastError      String?               @map("last_error")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  tenant         Tenant                @relation(fields: [tenantId], references: [id])
+  customer       Customer              @relation(fields: [customerId], references: [id])
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([status, nextAttemptAt, lockedUntil])
+  @@index([tenantId, customerId, createdAt])
+  @@map("line_notification_outbox")
 }
 
 model KycCase {

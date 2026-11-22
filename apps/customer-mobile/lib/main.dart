@@ -146,6 +146,16 @@ class _ContractsPageState extends State<ContractsPage> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
+                  builder: (_) => LineNotificationsPage(api: widget.api),
+                ),
+              );
+            },
+            child: const Text('LINE alerts'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
                   builder: (_) => LockShell(repository: ApiLockRepository(widget.api)),
                 ),
               );
@@ -182,6 +192,128 @@ class _ContractsPageState extends State<ContractsPage> {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class LineNotificationsPage extends StatefulWidget {
+  const LineNotificationsPage({super.key, required this.api});
+
+  final CustomerApi api;
+
+  @override
+  State<LineNotificationsPage> createState() => _LineNotificationsPageState();
+}
+
+class _LineNotificationsPageState extends State<LineNotificationsPage> {
+  Map<String, dynamic>? status;
+  Map<String, dynamic>? linkCode;
+  String? error;
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      final result = await widget.api.getLineLink();
+      if (!mounted) return;
+      setState(() {
+        status = result;
+        loading = false;
+      });
+    } catch (err) {
+      if (!mounted) return;
+      setState(() {
+        error = err.toString();
+        loading = false;
+      });
+    }
+  }
+
+  Future<void> _startLink() async {
+    try {
+      final result = await widget.api.startLineLink();
+      if (!mounted) return;
+      setState(() {
+        linkCode = result;
+        error = null;
+      });
+    } catch (err) {
+      if (!mounted) return;
+      setState(() => error = err.toString());
+    }
+  }
+
+  Future<void> _unlink() async {
+    try {
+      await widget.api.unlinkLine();
+      if (!mounted) return;
+      setState(() => linkCode = null);
+      await _refresh();
+    } catch (err) {
+      if (!mounted) return;
+      setState(() => error = err.toString());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final available = status?['available'] == true;
+    final linked = status?['linked'] == true;
+    return Scaffold(
+      appBar: AppBar(title: const Text('LINE notifications')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (error != null)
+            Text(error!, style: const TextStyle(color: Colors.red)),
+          if (!available)
+            const Text('LINE notifications are not set up by this shop yet.'),
+          if (linked) ...[
+            const Text('LINE notifications are enabled for this account.'),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _unlink,
+              child: const Text('Unlink and stop notifications'),
+            ),
+          ],
+          if (available && !linked) ...[
+            const Text(
+              'Agree to receive installment due reminders, overdue reminders, and payment confirmations through this shop’s LINE account.',
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: _startLink,
+              child: const Text('Agree and get a link code'),
+            ),
+          ],
+          if (linkCode != null) ...[
+            const SizedBox(height: 16),
+            Text('Add or open the shop’s LINE account: ${linkCode!['officialAccountUrl']}'),
+            const Text('Send this exact message to the shop’s LINE account:'),
+            SelectableText(
+              linkCode!['command'] as String,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const Text('The code expires in 10 minutes.'),
+            TextButton(
+              onPressed: _refresh,
+              child: const Text('I sent it — check link status'),
+            ),
+          ],
+        ],
       ),
     );
   }

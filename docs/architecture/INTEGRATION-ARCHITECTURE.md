@@ -61,7 +61,28 @@ flowchart LR
 | Push | FCM/APNs | R3 |
 | SMS | Thai SMS provider | consent required |
 | Email | SMTP/API | transactional |
-| LINE | LINE Messaging API | consent required |
+| LINE | LINE Messaging API | consent required; due/overdue reminders and payment confirmations |
+
+The LINE pilot uses a merchant-owned Official Account. Customers explicitly link
+their account after customer OTP authentication and can unlink in-app, send
+`STOP`, or unfollow the Official Account. The worker sends a due reminder one
+day before the due date, one overdue reminder the day after, and a payment
+confirmation only after a verified payment webhook. Messages do not include
+balances or identity data. Channel credentials are encrypted at rest; webhook
+signatures are verified and delivery uses a database outbox with retries. Chat
+support, slip uploads, merchant onboarding UI, and production credential
+approval are not included.
+
+To configure a merchant, an owner posts the Official Account channel access
+token, channel secret, and HTTPS Official Account URL to
+`POST /api/v1/tenants/me/line-integration`; the access token is checked against
+LINE before storage, and the response includes that tenant's webhook URL. Set
+the LINE Developers webhook URL to the returned URL.
+Customers use `GET/POST/DELETE /api/v1/me/line-link`; after consenting in the
+customer app, they send the returned `LINK <code>` command to the merchant's
+Official Account. `LINE_CREDENTIALS_ENCRYPTION_KEY` must be a dedicated secret
+of at least 32 characters, and `PUBLIC_API_BASE_URL` must be the public API
+origin reachable by LINE over HTTPS.
 
 ## Failure Handling
 

@@ -43,6 +43,8 @@ jobs:
       PAYMENT_PROVIDER: sandbox
       CUSTOMER_OTP_SANDBOX_CODE: "123456"
       MERCHANT_WEB_ORIGIN: http://localhost:5173
+      LINE_CREDENTIALS_ENCRYPTION_KEY: ci-line-credentials-encryption-key-32ch
+      PUBLIC_API_BASE_URL: http://localhost:3000
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4

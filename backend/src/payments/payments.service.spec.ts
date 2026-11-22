@@ -30,6 +30,15 @@ describe('PaymentsService', () => {
       findFirst: jest.fn(),
       create: jest.fn(),
     },
+    customerLineLink: {
+      findFirst: jest.fn(),
+    },
+    consent: {
+      findFirst: jest.fn(),
+    },
+    lineNotificationOutbox: {
+      create: jest.fn(),
+    },
     allocation: {
       createMany: jest.fn(),
     },
@@ -86,6 +95,9 @@ describe('PaymentsService', () => {
     );
     prisma.paymentIntent.findFirst.mockResolvedValue(null);
     prisma.paymentTransaction.findFirst.mockResolvedValue(null);
+    prisma.customerLineLink.findFirst.mockResolvedValue(null);
+    prisma.consent.findFirst.mockResolvedValue(null);
+    prisma.lineNotificationOutbox.create.mockResolvedValue({});
     prisma.contract.findFirst.mockResolvedValue(activeContract);
     prisma.paymentScheduleItem.findMany.mockResolvedValue([
       {
@@ -601,6 +613,14 @@ describe('PaymentsService', () => {
 
   it('allocates a successful sandbox webhook FIFO and writes installment ledger entries', async () => {
     prisma.paymentIntent.findFirst.mockResolvedValueOnce(intentRecord);
+    prisma.contract.findFirst.mockResolvedValueOnce({
+      ...activeContract,
+      customerId: 'customer-1',
+    });
+    prisma.customerLineLink.findFirst.mockResolvedValueOnce({
+      id: 'line-link',
+    });
+    prisma.consent.findFirst.mockResolvedValueOnce({ id: 'line-consent' });
     prisma.$queryRaw
       .mockResolvedValueOnce([intentRecord])
       .mockResolvedValueOnce([
@@ -707,6 +727,14 @@ describe('PaymentsService', () => {
     expect(prisma.paymentIntent.update).toHaveBeenCalledWith({
       where: { id: intentRecord.id },
       data: { status: PaymentIntentStatus.SUCCEEDED },
+    });
+    expect(prisma.lineNotificationOutbox.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: 'tenant-a',
+        customerId: 'customer-1',
+        kind: 'PAYMENT_CONFIRMATION',
+        idempotencyKey: 'receipt:txn-1',
+      }),
     });
   });
 

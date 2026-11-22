@@ -10,8 +10,11 @@ import {
 } from '@nestjs/common';
 import {
   ContractStatus,
+  ConsentType,
   LedgerDirection,
   LedgerDomain,
+  LineNotificationKind,
+  LineNotificationStatus,
   PaymentIntentStatus,
   PaymentTransaction,
   PaymentTransactionStatus,
@@ -111,7 +114,9 @@ export class PaymentsService {
       where: {
         id: contractId,
         tenantId,
-        ...(this.isCustomer(ctx) ? { customerId: ctx.customerId ?? undefined } : {}),
+        ...(this.isCustomer(ctx)
+          ? { customerId: ctx.customerId ?? undefined }
+          : {}),
       },
       select: {
         id: true,
@@ -359,6 +364,44 @@ export class PaymentsService {
           where: { id: intent.id },
           data: { status: PaymentIntentStatus.SUCCEEDED },
         });
+
+        const contract = await tx.contract.findFirst({
+          where: { id: intent.contractId, tenantId: intent.tenantId },
+          select: { customerId: true },
+        });
+        if (contract) {
+          const [lineLink, lineConsent] = await Promise.all([
+            tx.customerLineLink.findFirst({
+              where: {
+                tenantId: intent.tenantId,
+                customerId: contract.customerId,
+                revokedAt: null,
+              },
+              select: { id: true },
+            }),
+            tx.consent.findFirst({
+              where: {
+                tenantId: intent.tenantId,
+                customerId: contract.customerId,
+                type: ConsentType.LINE_NOTIFICATIONS,
+                revokedAt: null,
+              },
+              select: { id: true },
+            }),
+          ]);
+          if (lineLink && lineConsent) {
+            await tx.lineNotificationOutbox.create({
+              data: {
+                tenantId: intent.tenantId,
+                customerId: contract.customerId,
+                kind: LineNotificationKind.PAYMENT_CONFIRMATION,
+                status: LineNotificationStatus.PENDING,
+                idempotencyKey: `receipt:${transaction.id}`,
+                payload: { transactionId: transaction.id },
+              },
+            });
+          }
+        }
 
         return {
           data: {

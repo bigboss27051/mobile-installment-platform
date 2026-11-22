@@ -18,6 +18,7 @@ import { PlansModule } from './plans/plans.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './common/storage/storage.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { LineNotificationsModule } from './line/line-notifications.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { TenantsModule } from './tenants/tenants.module';
     PortalModule,
     StorageModule,
     OcrModule,
+    LineNotificationsModule,
   ],
 })
 export class AppModule {}

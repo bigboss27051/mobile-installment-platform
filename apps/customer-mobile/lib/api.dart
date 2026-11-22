@@ -75,6 +75,41 @@ class CustomerApi {
     if (response.statusCode >= 400) {
       throw Exception('Failed to load lock status');
     }
+
+    Future<Map<String, dynamic>> getLineLink() async {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/v1/me/line-link'),
+        headers: _authHeaders(),
+      );
+      if (response.statusCode >= 400) {
+        throw Exception('Failed to load LINE notification status');
+      }
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return body['data'] as Map<String, dynamic>;
+    }
+
+    Future<Map<String, dynamic>> startLineLink() async {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/v1/me/line-link'),
+        headers: _authHeaders(),
+        body: jsonEncode({'consent': true}),
+      );
+      if (response.statusCode >= 400) {
+        throw Exception('Failed to create LINE link code');
+      }
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return body['data'] as Map<String, dynamic>;
+    }
+
+    Future<void> unlinkLine() async {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/v1/me/line-link'),
+        headers: _authHeaders(),
+      );
+      if (response.statusCode >= 400) {
+        throw Exception('Failed to unlink LINE notifications');
+      }
+    }
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     return body['data'] as Map<String, dynamic>;
   }

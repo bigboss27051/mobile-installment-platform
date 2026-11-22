@@ -12,11 +12,15 @@ describe('permissionsForRole', () => {
         'devices.activate',
         'devices.bind',
         'devices.unbind',
+        'notifications.manage',
       ]),
     );
     expect(hasPermission(PlatformRole.MERCHANT_OWNER, 'devices.unbind')).toBe(
       true,
     );
+    expect(
+      hasPermission(PlatformRole.MERCHANT_OWNER, 'notifications.manage'),
+    ).toBe(true);
   });
 
   it('gives MERCHANT_STAFF enroll/bind but not unbind', () => {
@@ -32,6 +36,9 @@ describe('permissionsForRole', () => {
     expect(
       hasPermission(PlatformRole.MERCHANT_STAFF, 'applications.decide'),
     ).toBe(true);
+    expect(
+      hasPermission(PlatformRole.MERCHANT_STAFF, 'notifications.manage'),
+    ).toBe(false);
   });
 
   it('gives SUPER_ADMIN the same Phase 3a set as owner', () => {

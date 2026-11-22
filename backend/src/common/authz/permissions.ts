@@ -7,6 +7,7 @@ export const PERMISSIONS = [
   'devices.activate',
   'devices.bind',
   'devices.unbind',
+  'notifications.manage',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -14,7 +15,7 @@ export type Permission = (typeof PERMISSIONS)[number];
 const OWNER_PERMS: Permission[] = [...PERMISSIONS];
 
 const STAFF_PERMS: Permission[] = PERMISSIONS.filter(
-  (p) => p !== 'devices.unbind',
+  (p) => p !== 'devices.unbind' && p !== 'notifications.manage',
 );
 
 export function permissionsForRole(
