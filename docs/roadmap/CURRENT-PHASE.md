@@ -42,7 +42,7 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Phase 3e:** Staff `GET /api/v1/devices` (tenant-scoped, masked IMEI, policy + heartbeat). Merchant Web **Devices** page opens status + command panel.
 
-**Phase 3f (lab HTTPS):** Nest dual listen HTTP + HTTPS (`TLS_*` / `HTTPS_PORT`); `scripts/generate-lab-https-certs.sh`; DPC `0.1.14-lab` pins lab CA. **Pad 6:** agent heartbeat over `https://127.0.0.1:3443` via `adb reverse` updated `last_heartbeat_at`. LAN Wi‑Fi HTTPS still optional when Pad/Mac share L2 + firewall allows `:3443`. Docs: [AGENT-HTTPS-LAB.md](../device-management/AGENT-HTTPS-LAB.md).
+**Phase 3f (lab HTTPS):** Nest dual listen HTTP + HTTPS (`TLS_*` / `HTTPS_PORT`); `scripts/generate-lab-https-certs.sh`; DPC pins lab CA. **Pad 6:** `adb reverse` path proven `0.1.14-lab`; **LAN Wi‑Fi HTTPS proven 2026-11-22** — DPC `0.1.17-lab`, `apiBase=https://192.168.68.108:3443/api/v1`, empty `adb reverse --list`, `last_heartbeat_at` over Pad `192.168.68.110` → Mac `192.168.68.108`. Docs: [AGENT-HTTPS-LAB.md](../device-management/AGENT-HTTPS-LAB.md), evidence [2026-11-22-xiaomi-pad6-lan-https-welcome-qr.md](../device-management/lab-evidence/2026-11-22-xiaomi-pad6-lan-https-welcome-qr.md).
 
 **Phase 3g (lab done):** Soft location **only** when desired policy is `RESTRICT` or `LOCK` (D-061). Pad proof: under LOCK, agent heartbeat with `location` → `locationAccepted` + `lastKnownLocation`; purge on STOP→NONE. DPC `0.1.16-lab`. Spec/plan linked from backlog `R2-P3-009`.
 
@@ -58,7 +58,7 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Android lab completeness A (2026-11-22):** DPC `0.1.17-lab` — REMINDER notification (usable device) + LOCK emergency `ACTION_DIAL` `tel:112` with dialer lock-task allowlist; Customer Flutter pays portal `outstandingBalance` (no hardcoded 100); `GET /me/contracts/:id` returns `outstandingBalance`. Spec/plan: `docs/superpowers/specs/2026-11-22-android-lab-completeness-a-design.md`. Still lab only.
 
-**Next:** Optional LAN HTTPS / Welcome QR; WorkManager poller (Approach B) later; merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
+**Next:** Optional **Welcome QR** re-prove (gated — **ask before wipe**); WorkManager poller (Approach B) later; merchant policy settings later. **Do not** claim production Device Owner or financing lock. **Skip iOS** this usage window.
 
 **IOS-A (docs):** vendor MDM + Model B + Single App Mode (D-056). **IOS-B:** customer Flutter lock UI + `GET /me/lock-status`. Full MDM / SAM lab is Phase 5–6 and remains BLOCKED on Apple.
 

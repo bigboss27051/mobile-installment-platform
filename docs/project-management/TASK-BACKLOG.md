@@ -49,7 +49,7 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R2-P3-005 | Non-empty RESTRICT: QUERY_ALL_PACKAGES + lab proof on Pad 6 | P0 | Android | DONE (WPS/mediaeditor suspended=true; lab-target optional) |
 | R2-P3-006 | Merchant Web device command enqueue (reason + devices.command) | P1 | Frontend | DONE (panel after bind; unit tests) |
 | R2-P3-007 | Staff GET /devices list + Merchant Web Devices page | P1 | Backend/Web | DONE (tenant isolation + masked IMEI) |
-| R2-P3-008 | Lab HTTPS agent host (TLS listen + pinned lab CA + Pad heartbeat) | P0 | Backend/Android | DONE (adb-reverse HTTPS proven; LAN same-subnet optional) |
+| R2-P3-008 | Lab HTTPS agent host (TLS listen + pinned lab CA + Pad heartbeat) | P0 | Backend/Android | DONE (adb-reverse HTTPS proven; LAN same-subnet proven 2026-11-22) |
 | R2-P3-009 | Phase 3g soft location (arrears-only): heartbeat location when RESTRICT/LOCK, last-known + 14d history, staff read + purge (D-061) | P1 | Android/Backend/Web | DONE (Pad LOCK locationAccepted + purge on NONE) |
 | R2-P4-001 | Phase 4a payment-to-unlock: verified sandbox webhook → outstanding 0 → STOP_LOCK/SUSPEND enqueue (idempotent) | P0 | Backend | DONE (unit + Pad E2E 2026-11-21) |
 | R2-P4-002 | Phase 4b overdue auto-lock: staff evaluate-overdue → START_LOCK_TASK (lab jump-to-LOCK) | P0 | Backend | DONE (unit + Pad E2E 2026-11-21) |
@@ -57,4 +57,6 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R2-P4-004 | Phase 4d overdue ladder: 1/3/7d → REMINDER/RESTRICT/LOCK (escalate-only; D-065) | P0 | Backend | DONE (unit) |
 | R2-P4-005 | Android lab completeness A: DPC REMINDER notify + LOCK emergency dial; portal outstanding; Flutter pay outstanding | P0 | Android/Flutter/Backend | DONE (unit; lab; not production DO) |
 | R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | DONE (lab: wipe → reinstall DO via dpm + check-in + HTTPS HB + lock loop; full Welcome QR optional; REENROLL clears device_id) |
+| R2-P4-006 | LAN HTTPS lab: Pad agent heartbeat over Wi‑Fi to host `:3443` without adb reverse | P0 | Android/Backend | DONE (Pad 6 2026-11-22; `192.168.68.110` → `192.168.68.108`; `0.1.17-lab`; not production DO) |
+| R2-P4-007 | Welcome QR lab: post-wipe 6-tap QR Device Owner with LAN HTTPS enrollment endpoint | P1 | Android/Docs | BACKLOG (gated — explicit wipe approval required; see lan-https-welcome-qr plan Task 6) |
 | P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |

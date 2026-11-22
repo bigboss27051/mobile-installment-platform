@@ -1,6 +1,6 @@
 # Agent HTTPS lab
 
-**Status:** lab proven on Xiaomi Pad 6 (`0.1.14-lab`). Not production Device Owner / financing.
+**Status:** lab proven on Xiaomi Pad 6 (`0.1.14-lab` USB reverse; `0.1.17-lab` LAN Wi‑Fi). Not production Device Owner / financing.
 
 ## What “HTTPS agent host” means here
 
@@ -40,7 +40,8 @@ QR / env: `DPC_ENROLLMENT_ENDPOINT=https://<host>:3443/api/v1/devices/enroll/che
 | Host `curl -sk https://127.0.0.1:3443/api/v1/health` | 200 |
 | Host agent heartbeat over HTTPS | 200 + `lastHeartbeatAt` |
 | Device `apiBase=https://127.0.0.1:3443/api/v1` + `adb reverse tcp:3443 tcp:3443` | Poller updated `last_heartbeat_at` (TLS + lab CA) |
-| Direct LAN `https://192.168.1.7:3443` from Pad | Not proven this session (Pad Wi‑Fi subnet `192.168.68.x` vs Mac `192.168.1.7`; open firewall / same L2 for shop Wi‑Fi) |
+| Direct LAN `https://192.168.1.7:3443` from Pad | Not proven (2026-11-21; Pad Wi‑Fi subnet `192.168.68.x` vs Mac `192.168.1.7`) |
+| Direct LAN `https://192.168.68.108:3443` from Pad (no adb reverse) | **Proven 2026-11-22** — see [2026-11-22-xiaomi-pad6-lan-https-welcome-qr.md](./lab-evidence/2026-11-22-xiaomi-pad6-lan-https-welcome-qr.md) |
 
 ## Wipe / FRP
 

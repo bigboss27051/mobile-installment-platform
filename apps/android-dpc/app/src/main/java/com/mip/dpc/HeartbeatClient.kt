@@ -1,11 +1,14 @@
 package com.mip.dpc
 
+import android.util.Log
 import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 
 object HeartbeatClient {
+    private const val TAG = "MipHeartbeat"
+
     fun post(
         session: AgentTokenStore.AgentSession,
         policyVersion: Int,
@@ -40,8 +43,14 @@ object HeartbeatClient {
                 payload.put("location", loc)
             }
             OutputStreamWriter(connection.outputStream).use { it.write(payload.toString()) }
-            connection.responseCode in 200..299
-        } catch (_: Exception) {
+            val code = connection.responseCode
+            val ok = code in 200..299
+            if (!ok) {
+                Log.w(TAG, "heartbeat HTTP $code url=$url")
+            }
+            ok
+        } catch (e: Exception) {
+            Log.w(TAG, "heartbeat failed url=$url: ${e.javaClass.simpleName}: ${e.message}", e)
             false
         } finally {
             connection.disconnect()
