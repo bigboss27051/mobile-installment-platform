@@ -11,69 +11,6 @@ body {
   margin: 0;
 }
 
-.app-shell {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  min-height: 100vh;
-}
-
-.app-shell.nav-open {
-  /* mobile drawer open handled via .app-sidebar */
-}
-
-.app-sidebar {
-  background: var(--mip-sidebar);
-  color: #fff;
-  padding: var(--mip-space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--mip-space-2);
-}
-
-.app-sidebar__brand {
-  font-weight: 700;
-  margin-bottom: var(--mip-space-3);
-}
-
-.app-sidebar button,
-.app-sidebar a {
-  display: block;
-  width: 100%;
-  margin: 0;
-  background: transparent;
-  color: #fff;
-  border: 0;
-  text-align: left;
-  cursor: pointer;
-  min-height: var(--mip-input-height);
-  padding: var(--mip-space-2) var(--mip-space-3);
-  border-radius: var(--mip-radius);
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.app-sidebar button.active {
-  background: var(--mip-primary);
-  font-weight: 600;
-}
-
-.app-main {
-  padding: var(--mip-space-4);
-  background: var(--mip-bg);
-  min-width: 0;
-}
-
-.app-topbar {
-  display: none;
-  align-items: center;
-  gap: var(--mip-space-3);
-  margin-bottom: var(--mip-space-4);
-}
-
-.app-backdrop {
-  display: none;
-}
-
 .lang-switch {
   display: flex;
   gap: var(--mip-space-2);
@@ -84,48 +21,19 @@ body {
   width: auto;
   min-height: var(--mip-input-height);
   padding: 0 var(--mip-space-3);
-  border: 1px solid rgb(255 255 255 / 35%);
+  border: 1px solid var(--mip-border);
   border-radius: var(--mip-radius);
   font-size: 12px;
+  color: var(--mip-text);
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .lang-switch button.active {
-  background: var(--mip-primary);
-  border-color: var(--mip-primary);
-}
-
-.login-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--mip-space-4);
-  background: var(--mip-bg);
-}
-
-.login-card {
-  width: 100%;
-  max-width: var(--mip-login-max);
-  background: var(--mip-surface);
-  border: 1px solid var(--mip-border);
-  border-radius: var(--mip-radius);
-  padding: var(--mip-space-5);
-}
-
-.login-card .lang-switch button {
-  color: var(--mip-text);
-  border-color: var(--mip-border);
-}
-
-.login-card .lang-switch button.active {
   color: #fff;
   background: var(--mip-primary);
   border-color: var(--mip-primary);
-}
-
-.login-card h1 {
-  margin: 0 0 var(--mip-space-4);
-  font-size: var(--mip-title-size);
 }
 
 .chip {
@@ -159,41 +67,4 @@ body {
 }
 .check-row input {
   margin-top: 3px;
-}
-
-@media (min-width: 768px) {
-  .app-main {
-    padding: var(--mip-space-5);
-  }
-  .login-screen {
-    padding: var(--mip-space-5);
-  }
-}
-
-@media (max-width: 767px) {
-  .app-shell {
-    grid-template-columns: 1fr;
-  }
-  .app-topbar {
-    display: flex;
-  }
-  .app-sidebar {
-    position: fixed;
-    inset: 0 auto 0 0;
-    width: 220px;
-    z-index: 20;
-    transform: translateX(-100%);
-    transition: transform 0.15s ease;
-  }
-  .app-shell.nav-open .app-sidebar {
-    transform: translateX(0);
-  }
-  .app-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgb(15 23 42 / 40%);
-    z-index: 15;
-    border: 0;
-  }
 }

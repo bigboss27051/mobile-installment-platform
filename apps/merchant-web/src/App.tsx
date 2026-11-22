@@ -1,4 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 import {
   ApiError,
   apiRequest,
@@ -25,6 +29,7 @@ import {
   Spinner,
   Table,
 } from './ui';
+import { MIP_TOKENS } from './ui/theme';
 
 type AppPage =
   | 'products'
@@ -52,6 +57,36 @@ const PAGES: AppPage[] = [
   'enroll',
   'line',
 ];
+
+const DRAWER_WIDTH = 220;
+
+const drawerPaperSx = {
+  width: DRAWER_WIDTH,
+  boxSizing: 'border-box',
+  bgcolor: MIP_TOKENS.sidebar,
+  color: '#fff',
+  border: 'none',
+} as const;
+
+function navButtonSx(active: boolean) {
+  return {
+    display: 'block',
+    width: '100%',
+    m: 0,
+    px: 1.5,
+    py: 1,
+    minHeight: MIP_TOKENS.inputHeight,
+    border: 0,
+    borderRadius: 1,
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontFamily: 'inherit',
+    fontSize: 14,
+    fontWeight: active ? 600 : 400,
+    color: '#fff',
+    bgcolor: active ? 'primary.main' : 'transparent',
+  } as const;
+}
 
 async function runAction(
   action: () => Promise<void>,
@@ -85,43 +120,85 @@ export function App() {
     );
   }
 
-  return (
-    <div className={`app-shell${navOpen ? ' nav-open' : ''}`}>
-      {navOpen ? (
-        <button
+  function renderSidebar() {
+    return (
+    <Box
+      component="nav"
+      aria-label="Main"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+        p: 2,
+        height: '100%',
+        '& .lang-switch button': {
+          color: '#fff',
+          borderColor: 'rgba(255, 255, 255, 0.35)',
+          backgroundColor: 'transparent',
+        },
+        '& .lang-switch button.active': {
+          color: '#fff',
+          bgcolor: 'primary.main',
+          borderColor: 'primary.main',
+        },
+      }}
+    >
+      <Box sx={{ fontWeight: 700, mb: 1.5 }}>{t('nav.brand')}</Box>
+      <LanguageSwitch />
+      {PAGES.map((item) => (
+        <Box
+          component="button"
+          key={item}
           type="button"
-          className="app-backdrop"
-          aria-label="Close menu"
-          onClick={() => setNavOpen(false)}
-        />
-      ) : null}
-      <nav className="app-sidebar" aria-label="Main">
-        <div className="app-sidebar__brand">{t('nav.brand')}</div>
-        <LanguageSwitch />
-        {PAGES.map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={page === item ? 'active' : undefined}
-            onClick={() => {
-              setPage(item);
-              setError(null);
-              setNavOpen(false);
-            }}
-          >
-            {t(`nav.${item}`)}
-          </button>
-        ))}
-        <button type="button" onClick={() => setLogoutOpen(true)}>
-          {t('nav.logout')}
-        </button>
-      </nav>
-      <div className="app-main">
-        <div className="app-topbar">
-          <Button type="button" variant="secondary" onClick={() => setNavOpen(true)}>
+          onClick={() => {
+            setPage(item);
+            setError(null);
+            setNavOpen(false);
+          }}
+          sx={navButtonSx(page === item)}
+        >
+          {t(`nav.${item}`)}
+        </Box>
+      ))}
+      <Box component="button" type="button" onClick={() => setLogoutOpen(true)} sx={navButtonSx(false)}>
+        {t('nav.logout')}
+      </Box>
+    </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Drawer
+        variant="temporary"
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': drawerPaperSx,
+        }}
+      >
+        {renderSidebar()}
+      </Drawer>
+      <Drawer
+        variant="permanent"
+        open
+        elevation={0}
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': drawerPaperSx,
+        }}
+      >
+        {renderSidebar()}
+      </Drawer>
+      <Box component="main" sx={{ flex: 1, minWidth: 0, p: { xs: 2, md: 3 } }}>
+        <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', mb: 2 }}>
+          <Button type="button" variant="ghost" onClick={() => setNavOpen(true)}>
             {t('nav.menu')}
           </Button>
-        </div>
+        </Box>
         {error ? (
           <div className="mip-toast">
             <Alert tone="error">
@@ -161,8 +238,8 @@ export function App() {
         {page === 'devices' ? <DevicesPage onError={setError} apiError={apiError} /> : null}
         {page === 'enroll' ? <EnrollPage onError={setError} apiError={apiError} /> : null}
         {page === 'line' ? <LineSettingsPage onError={setError} apiError={apiError} /> : null}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -183,10 +260,21 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
   }
 
   return (
-    <div className="login-screen">
-      <div className="login-card">
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: { xs: 2, md: 3 },
+        bgcolor: 'background.default',
+      }}
+    >
+      <Paper sx={{ width: '100%', maxWidth: MIP_TOKENS.loginMax, p: 3 }}>
         <LanguageSwitch />
-        <h1>{t('login.title')}</h1>
+        <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
+          {t('login.title')}
+        </Typography>
         <form className="mip-form-grid" onSubmit={onSubmit}>
           <FormField label={t('login.email')} htmlFor="login-email" required>
             <Input
@@ -213,8 +301,8 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
           </div>
         </form>
         {error ? <Alert tone="error">{error}</Alert> : null}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 }
 
