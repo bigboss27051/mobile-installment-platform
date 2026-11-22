@@ -3,8 +3,6 @@ package com.mip.dpc
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.os.Bundle
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import kotlin.concurrent.thread
 
@@ -25,24 +23,14 @@ class LabProvisioningActivity : AppCompatActivity() {
         val extras = EnrollmentExtrasResolver.resolve(fromIntent, store.load())
         val call = CheckInCall.plan(extras, status)
 
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 48, 48, 48)
-        }
-        val statusView = TextView(this).apply {
-            text = "Device Owner: ${status.isDeviceOwner}\nQR check-in only. Play Protect stays on. No kiosk."
-            textSize = 16f
-        }
-        val resultView = TextView(this).apply {
-            text = if (call == null) {
-                "No HTTPS enrollment extras on this launch."
-            } else {
-                "Checking in…"
-            }
-        }
-        root.addView(statusView)
-        root.addView(resultView)
-        setContentView(root)
+        val shell = LabShell.inflate(this, "Device Owner check-in")
+        shell.body.text =
+            "Device Owner: ${status.isDeviceOwner}\nQR check-in only. Play Protect stays on. No kiosk.\n" +
+                if (call == null) {
+                    "No HTTPS enrollment extras on this launch."
+                } else {
+                    "Checking in…"
+                }
 
         if (call != null) {
             thread {
@@ -57,7 +45,10 @@ class LabProvisioningActivity : AppCompatActivity() {
                     PushTokenClient.registerIfPossible(applicationContext)
                 }
                 store.clear()
-                runOnUiThread { resultView.text = result.message }
+                runOnUiThread {
+                    shell.body.text =
+                        "Device Owner: ${status.isDeviceOwner}\nQR check-in only. Play Protect stays on. No kiosk.\n${result.message}"
+                }
             }
         }
     }

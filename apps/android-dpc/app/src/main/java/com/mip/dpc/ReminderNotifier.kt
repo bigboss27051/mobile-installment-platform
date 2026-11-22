@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import androidx.core.content.ContextCompat
 
 /**
  * Lab overdue REMINDER channel. Not soft-location, not FGS recovery channel.
@@ -16,20 +17,25 @@ object ReminderNotifier {
     fun show(context: Context) {
         ensureChannel(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        val title = context.getString(R.string.reminder_title)
+        val body = context.getString(R.string.reminder_body)
+        val teal = ContextCompat.getColor(context, R.color.mip_teal)
         val notification =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Notification.Builder(context, CHANNEL_ID)
-                    .setContentTitle("Installment overdue")
-                    .setContentText("Please pay via the MIP customer app. Device remains usable.")
+                    .setContentTitle(title)
+                    .setContentText(body)
                     .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setColor(teal)
                     .setOngoing(true)
                     .build()
             } else {
                 @Suppress("DEPRECATION")
                 Notification.Builder(context)
-                    .setContentTitle("Installment overdue")
-                    .setContentText("Please pay via the MIP customer app. Device remains usable.")
+                    .setContentTitle(title)
+                    .setContentText(body)
                     .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setColor(teal)
                     .setOngoing(true)
                     .build()
             }
@@ -47,10 +53,10 @@ object ReminderNotifier {
         val channel =
             NotificationChannel(
                 CHANNEL_ID,
-                "Overdue reminder",
+                context.getString(R.string.reminder_channel_name),
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
-                description = "MIP lab REMINDER — usable device, pay reminder only"
+                description = context.getString(R.string.reminder_channel_desc)
             }
         manager.createNotificationChannel(channel)
     }

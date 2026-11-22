@@ -4,7 +4,6 @@ import android.app.Activity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.widget.LinearLayout
 import android.widget.TextView
 import kotlin.concurrent.thread
 
@@ -23,16 +22,9 @@ class CommandPollActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 48, 48, 48)
-        }
-        statusView = TextView(this).apply {
-            text = "Command poller (lab). Waiting…"
-            textSize = 16f
-        }
-        root.addView(statusView)
-        setContentView(root)
+        val shell = LabShell.inflate(this, "Command poller")
+        statusView = shell.body
+        statusView.text = "Waiting…"
         handler.post(tick)
     }
 

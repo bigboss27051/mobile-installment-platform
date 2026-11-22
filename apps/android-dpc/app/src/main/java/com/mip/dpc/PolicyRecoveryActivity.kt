@@ -3,8 +3,6 @@ package com.mip.dpc
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.LinearLayout
-import android.widget.TextView
 import kotlin.concurrent.thread
 
 /**
@@ -13,17 +11,8 @@ import kotlin.concurrent.thread
 class PolicyRecoveryActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val status = TextView(this).apply {
-            text = "Reboot recovery…"
-            textSize = 16f
-            setPadding(48, 48, 48, 48)
-        }
-        setContentView(
-            LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                addView(status)
-            },
-        )
+        val shell = LabShell.inflate(this, "Reboot recovery")
+        shell.body.text = "Reboot recovery…"
 
         thread {
             val session = AgentTokenStore(this).load()
@@ -35,7 +24,7 @@ class PolicyRecoveryActivity : Activity() {
             }
             val result = PolicyRecovery.reapply(this, desired)
             runOnUiThread {
-                status.text = "Recovery: desired=$desired result=$result"
+                shell.body.text = "Recovery: desired=$desired result=$result"
             }
             // Resume poller only when not entering Lock Task — otherwise it covers Mango Lock.
             if (desired != "LOCK") {

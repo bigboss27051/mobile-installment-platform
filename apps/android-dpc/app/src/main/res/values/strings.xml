@@ -1,4 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MIP Lab DPC</string>
+
+    <string name="lock_brand">MIP</string>
+    <string name="lock_title_th">อุปกรณ์ถูกล็อก</string>
+    <string name="lock_title_en">Device locked</string>
+    <string name="lock_body_th">ค้างชำระ — ชำระในแอปลูกค้าเพื่อปลดล็อก</string>
+    <string name="lock_body_en">Overdue — pay in the customer app to unlock</string>
+    <string name="lock_status_heading">สถานะ · STATUS</string>
+    <string name="lock_amount_heading">ยอดค้าง · AMOUNT DUE</string>
+    <string name="lock_due_heading">กำหนดชำระ · Due</string>
+    <string name="lock_contract_heading">สัญญา · CONTRACT</string>
+    <string name="lock_contact_merchant">ติดต่อร้าน · Contact your merchant</string>
+    <string name="lock_emergency">โทรฉุกเฉิน 112 · Emergency</string>
+
+    <string name="reminder_channel_name">ค้างชำระ · Overdue reminder</string>
+    <string name="reminder_channel_desc">MIP REMINDER — device usable; pay reminder only</string>
+    <string name="reminder_title">ค้างชำระงวด · Installment overdue</string>
+    <string name="reminder_body">ชำระในแอปลูกค้า — ยังใช้งานเครื่องได้. Pay in customer app — device stays usable.</string>
+
+    <string name="lab_brand">MIP LAB</string>
 </resources>

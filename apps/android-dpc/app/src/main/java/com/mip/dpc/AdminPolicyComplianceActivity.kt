@@ -5,8 +5,6 @@ import android.app.admin.DevicePolicyManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.widget.LinearLayout
-import android.widget.TextView
 import kotlin.concurrent.thread
 
 /**
@@ -35,26 +33,19 @@ class AdminPolicyComplianceActivity : Activity() {
         val extras = EnrollmentExtrasResolver.resolve(fromIntent, store.load())
         val call = CheckInCall.plan(extras, status)
 
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(48, 48, 48, 48)
-        }
-        val statusView = TextView(this).apply {
-            text = "Device Owner: ${status.isDeviceOwner}\nPolicy compliance. Play Protect stays on."
-            textSize = 16f
-        }
-        val resultView = TextView(this)
-        root.addView(statusView)
-        root.addView(resultView)
-        setContentView(root)
+        val shell = LabShell.inflate(this, "Policy compliance")
+        shell.body.text =
+            "Device Owner: ${status.isDeviceOwner}\nPolicy compliance. Play Protect stays on."
 
         if (call == null) {
-            resultView.text = "No HTTPS enrollment extras; finishing provisioning."
+            shell.body.text =
+                "Device Owner: ${status.isDeviceOwner}\nNo HTTPS enrollment extras; finishing provisioning."
             finishOk()
             return
         }
 
-        resultView.text = "Checking in…"
+        shell.body.text =
+            "Device Owner: ${status.isDeviceOwner}\nPolicy compliance. Play Protect stays on.\nChecking in…"
         mainHandler.postDelayed({ finishOk() }, CHECK_IN_TIMEOUT_MS)
         thread {
             val result = CheckInHttp.post(call)
@@ -69,7 +60,8 @@ class AdminPolicyComplianceActivity : Activity() {
             }
             store.clear()
             runOnUiThread {
-                resultView.text = result.message
+                shell.body.text =
+                    "Device Owner: ${status.isDeviceOwner}\nPolicy compliance.\n${result.message}"
                 finishOk()
             }
         }
