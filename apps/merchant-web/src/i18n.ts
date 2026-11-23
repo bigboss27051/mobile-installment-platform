@@ -305,6 +305,10 @@ const th: Record<string, string> = {
     'เครื่องที่เพิ่มด้วย Configurator อาจออกจาก Remote Management ได้ใน 30 วัน ต้องเปิดเผยในสัญญา',
   'enroll.refresh': 'รีเฟรชสถานะ',
   'enroll.issueQr': 'ออก QR',
+  'enroll.dpcConfigured': 'ตั้งค่า DPC_* พร้อมออก QR (ยังไม่ใช่การรับรอง Device Owner เชิงพาณิชย์)',
+  'enroll.dpcNotConfigured':
+    'ยังตั้งค่า DPC ไม่ครบ — ขาด: {missing}. ตั้งค่าในเซิร์ฟเวอร์ก่อนออก QR Android',
+  'enroll.needDpcConfig': 'ต้องตั้งค่า DPC_* บนเซิร์ฟเวอร์ก่อนสร้างเซสชัน Android',
   'enroll.cancel': 'ยกเลิกเซสชัน',
   'enroll.newSession': 'เริ่มเซสชันใหม่',
   'enroll.handoverBlocked': 'ยังส่งมอบเครื่องไม่ได้ จนกว่าสถานะจะเป็นเสร็จสิ้น',
@@ -669,6 +673,11 @@ const en: Record<string, string> = {
     'Configurator-added devices may leave Remote Management for 30 days — disclose in the contract.',
   'enroll.refresh': 'Refresh status',
   'enroll.issueQr': 'Issue QR',
+  'enroll.dpcConfigured':
+    'DPC_* settings look ready for QR (not a commercial Device Owner approval).',
+  'enroll.dpcNotConfigured':
+    'DPC settings incomplete — missing: {missing}. Configure the API server before issuing Android QR.',
+  'enroll.needDpcConfig': 'Configure DPC_* on the API server before creating an Android session.',
   'enroll.cancel': 'Cancel session',
   'enroll.newSession': 'Start a new session',
   'enroll.handoverBlocked': 'Handover is blocked until enrollment is completed.',

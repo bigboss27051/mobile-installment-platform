@@ -14,6 +14,8 @@ Dedicated GMS test phone. Do not wipe a personal device. Confirm wipe approval i
 
 **FRP:** After wipe, GMS may require the previous Google account before Setup Wizard / QR Device Owner can continue. Prefer FRP-free lab stock (no personal Google before first DO) or keep the lab Google credentials available. See [FRP-AND-REENROLL.md](./FRP-AND-REENROLL.md). The platform does not bypass FRP.
 
+**Shop floor (software pack D-070):** [SHOP-FLOOR-ANDROID-RUNBOOK.md](./SHOP-FLOOR-ANDROID-RUNBOOK.md) — still not a multi-SKU / Play approval claim.
+
 ## 1. Submit AMAPI permissible-usage inquiry (DM0-006) — optional
 
 Printable steps + shopping list: [OPERATOR-PACKET.md](./OPERATOR-PACKET.md).  

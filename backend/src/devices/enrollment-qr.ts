@@ -7,26 +7,47 @@ export type DpcQrSettings = {
   enrollmentEndpoint: string;
 };
 
-export function resolveDpcQrSettings(
+export type DpcConfigStatus = {
+  configured: boolean;
+  missing: string[];
+};
+
+/** Which DPC_* keys fail validation (names only — no secret values). */
+export function diagnoseDpcQrSettings(
   env: Record<string, string | undefined>,
-): DpcQrSettings | null {
+): DpcConfigStatus {
+  const missing: string[] = [];
   const componentName = env.DPC_COMPONENT_NAME?.trim() ?? '';
   const downloadUrl = env.DPC_DOWNLOAD_URL?.trim() ?? '';
   const packageChecksum = env.DPC_PACKAGE_CHECKSUM?.trim() ?? '';
   const enrollmentEndpoint = env.DPC_ENROLLMENT_ENDPOINT?.trim() ?? '';
-  if (
-    !componentName ||
-    !isHttpsResource(downloadUrl) ||
-    !isSha256Base64Url(packageChecksum) ||
-    !isCheckInEndpoint(enrollmentEndpoint)
-  ) {
+  if (!componentName) {
+    missing.push('DPC_COMPONENT_NAME');
+  }
+  if (!isHttpsResource(downloadUrl)) {
+    missing.push('DPC_DOWNLOAD_URL');
+  }
+  if (!isSha256Base64Url(packageChecksum)) {
+    missing.push('DPC_PACKAGE_CHECKSUM');
+  }
+  if (!isCheckInEndpoint(enrollmentEndpoint)) {
+    missing.push('DPC_ENROLLMENT_ENDPOINT');
+  }
+  return { configured: missing.length === 0, missing };
+}
+
+export function resolveDpcQrSettings(
+  env: Record<string, string | undefined>,
+): DpcQrSettings | null {
+  const status = diagnoseDpcQrSettings(env);
+  if (!status.configured) {
     return null;
   }
   return {
-    componentName,
-    downloadUrl,
-    packageChecksum,
-    enrollmentEndpoint,
+    componentName: env.DPC_COMPONENT_NAME!.trim(),
+    downloadUrl: env.DPC_DOWNLOAD_URL!.trim(),
+    packageChecksum: env.DPC_PACKAGE_CHECKSUM!.trim(),
+    enrollmentEndpoint: env.DPC_ENROLLMENT_ENDPOINT!.trim(),
   };
 }
 

@@ -47,6 +47,12 @@ describe('EnrollPage QR issue button', () => {
     vi.stubGlobal('fetch', fetchMock);
     const qrCalls: string[] = [];
     fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (
+        (init?.method ?? 'GET') === 'GET' &&
+        String(path).includes('/api/v1/devices/enrollment/dpc-config-status')
+      ) {
+        return jsonResponse(200, { data: { configured: true, missing: [] } });
+      }
       if ((init?.method ?? 'GET') === 'GET' && String(path).includes('/api/v1/contracts')) {
         return jsonResponse(200, {
           data: [
@@ -147,9 +153,57 @@ describe('EnrollPage QR issue button', () => {
     expect(qrCalls).toEqual(['POST', 'POST']);
   });
 
+  it('disables Android create when DPC config is incomplete', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (String(path).includes('/dpc-config-status')) {
+        return jsonResponse(200, {
+          data: {
+            configured: false,
+            missing: ['DPC_DOWNLOAD_URL', 'DPC_PACKAGE_CHECKSUM'],
+          },
+        });
+      }
+      if ((init?.method ?? 'GET') === 'GET' && String(path).includes('/api/v1/contracts')) {
+        return jsonResponse(200, {
+          data: [
+            {
+              id: '22222222-2222-4222-8222-222222222222',
+              status: 'ACTIVE',
+              principal: '8000.00',
+              termMonths: 6,
+            },
+          ],
+        });
+      }
+      return jsonResponse(200, { data: [] });
+    });
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <EnrollPage onError={() => undefined} apiError={(message) => message} />
+        </I18nProvider>,
+      );
+    });
+
+    expect(container.querySelector('[data-testid="enroll-dpc-missing"]')).toBeTruthy();
+    expect(container.textContent).toContain('DPC_DOWNLOAD_URL');
+    const submit = Array.from(container.querySelectorAll('button')).find((button) =>
+      (button.textContent ?? '').includes('สร้างเซสชัน'),
+    ) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+  });
+
   it('blocks create session until Android FRP checklist is complete', async () => {
     vi.stubGlobal('fetch', fetchMock);
     fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (String(path).includes('/dpc-config-status')) {
+        return jsonResponse(200, { data: { configured: true, missing: [] } });
+      }
       if ((init?.method ?? 'GET') === 'GET' && String(path).includes('/api/v1/contracts')) {
         return jsonResponse(200, {
           data: [

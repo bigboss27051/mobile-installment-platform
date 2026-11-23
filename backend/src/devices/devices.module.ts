@@ -10,7 +10,10 @@ import { DeviceLifecycleController } from './device-lifecycle.controller';
 import { DeviceLifecycleService } from './device-lifecycle.service';
 import { DeviceLocationService } from './device-location.service';
 import { DeviceRecoveryService } from './device-recovery.service';
-import { EnrollmentController } from './enrollment.controller';
+import {
+  EnrollmentController,
+  EnrollmentDpcConfigController,
+} from './enrollment.controller';
 import { EnrollmentService } from './enrollment.service';
 import { DeviceLockApprovalService } from './device-lock-approval.service';
 import { DevicePolicySettingsService } from './device-policy-settings.service';
@@ -23,6 +26,7 @@ import { MDM_PROVIDER } from './ports/mdm-provider.port';
 @Module({
   imports: [PrismaModule, ScheduleModule.forRoot()],
   controllers: [
+    EnrollmentDpcConfigController,
     EnrollmentController,
     DeviceAgentController,
     DeviceLifecycleController,

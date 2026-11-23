@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Android shop software pack (D-070):** DPC `lab`/`shop` flavors; `GET /api/v1/devices/enrollment/dpc-config-status`; Merchant Web enroll preflight; `SHOP-FLOOR-ANDROID-RUNBOOK.md`; checksum script outputs Android base64url
 - **Stripe PromptPay (D-069):** `StripePaymentAdapter`, `PAYMENT_PROVIDER=stripe`, webhook `/webhooks/payments/stripe`; Merchant Web + Customer Flutter prefer `imageUrlPng` / hosted URL; CI default remains sandbox
 - **OTP SMS port stub:** `OTP_CHANNEL=sandbox|sms` + `BlockedSmsAdapter` (`SMS_OTP_BLOCKED`)
 - **Ops / DPC / legal packs:** `backend/Dockerfile`, `docs/operations/PRODUCTION-DEPLOY.md`, `DPC-HOSTING-CHECKLIST.md`, `scripts/dpc-apk-checksum.sh`, FRP shop-floor SOP, `LEGAL-COUNSEL-PACKET.md`

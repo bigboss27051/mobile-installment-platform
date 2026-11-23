@@ -37,12 +37,12 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 - **Stripe PromptPay (D-069):** `PAYMENT_PROVIDER=stripe` + `POST /api/v1/webhooks/payments/stripe`. Put keys in env (never git). CI stays sandbox.
 - **OTP:** `OTP_CHANNEL=sandbox|sms`; SMS uses `BlockedSmsAdapter` → `SMS_OTP_BLOCKED` until a real vendor adapter exists.
 - **Ops:** [PRODUCTION-DEPLOY.md](../operations/PRODUCTION-DEPLOY.md), `backend/Dockerfile`.
-- **DPC:** [DPC-HOSTING-CHECKLIST.md](../device-management/DPC-HOSTING-CHECKLIST.md), `scripts/dpc-apk-checksum.sh`; FRP shop-floor SOP expanded (no adb).
+- **DPC / shop software (D-070):** `lab`/`shop` flavors; `GET /api/v1/devices/enrollment/dpc-config-status`; Merchant enroll blocks Android QR until `DPC_*` valid; [SHOP-FLOOR-ANDROID-RUNBOOK.md](../device-management/SHOP-FLOOR-ANDROID-RUNBOOK.md); [DPC-HOSTING-CHECKLIST.md](../device-management/DPC-HOSTING-CHECKLIST.md). **Not** shop-SKU proven / Play-approved.
 - **Legal:** [LEGAL-COUNSEL-PACKET.md](../device-management/LEGAL-COUNSEL-PACKET.md) — financing lock still **Unverified**.
 
 ## Next
 
-- Human: Stripe Dashboard webhook → public HTTPS; counsel review of legal packet; multi-SKU lab (DM0-001); real SMS vendor.
+- Human: host shop APK + set `DPC_*`; Stripe webhook → public HTTPS; multi-SKU lab (DM0-001); counsel; real SMS vendor.
 - **R3** SaaS operations may proceed in parallel.
 - **Phase 5–6 iOS:** **BLOCKED** on Apple ABM / MDM vendor (D-043).
 - **Phase 7:** production validation — not claimed.

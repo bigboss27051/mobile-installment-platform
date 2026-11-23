@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import {
   buildAndroidEnrollmentQrPayload,
+  diagnoseDpcQrSettings,
   resolveDpcQrSettings,
 } from './enrollment-qr';
 
@@ -75,5 +76,34 @@ describe('resolveDpcQrSettings', () => {
     ['wrong path', { DPC_ENROLLMENT_ENDPOINT: 'https://api.example.test/api/v1/devices/enroll/check-in/extra' }],
   ])('rejects %s', (_label, override) => {
     expect(resolveDpcQrSettings({ ...valid, ...override })).toBeNull();
+  });
+});
+
+describe('diagnoseDpcQrSettings', () => {
+  const valid = {
+    DPC_COMPONENT_NAME: 'com.mip.dpc/com.mip.dpc.MipDeviceAdminReceiver',
+    DPC_DOWNLOAD_URL: 'https://downloads.example.test/dpc.apk',
+    DPC_PACKAGE_CHECKSUM: packageChecksum,
+    DPC_ENROLLMENT_ENDPOINT: endpoint,
+  };
+
+  it('returns configured with empty missing when all valid', () => {
+    expect(diagnoseDpcQrSettings(valid)).toEqual({
+      configured: true,
+      missing: [],
+    });
+  });
+
+  it('lists only failing key names without values', () => {
+    expect(
+      diagnoseDpcQrSettings({
+        ...valid,
+        DPC_DOWNLOAD_URL: '',
+        DPC_PACKAGE_CHECKSUM: 'nope',
+      }),
+    ).toEqual({
+      configured: false,
+      missing: ['DPC_DOWNLOAD_URL', 'DPC_PACKAGE_CHECKSUM'],
+    });
   });
 });

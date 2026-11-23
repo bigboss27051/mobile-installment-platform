@@ -16,6 +16,7 @@ import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   buildAndroidEnrollmentQrPayload,
+  diagnoseDpcQrSettings,
   resolveDpcQrSettings,
 } from './enrollment-qr';
 import { issueEnrollmentToken } from './enrollment-token';
@@ -126,6 +127,10 @@ export class EnrollmentService {
   async getById(ctx: TenantContext, id: string) {
     const session = await this.findOwned(ctx, id);
     return this.toPublic(await this.expireIfNeeded(session));
+  }
+
+  getDpcConfigStatus() {
+    return diagnoseDpcQrSettings(process.env);
   }
 
   async cancel(ctx: TenantContext, id: string) {

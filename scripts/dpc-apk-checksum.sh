@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Print SHA-256 of a DPC APK for DPC_PACKAGE_CHECKSUM (no secrets).
+# Print SHA-256 of a DPC APK as Android base64url (no padding) for DPC_PACKAGE_CHECKSUM.
 set -euo pipefail
 if [[ $# -ne 1 ]]; then
   echo "Usage: $0 path/to/app.apk" >&2
@@ -10,11 +10,13 @@ if [[ ! -f "$apk" ]]; then
   echo "File not found: $apk" >&2
   exit 1
 fi
-if command -v shasum >/dev/null 2>&1; then
-  shasum -a 256 "$apk" | awk '{print $1}'
-elif command -v sha256sum >/dev/null 2>&1; then
-  sha256sum "$apk" | awk '{print $1}'
-else
-  echo "Need shasum or sha256sum" >&2
-  exit 1
+
+# openssl dgst -sha256 -binary | base64 | tr '+/' '-_' | tr -d '=\n'
+if command -v openssl >/dev/null 2>&1; then
+  openssl dgst -sha256 -binary "$apk" | openssl base64 -A | tr '+/' '-_' | tr -d '='
+  echo
+  exit 0
 fi
+
+echo "Need openssl to produce base64url checksum" >&2
+exit 1

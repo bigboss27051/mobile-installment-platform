@@ -3,6 +3,9 @@
 /app/build
 /lab-target/build
 /local.properties
+keystore.properties
+*.jks
+*.keystore
 *.iml
 .idea
 .DS_Store

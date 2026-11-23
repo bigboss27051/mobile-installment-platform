@@ -8,6 +8,7 @@ Canonical specs for the **Device Provisioning & Enrollment Platform** (R2 / Phas
 | [DEVICE-PROVISIONING-ENROLLMENT.md](./DEVICE-PROVISIONING-ENROLLMENT.md) | Lifecycle, modules, wizard states |
 | [ANDROID-ENROLLMENT.md](./ANDROID-ENROLLMENT.md) | Android QR Device Owner (product) |
 | [FRP-AND-REENROLL.md](./FRP-AND-REENROLL.md) | Factory Reset Protection after wipe + re-enroll SOP (D-060) |
+| [SHOP-FLOOR-ANDROID-RUNBOOK.md](./SHOP-FLOOR-ANDROID-RUNBOOK.md) | Printable shop Android enroll / re-enroll (no adb; D-070) |
 | [../architecture/android-dpc-architecture.md](../architecture/android-dpc-architecture.md) | Kotlin DPC components |
 | [../architecture/android-qr-provisioning.md](../architecture/android-qr-provisioning.md) | QR extras |
 | [../architecture/android-kiosk-locking.md](../architecture/android-kiosk-locking.md) | Lock Task Mode vs lockNow |

@@ -64,18 +64,27 @@ export function EnrollPage({
   const [qr, setQr] = useState<EnrollmentQr | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [reason, setReason] = useState(() => t('enroll.defaultReason'));
+  const [dpcConfigured, setDpcConfigured] = useState<boolean | null>(null);
+  const [dpcMissing, setDpcMissing] = useState<string[]>([]);
 
   useEffect(() => {
     void (async () => {
       try {
-        const rows = await apiRequest<
-          { id: string; status: string; principal: string; termMonths: number }[]
-        >('/api/v1/contracts');
+        const [rows, dpcStatus] = await Promise.all([
+          apiRequest<
+            { id: string; status: string; principal: string; termMonths: number }[]
+          >('/api/v1/contracts'),
+          apiRequest<{ configured: boolean; missing: string[] }>(
+            '/api/v1/devices/enrollment/dpc-config-status',
+          ).catch(() => ({ configured: false, missing: ['DPC_CONFIG_STATUS'] })),
+        ]);
         const active = rows.filter((row) => row.status === 'ACTIVE');
         setContracts(active);
         setContractId((current) =>
           active.some((row) => row.id === current) ? current : (active[0]?.id ?? ''),
         );
+        setDpcConfigured(dpcStatus.configured);
+        setDpcMissing(dpcStatus.missing ?? []);
         onError(null);
       } catch (err) {
         onError(err instanceof ApiError ? apiError(err.message) : t('enroll.failed'));
@@ -92,8 +101,14 @@ export function EnrollPage({
   const qrHasWifiSecret = /WIFI_PASSWORD/i.test(qrText);
   const iosReady = Object.values(iosPrereq).every(Boolean);
   const frpReady = isAndroidFrpChecklistComplete(frpChecklist);
+  const androidDpcReady = dpcConfigured === true;
+  const canCreateAndroid = platform !== 'ANDROID' || androidDpcReady;
 
   async function loadQr(sessionId: string) {
+    if (!androidDpcReady) {
+      onError(t('enroll.needDpcConfig'));
+      return;
+    }
     if (!isAndroidFrpChecklistComplete(frpChecklist)) {
       onError(t('enroll.needFrp'));
       return;
@@ -118,6 +133,10 @@ export function EnrollPage({
     }
     if (!consent) {
       onError(t('enroll.needConsent'));
+      return;
+    }
+    if (platform === 'ANDROID' && !androidDpcReady) {
+      onError(t('enroll.needDpcConfig'));
       return;
     }
     if (platform === 'ANDROID' && !frpReady) {
@@ -204,6 +223,17 @@ export function EnrollPage({
               <li>{t('enroll.androidStep5')}</li>
             </ol>
             <Alert tone="error">{t('enroll.playProtect')}</Alert>
+            {dpcConfigured === false ? (
+              <Box data-testid="enroll-dpc-missing">
+                <Alert tone="error">
+                  {t('enroll.dpcNotConfigured', {
+                    missing: dpcMissing.length ? dpcMissing.join(', ') : 'DPC_*',
+                  })}
+                </Alert>
+              </Box>
+            ) : dpcConfigured === true ? (
+              <Alert tone="info">{t('enroll.dpcConfigured')}</Alert>
+            ) : null}
             <Alert tone="info">{t('enroll.frpBlocked')}</Alert>
             <p>{t('enroll.frpTitle')}</p>
             <label className="check-row">
@@ -349,7 +379,7 @@ export function EnrollPage({
             spacing={1}
             sx={{ mt: 2, gridColumn: '1 / -1' }}
           >
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" disabled={!canCreateAndroid}>
               {t('enroll.createSession')}
             </Button>
           </Stack>
@@ -390,7 +420,9 @@ export function EnrollPage({
               <Button
                 type="button"
                 variant="primary"
-                disabled={session.platform === 'ANDROID' && !frpReady}
+                disabled={
+                  session.platform === 'ANDROID' && (!frpReady || !androidDpcReady)
+                }
                 onClick={() => void loadQr(session.id)}
               >
                 {t('enroll.issueQr')}
