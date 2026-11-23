@@ -39,10 +39,12 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 - **Ops:** [PRODUCTION-DEPLOY.md](../operations/PRODUCTION-DEPLOY.md), `backend/Dockerfile`.
 - **DPC / shop software (D-070):** `lab`/`shop` flavors; `GET /api/v1/devices/enrollment/dpc-config-status`; Merchant enroll blocks Android QR until `DPC_*` valid; [SHOP-FLOOR-ANDROID-RUNBOOK.md](../device-management/SHOP-FLOOR-ANDROID-RUNBOOK.md); [DPC-HOSTING-CHECKLIST.md](../device-management/DPC-HOSTING-CHECKLIST.md). **Not** shop-SKU proven / Play-approved.
 - **Legal:** [LEGAL-COUNSEL-PACKET.md](../device-management/LEGAL-COUNSEL-PACKET.md) — financing lock still **Unverified**.
+- **RBAC / ops hardening (D-071):** STAFF branch assignments + inventory scope; Nest throttler on login/OTP; `GET /api/v1/health/ready`; [OPS-HARDENING-CHECKLIST.md](../security/OPS-HARDENING-CHECKLIST.md) + [PDPA-OFFBOARDING-CHECKLIST.md](../security/PDPA-OFFBOARDING-CHECKLIST.md). **Not** full R3 SaaS / counsel PDPA clearance.
 
 ## Next
 
 - Human: host shop APK + set `DPC_*`; Stripe webhook → public HTTPS; multi-SKU lab (DM0-001); counsel; real SMS vendor.
+- Follow-up: branch-scope contracts/applications; full USER-ROLES matrix still deferred.
 - **R3** SaaS operations may proceed in parallel.
 - **Phase 5–6 iOS:** **BLOCKED** on Apple ABM / MDM vendor (D-043).
 - **Phase 7:** production validation — not claimed.

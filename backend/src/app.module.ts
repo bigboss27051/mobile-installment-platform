@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { CatalogModule } from './catalog/catalog.module';
@@ -19,6 +21,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './common/storage/storage.module';
 import { NotificationsModule } from './common/notifications/notifications.module';
 import { LineModule } from './line/line.module';
+import { StaffModule } from './staff/staff.module';
 import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
@@ -28,6 +31,13 @@ import { TenantsModule } from './tenants/tenants.module';
       envFilePath: ['../.env', '.env'],
       validationSchema: envValidationSchema,
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: Number(process.env.THROTTLE_GLOBAL_LIMIT ?? 120),
+      },
+    ]),
     AuthzModule,
     NotificationsModule,
     HealthModule,
@@ -42,11 +52,18 @@ import { TenantsModule } from './tenants/tenants.module';
     KycModule,
     CatalogModule,
     InventoryModule,
+    StaffModule,
     PaymentsModule,
     PortalModule,
     StorageModule,
     OcrModule,
     LineModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

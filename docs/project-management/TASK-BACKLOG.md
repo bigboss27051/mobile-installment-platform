@@ -73,3 +73,5 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | PAY-P0-002 | OTP_CHANNEL + BlockedSmsAdapter (SMS_OTP_BLOCKED until vendor) | P1 | Backend | DONE (unit; SMS still BLOCKED) |
 | OPS-P0-001 | PRODUCTION-DEPLOY.md + backend Dockerfile + DPC hosting checklist + legal counsel packet | P1 | Docs/Ops | DONE (docs only; not live host claim) |
 | R2-SHOP-001 | Android shop software pack: DPC flavors + dpc-config-status + enroll preflight + shop runbook (D-070) | P0 | Android/Backend/Web/Docs | DONE (software; not multi-SKU / Play claim) |
+| RBAC-P0-001 | Staff branch assignments + inventory branch scope + OWNER assignment APIs (D-071) | P0 | Backend | DONE (unit; contracts/apps branch scope deferred) |
+| OPS-P0-002 | Auth/OTP throttler + `/health/ready` + OPS/PDPA checklists (D-071) | P0 | Backend/Docs | DONE (unit; not production cutover claim) |

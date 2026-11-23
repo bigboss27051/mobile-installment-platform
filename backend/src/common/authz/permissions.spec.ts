@@ -64,4 +64,13 @@ describe('permissionsForRole', () => {
       hasPermission(PlatformRole.SUPER_ADMIN, 'devices.policy.config'),
     ).toBe(true);
   });
+
+  it('gives staff.branches.manage to OWNER but not STAFF', () => {
+    expect(
+      hasPermission(PlatformRole.MERCHANT_OWNER, 'staff.branches.manage'),
+    ).toBe(true);
+    expect(
+      hasPermission(PlatformRole.MERCHANT_STAFF, 'staff.branches.manage'),
+    ).toBe(false);
+  });
 });
