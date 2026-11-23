@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { BlockedSmsAdapter } from '../common/notifications/blocked-sms.adapter';
+import { SMS_OTP } from '../common/notifications/sms-otp.port';
 import { TenantsModule } from '../tenants/tenants.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -23,7 +25,17 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController, CustomerAuthController],
-  providers: [AuthService, CustomerAuthService, JwtStrategy, JwtCustomerStrategy],
+  providers: [
+    AuthService,
+    CustomerAuthService,
+    JwtStrategy,
+    JwtCustomerStrategy,
+    BlockedSmsAdapter,
+    {
+      provide: SMS_OTP,
+      useExisting: BlockedSmsAdapter,
+    },
+  ],
   exports: [AuthService, CustomerAuthService],
 })
 export class AuthModule {}

@@ -6,6 +6,7 @@ import 'lock/lock_repository.dart';
 import 'lock/lock_screens.dart';
 import 'outstanding_pay.dart';
 import 'payment_status.dart';
+import 'promptpay_qr.dart';
 
 void main() {
   runApp(const CustomerApp());
@@ -299,7 +300,26 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
                 if (intent != null) ...[
                   Text('Intent ${intent!['status']}'),
                   Text(paid ? 'Paid (server confirmed)' : 'Not paid until webhook succeeds'),
-                  Text(jsonPreview(intent!['qrPayload'])),
+                  Builder(
+                    builder: (context) {
+                      final vm = PromptPayQrViewModel.fromPayload(
+                        intent!['qrPayload'],
+                      );
+                      if (vm.imageUrlPng != null) {
+                        return Column(
+                          children: [
+                            Image.network(vm.imageUrlPng!, width: 200, height: 200),
+                            if (vm.hostedInstructionsUrl != null)
+                              Text(vm.hostedInstructionsUrl!),
+                          ],
+                        );
+                      }
+                      if (vm.hostedInstructionsUrl != null) {
+                        return Text(vm.hostedInstructionsUrl!);
+                      }
+                      return Text(jsonPreview(intent!['qrPayload']));
+                    },
+                  ),
                 ],
                 if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
               ],

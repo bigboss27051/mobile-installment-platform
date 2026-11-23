@@ -4,6 +4,9 @@
 
 ### Added
 
+- **Stripe PromptPay (D-069):** `StripePaymentAdapter`, `PAYMENT_PROVIDER=stripe`, webhook `/webhooks/payments/stripe`; Merchant Web + Customer Flutter prefer `imageUrlPng` / hosted URL; CI default remains sandbox
+- **OTP SMS port stub:** `OTP_CHANNEL=sandbox|sms` + `BlockedSmsAdapter` (`SMS_OTP_BLOCKED`)
+- **Ops / DPC / legal packs:** `backend/Dockerfile`, `docs/operations/PRODUCTION-DEPLOY.md`, `DPC-HOSTING-CHECKLIST.md`, `scripts/dpc-apk-checksum.sh`, FRP shop-floor SOP, `LEGAL-COUNSEL-PACKET.md`
 - **R2 Android lab closeout (D-068):** recovery types `REPLACE` / `UNENROLL` / `RELEASE` / `CONTRACT_CLOSE` (plus existing `REENROLL`); Merchant Web `DeviceRecoveryPanel`; CURRENT-PHASE marks Android lab COMPLETE (iOS / production DO still BLOCKED)
 - Merchant Web **MUI adapter UI**: `ThemeProvider` + compact enterprise theme; `./ui` primitives reimplemented with Material UI; presentation-only — no `/api/v1`, auth, RBAC, or handler changes
 - Design spec `docs/superpowers/specs/2026-11-22-merchant-web-mui-adapter-ui-design.md` and plan `docs/superpowers/plans/2026-11-22-merchant-web-mui-adapter-ui.md`

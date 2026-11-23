@@ -1,6 +1,7 @@
 import {
   HttpException,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CustomerStatus, TenantStatus } from '@prisma/client';
@@ -27,17 +28,20 @@ describe('CustomerAuthService', () => {
       getOrThrow: jest.fn().mockReturnValue(secret),
       get: jest.fn((key: string, fallback?: string) => {
         if (key === 'CUSTOMER_OTP_SANDBOX_CODE') return '123456';
+        if (key === 'OTP_CHANNEL') return 'sandbox';
         if (key === 'JWT_ACCESS_TTL') return '15m';
         return fallback;
       }),
     };
+    const smsOtp = { sendOtp: jest.fn().mockResolvedValue(undefined) };
     const service = new CustomerAuthService(
       prisma as never,
       jwt as never,
       config as never,
+      smsOtp as never,
     );
     jest.spyOn(service, 'now').mockReturnValue(now);
-    return { service, prisma, jwt };
+    return { service, prisma, jwt, config, smsOtp };
   }
 
   const tenant = {
@@ -111,6 +115,36 @@ describe('CustomerAuthService', () => {
         }),
       }),
     });
+  });
+
+  it('calls SMS port when OTP_CHANNEL=sms and surfaces SMS_OTP_BLOCKED', async () => {
+    const { service, prisma, config, smsOtp } = createService();
+    config.get.mockImplementation((key: string, fallback?: string) => {
+      if (key === 'OTP_CHANNEL') return 'sms';
+      if (key === 'CUSTOMER_OTP_SANDBOX_CODE') return '123456';
+      if (key === 'JWT_ACCESS_TTL') return '15m';
+      return fallback;
+    });
+    smsOtp.sendOtp.mockRejectedValue(
+      new ServiceUnavailableException('SMS_OTP_BLOCKED'),
+    );
+    prisma.tenant.findUnique.mockResolvedValue(tenant);
+    prisma.customer.findFirst.mockResolvedValue(customer);
+    prisma.customerOtpChallenge.count.mockResolvedValue(0);
+    prisma.customerOtpChallenge.create.mockResolvedValue({
+      expiresAt: new Date('2026-11-12T12:10:00.000Z'),
+    });
+
+    await expect(
+      service.requestOtp({ tenantSlug: 'shop-a', phone: '0811111111' }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+    expect(smsOtp.sendOtp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-a',
+        phone: '0811111111',
+        code: expect.stringMatching(/^\d{6}$/),
+      }),
+    );
   });
 
   it('rejects verify with a wrong code', async () => {

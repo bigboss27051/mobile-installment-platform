@@ -1,6 +1,6 @@
-# Current Phase: **R2 Android lab COMPLETE** — next R3 / iOS BLOCKED
+# Current Phase: **Production readiness pack** (Stripe + ops docs) — R2 Android lab COMPLETE
 
-**Previous:** Phase 4 payment-to-unlock (lab) + recovery closeout — **COMPLETE** on `develop` (Android lab only)
+**Previous:** R2 Android lab closeout (D-068) — **COMPLETE**. Stripe PromptPay adapter + OTP SMS port stub + deploy/DPC/legal packets (D-069) on `develop`.
 
 ## Scope (done)
 
@@ -32,12 +32,20 @@ R1 installment core (R1a–R1f) delivered. **R2 Device** is a **Device Provision
 
 **Parallel track (R3-P0, D-066):** LINE installment comms sandbox — tenant OA config, webhook, customer linking, read-only installment replies, payment confirmation / manual reminder templates. Production LINE remains BLOCKED.
 
+## Production readiness (2026-11-23)
+
+- **Stripe PromptPay (D-069):** `PAYMENT_PROVIDER=stripe` + `POST /api/v1/webhooks/payments/stripe`. Put keys in env (never git). CI stays sandbox.
+- **OTP:** `OTP_CHANNEL=sandbox|sms`; SMS uses `BlockedSmsAdapter` → `SMS_OTP_BLOCKED` until a real vendor adapter exists.
+- **Ops:** [PRODUCTION-DEPLOY.md](../operations/PRODUCTION-DEPLOY.md), `backend/Dockerfile`.
+- **DPC:** [DPC-HOSTING-CHECKLIST.md](../device-management/DPC-HOSTING-CHECKLIST.md), `scripts/dpc-apk-checksum.sh`; FRP shop-floor SOP expanded (no adb).
+- **Legal:** [LEGAL-COUNSEL-PACKET.md](../device-management/LEGAL-COUNSEL-PACKET.md) — financing lock still **Unverified**.
+
 ## Next
 
-- **R3** SaaS operations (Super Admin, billing, notifications hardening) may proceed in parallel.
-- **Phase 5–6 iOS:** vendor MDM + Model B + SAM — **BLOCKED** on Apple ABM / MDM vendor (D-043). IOS-A docs + IOS-B Flutter lock UI already exist; full MDM lab not started.
-- **Phase 7:** production validation / multi-SKU / distribution — not claimed.
-- Optional: Pad E2E of policy thresholds + approval queue (not required to mark Android lab complete).
+- Human: Stripe Dashboard webhook → public HTTPS; counsel review of legal packet; multi-SKU lab (DM0-001); real SMS vendor.
+- **R3** SaaS operations may proceed in parallel.
+- **Phase 5–6 iOS:** **BLOCKED** on Apple ABM / MDM vendor (D-043).
+- **Phase 7:** production validation — not claimed.
 
 **Do not** claim production Device Owner or financing lock. **Skip iOS** until ABM + vendor credentials.
 

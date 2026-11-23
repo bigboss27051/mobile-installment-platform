@@ -24,4 +24,15 @@ export class WebhooksController {
     }
     return this.payments.handleSandboxWebhook(req.rawBody, headers);
   }
+
+  @Post('stripe')
+  async handleStripeWebhook(
+    @Req() req: RawBodyRequest,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ) {
+    if (!Buffer.isBuffer(req.rawBody)) {
+      throw new BadRequestException('Raw webhook body is required.');
+    }
+    return this.payments.handleProviderWebhook(req.rawBody, headers);
+  }
 }

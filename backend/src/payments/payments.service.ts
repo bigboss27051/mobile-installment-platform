@@ -25,6 +25,7 @@ import {
   PAYMENT_GATEWAY,
   PaymentGatewayPort,
 } from '../common/payments/payment-gateway.port';
+import { IgnorableStripeEventError } from '../common/payments/stripe-payment.adapter';
 import { allocateFifo } from '../common/payments/allocate-fifo';
 import { parseThbMoneyString } from '../common/schedule/money';
 import { TenantContext } from '../common/tenant/tenant-context';
@@ -225,13 +226,28 @@ export class PaymentsService {
   async handleSandboxWebhook(
     rawBody: Buffer,
     headers: Record<string, string | string[] | undefined>,
-  ): Promise<SandboxWebhookSummary> {
+  ): Promise<SandboxWebhookSummary | { ignored: true; type: string }> {
+    return this.handleProviderWebhook(rawBody, headers);
+  }
+
+  async handleProviderWebhook(
+    rawBody: Buffer,
+    headers: Record<string, string | string[] | undefined>,
+  ): Promise<SandboxWebhookSummary | { ignored: true; type: string }> {
     const normalizedHeaders = this.normalizeHeaders(headers);
     if (!this.gateway.verifyWebhookSignature(normalizedHeaders, rawBody)) {
-      throw new UnauthorizedException('Invalid sandbox webhook signature.');
+      throw new UnauthorizedException('Invalid payment webhook signature.');
     }
 
-    const event = this.gateway.parseWebhookEvent(rawBody);
+    let event;
+    try {
+      event = this.gateway.parseWebhookEvent(rawBody);
+    } catch (error: unknown) {
+      if (error instanceof IgnorableStripeEventError) {
+        return { ignored: true, type: error.eventType };
+      }
+      throw error;
+    }
     const amount = this.parseWebhookAmount(event.amount);
 
     const existing = await this.findTransactionByProviderEventId(

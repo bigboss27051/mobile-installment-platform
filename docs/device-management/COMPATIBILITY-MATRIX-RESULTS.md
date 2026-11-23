@@ -1,17 +1,18 @@
 # Compatibility matrix results
 
-**Lab date:** 2026-11-14  
-**Operator:** Cursor agent (desk only)  
-**Hardware:** none in workspace → all SKU rows **NOT RUN**
+**Updated:** 2026-11-23  
+**Operator:** Fill per physical SKU; desk rows remain **NOT RUN** until hardware evidence  
+**Procedure:** For each shop SKU — factory-fresh or FRP-cleared → Welcome QR DO → check-in → START_LOCK_TASK / STOP → note Play Protect warnings. Ask before wipe. See [DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md), [DPC-HOSTING-CHECKLIST.md](./DPC-HOSTING-CHECKLIST.md).
 
-## Android QR / AMAPI
+## Android custom DPC QR (implementation path D-057)
 
-| Model | OS | GMS | 6-tap QR | AMAPI enroll without Play Protect off | IMEI in AMAPI | Result |
-|-------|----|-----|----------|----------------------------------------|---------------|--------|
-| Samsung (TBD) | | Y expected | NOT RUN | NOT RUN | NOT RUN | BLOCKED |
-| Xiaomi (TBD) | | Y expected | NOT RUN | NOT RUN | NOT RUN | BLOCKED |
-| OPPO or vivo (TBD) | | Y expected | NOT RUN | NOT RUN | NOT RUN | BLOCKED |
-| Non-GMS / custom ROM | | N | — | — | — | **Unsupported** (D-052), do not lab as in-scope |
+| Model | OS | GMS | 6-tap QR DO | Check-in | Lock Task | Package suspend | Result |
+|-------|----|-----|-------------|----------|-----------|-----------------|--------|
+| Xiaomi Pad 6 (pipa) | 14 | Y | Lab DONE (evidence) | Lab DONE | Lab DONE | Lab DONE | Lab only — not production DO |
+| Samsung phone (shop SKU) | | Y expected | NOT RUN | NOT RUN | NOT RUN | NOT RUN | BLOCKED |
+| Xiaomi phone (shop SKU) | | Y expected | NOT RUN | NOT RUN | NOT RUN | NOT RUN | BLOCKED |
+| OPPO / vivo (shop SKU) | | Y expected | NOT RUN | NOT RUN | NOT RUN | NOT RUN | BLOCKED |
+| Non-GMS / custom ROM | | N | — | — | — | — | **Unsupported** (D-052) |
 
 Zero-touch (reseller-registered unit): **NOT RUN**. Thailand partners historically include A2 Network and DTAC; merchant contract not verified here.
 

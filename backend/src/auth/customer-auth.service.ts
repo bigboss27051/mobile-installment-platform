@@ -1,6 +1,7 @@
 import {
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -8,6 +9,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { CustomerStatus, TenantStatus } from '@prisma/client';
+import { randomInt } from 'crypto';
+import {
+  SMS_OTP,
+  SmsOtpPort,
+} from '../common/notifications/sms-otp.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { customerOtpMatches, hashCustomerOtp } from './customer-otp';
 
@@ -21,6 +27,7 @@ export class CustomerAuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    @Inject(SMS_OTP) private readonly smsOtp: SmsOtpPort,
   ) {}
 
   now(): Date {
@@ -50,8 +57,13 @@ export class CustomerAuthService {
       );
     }
 
+    const channel = this.config.get<string>('OTP_CHANNEL', 'sandbox');
+    const code =
+      channel === 'sms'
+        ? String(randomInt(100000, 1000000))
+        : this.config.get<string>('CUSTOMER_OTP_SANDBOX_CODE', '123456');
+
     const expiresAt = new Date(this.now().getTime() + OTP_TTL_MS);
-    const code = this.config.get<string>('CUSTOMER_OTP_SANDBOX_CODE', '123456');
     const codeHash = hashCustomerOtp({
       secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
       tenantId: tenant.id,
@@ -68,6 +80,14 @@ export class CustomerAuthService {
         expiresAt,
       },
     });
+
+    if (channel === 'sms') {
+      await this.smsOtp.sendOtp({
+        tenantId: tenant.id,
+        phone: customer.phone,
+        code,
+      });
+    }
 
     return { expiresAt: challenge.expiresAt };
   }

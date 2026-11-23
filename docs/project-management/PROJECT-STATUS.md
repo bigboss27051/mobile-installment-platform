@@ -1,13 +1,13 @@
 # Project Status
 
 **Updated:** 2026-11-23  
-**Current Phase:** R2 **Android lab COMPLETE** (Phases 1–4 + recovery closeout). Next: R3 SaaS parallel; Phase 5–6 iOS **BLOCKED** on ABM/MDM; Phase 7 production validation unclaimed.  
+**Current Phase:** R2 Android lab COMPLETE + **Stripe PromptPay** adapter (D-069) + production readiness docs. Next: human Stripe webhook/SMS/counsel/multi-SKU; R3; iOS BLOCKED.  
 **Branch:** `develop`  
-**Codebase:** NestJS backend R0–R1f + R2 Android lab (DPC/agent/policy/payment-unlock/recovery); Merchant Web; Customer Android; CI on push/PR
+**Codebase:** NestJS backend R0–R1f + R2 Android lab + Stripe gateway; Merchant Web; Customer Android; CI on push/PR (sandbox payments)
 
 ## Summary
 
-R0 foundation plus **R1a–R1f** are delivered on `develop`. **R2 Android lab** (D-068) is closed for software + Pad 6 evidence: enrollment QR/check-in, lock/restrict/reminder, heartbeat, HTTPS lab, payment-to-unlock, overdue ladder + merchant policy settings, FCM/WorkManager poller, and full recovery types with Merchant Web UI. **Not** production Device Owner / financing approval. Omise live, SMS OTP, refunds, and iOS MDM remain BLOCKED or incomplete.
+R0–R1f delivered. R2 Android lab closed (D-068). Stripe PromptPay wired behind `PaymentGatewayPort` (D-069); OTP SMS port is **BLOCKED** until vendor keys; deploy/DPC/legal packets landed without claiming production DO or financing-lock clearance. Omise primary (D-034), refunds, and iOS MDM remain incomplete/BLOCKED.
 
 ## Completed
 

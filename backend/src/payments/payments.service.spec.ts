@@ -572,7 +572,7 @@ describe('PaymentsService', () => {
       service.handleSandboxWebhook(Buffer.from('{}'), {
         'x-mip-signature': 'bad',
       }),
-    ).rejects.toThrow('Invalid sandbox webhook signature.');
+    ).rejects.toThrow('Invalid payment webhook signature.');
 
     expect(gateway.parseWebhookEvent).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();

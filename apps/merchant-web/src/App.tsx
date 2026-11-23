@@ -1386,7 +1386,35 @@ function ContractsPage({
               </Button>
             </Stack>
           </Stack>
-          {qr ? <pre className="mip-pre">{JSON.stringify(qr, null, 2)}</pre> : null}
+          {qr &&
+          typeof qr === 'object' &&
+          qr !== null &&
+          'imageUrlPng' in qr &&
+          typeof (qr as { imageUrlPng?: unknown }).imageUrlPng === 'string' &&
+          (qr as { imageUrlPng: string }).imageUrlPng ? (
+            <Stack spacing={1}>
+              <img
+                src={(qr as { imageUrlPng: string }).imageUrlPng}
+                alt="PromptPay QR"
+                width={240}
+                height={240}
+              />
+              {'hostedInstructionsUrl' in qr &&
+              typeof (qr as { hostedInstructionsUrl?: unknown }).hostedInstructionsUrl ===
+                'string' &&
+              (qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl ? (
+                <a
+                  href={(qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {(qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl}
+                </a>
+              ) : null}
+            </Stack>
+          ) : qr ? (
+            <pre className="mip-pre">{JSON.stringify(qr, null, 2)}</pre>
+          ) : null}
         </Section>
       ) : null}
     </Page>

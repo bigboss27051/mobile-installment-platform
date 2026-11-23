@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../promptpay_qr.dart';
 import 'lock_cubit.dart';
 import 'lock_models.dart';
 import 'lock_repository.dart';
@@ -286,15 +287,34 @@ class PromptPayScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final payload = state.status?.latestIntent?.qrPayload?.toString() ?? '';
-    final qr = payload.isEmpty
-        ? const Text('No PromptPay QR yet. Use Pay to request one from the server.')
-        : Column(
-            children: [
-              QrImageView(data: payload, size: 180),
-              Text(payload, textAlign: TextAlign.center),
-            ],
-          );
+    final raw = state.status?.latestIntent?.qrPayload;
+    final vm = PromptPayQrViewModel.fromPayload(raw);
+    final Widget qr;
+    if (vm.imageUrlPng != null) {
+      qr = Column(
+        children: [
+          Image.network(vm.imageUrlPng!, width: 180, height: 180),
+          if (vm.hostedInstructionsUrl != null)
+            Text(vm.hostedInstructionsUrl!, textAlign: TextAlign.center),
+        ],
+      );
+    } else if (vm.hostedInstructionsUrl != null) {
+      qr = Text(vm.hostedInstructionsUrl!, textAlign: TextAlign.center);
+    } else if (vm.fallbackText != null && vm.fallbackText!.isNotEmpty) {
+      final text = vm.fallbackText!;
+      // Only QR-encode short EMV-like strings; never encode JSON blobs.
+      final looksLikeEmv = !text.startsWith('{') && text.length < 512;
+      qr = Column(
+        children: [
+          if (looksLikeEmv) QrImageView(data: text, size: 180),
+          Text(text, textAlign: TextAlign.center),
+        ],
+      );
+    } else {
+      qr = const Text(
+        'No PromptPay QR yet. Use Pay to request one from the server.',
+      );
+    }
     if (nested) {
       return qr;
     }
