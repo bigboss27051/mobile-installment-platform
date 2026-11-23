@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
 import { DeviceCommandPanel } from './device-command-panel';
+import { DeviceRecoveryPanel } from './device-recovery-panel';
 import { useI18n } from './i18n-context';
 import { Alert, Section } from './ui';
 import { MIP_TOKENS } from './ui/theme';
@@ -143,6 +144,7 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
         </Section>
       ) : null}
       <DeviceCommandPanel deviceId={deviceId} onEnqueued={() => void refresh()} />
+      <DeviceRecoveryPanel deviceId={deviceId} onSubmitted={() => void refresh()} />
     </>
   );
 }

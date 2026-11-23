@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  DeviceBindingStatus,
   DeviceCommandStatus,
   DeviceLifecycleStatus,
   DeviceRecoveryType,
@@ -26,6 +27,10 @@ describe('DeviceRecoveryService', () => {
     },
     devicePolicyState: {
       upsert: jest.fn(),
+    },
+    deviceContractBinding: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
     },
     deviceRecoveryRequest: {
       create: jest.fn(),
@@ -161,5 +166,150 @@ describe('DeviceRecoveryService', () => {
         { type: DeviceRecoveryType.REENROLL, reason: 'lab' },
       ),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  function stubDeviceFound() {
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      imeiUnitId: 'imei-1',
+      status: DeviceLifecycleStatus.ACTIVE,
+    });
+    prisma.deviceEnrollmentSession.updateMany.mockResolvedValue({ count: 0 });
+    prisma.deviceCommand.updateMany.mockResolvedValue({ count: 0 });
+    prisma.devicePolicyState.upsert.mockResolvedValue({});
+    prisma.deviceLockApproval.updateMany.mockResolvedValue({ count: 0 });
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+    locations.clearForDevice.mockResolvedValue(undefined);
+  }
+
+  it('REPLACE marks active binding REPLACED and device UNENROLLED', async () => {
+    stubDeviceFound();
+    prisma.deviceContractBinding.findFirst.mockResolvedValue({
+      id: 'bind-1',
+      status: DeviceBindingStatus.ACTIVE,
+    });
+    prisma.deviceContractBinding.update.mockResolvedValue({
+      id: 'bind-1',
+      status: DeviceBindingStatus.REPLACED,
+    });
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-1',
+      status: DeviceLifecycleStatus.UNENROLLED,
+    });
+    prisma.deviceRecoveryRequest.create.mockResolvedValue({
+      id: 'rec-replace',
+      type: DeviceRecoveryType.REPLACE,
+      status: 'APPROVED',
+    });
+
+    await service.request(user, 'dev-1', {
+      type: DeviceRecoveryType.REPLACE,
+      reason: 'screen cracked swap',
+    });
+
+    expect(prisma.deviceContractBinding.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'bind-1' },
+        data: expect.objectContaining({
+          status: DeviceBindingStatus.REPLACED,
+        }),
+      }),
+    );
+    expect(prisma.device.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: DeviceLifecycleStatus.UNENROLLED,
+          agentTokenHash: null,
+        }),
+      }),
+    );
+    expect(prisma.deviceAuditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          reason: expect.stringContaining('REPLACE:'),
+        }),
+      }),
+    );
+  });
+
+  it.each([
+    [DeviceRecoveryType.UNENROLL, 'UNENROLL:'],
+    [DeviceRecoveryType.RELEASE, 'RELEASE:'],
+    [DeviceRecoveryType.CONTRACT_CLOSE, 'CONTRACT_CLOSE:'],
+  ] as const)(
+    '%s sets device UNENROLLED and active binding UNBOUND',
+    async (type, auditPrefix) => {
+      stubDeviceFound();
+      prisma.deviceContractBinding.findFirst.mockResolvedValue({
+        id: 'bind-1',
+        status: DeviceBindingStatus.ACTIVE,
+      });
+      prisma.deviceContractBinding.update.mockResolvedValue({
+        id: 'bind-1',
+        status: DeviceBindingStatus.UNBOUND,
+      });
+      prisma.device.update.mockResolvedValue({
+        id: 'dev-1',
+        status: DeviceLifecycleStatus.UNENROLLED,
+      });
+      prisma.deviceRecoveryRequest.create.mockResolvedValue({
+        id: `rec-${type}`,
+        type,
+        status: 'APPROVED',
+      });
+
+      await service.request(user, 'dev-1', {
+        type,
+        reason: 'lab closeout',
+      });
+
+      expect(prisma.deviceContractBinding.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'bind-1' },
+          data: expect.objectContaining({
+            status: DeviceBindingStatus.UNBOUND,
+          }),
+        }),
+      );
+      expect(prisma.device.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: DeviceLifecycleStatus.UNENROLLED,
+            agentTokenHash: null,
+          }),
+        }),
+      );
+      expect(prisma.deviceAuditEvent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            reason: expect.stringContaining(auditPrefix),
+          }),
+        }),
+      );
+    },
+  );
+
+  it('UNENROLL with no active binding still creates APPROVED recovery', async () => {
+    stubDeviceFound();
+    prisma.deviceContractBinding.findFirst.mockResolvedValue(null);
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-1',
+      status: DeviceLifecycleStatus.UNENROLLED,
+    });
+    prisma.deviceRecoveryRequest.create.mockResolvedValue({
+      id: 'rec-noop',
+      type: DeviceRecoveryType.UNENROLL,
+      status: 'APPROVED',
+    });
+
+    const result = await service.request(user, 'dev-1', {
+      type: DeviceRecoveryType.UNENROLL,
+      reason: 'already unbound',
+    });
+
+    expect(result.id).toBe('rec-noop');
+    expect(prisma.deviceContractBinding.update).not.toHaveBeenCalled();
+    expect(prisma.device.update).toHaveBeenCalled();
   });
 });

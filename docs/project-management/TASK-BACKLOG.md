@@ -68,3 +68,4 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R3-P0-005 | Merchant Web LINE settings + customer link panel | P1 | Frontend | DONE (thin UI) |
 | R3-P0-006 | Production LINE Messaging API | P2 | Backend | BLOCKED (provider + consent) |
 | R2-P4-009 | Merchant policy settings + lock approval queue (thresholds, cron toggle, requireLockApproval) | P0 | Backend/Web | DONE (unit; lab; not production DO) |
+| R2-P4-010 | Recovery types REPLACE/UNENROLL/RELEASE/CONTRACT_CLOSE + Merchant Web recovery panel (Android lab closeout) | P0 | Backend/Web | DONE (unit; lab; not production DO) |

@@ -1,9 +1,9 @@
 # Master Execution Plan
 
 **Product:** Mobile Installment SaaS Platform (Thailand pilot)  
-**Updated:** 2026-11-14  
-**Status:** R1 installment core complete on `develop`. Device work is **R2** as a Device Provisioning & Enrollment Platform. Next **software** slice is **Phase 1 — Shared Enrollment Foundation**, then **Phase 2 — Android QR Provisioning**. Hardware wipe still requires human approval.  
-**Scope of this update:** Android shop enrollment is **QR custom DPC / Device Owner** (D-057). iPhone enrollment remains **merchant-assisted Apple Configurator + Apple Business / MDM** (D-043). No application source code is changed by this revision.
+**Updated:** 2026-11-23  
+**Status:** R1 installment core complete. **R2 Android lab COMPLETE** (Phases 1–4 + recovery closeout, D-068). Next software: **R3** SaaS ops in parallel; **Phase 5–6 iOS** BLOCKED on ABM/MDM; **Phase 7** production validation unclaimed. Hardware wipe still requires human approval.  
+**Scope of this update:** Status refresh only — Android QR custom DPC / Device Owner (D-057); iPhone remains merchant-assisted Configurator + ABM / MDM (D-043).
 
 This document is the index for the dual-track master plan. Detailed product, architecture, database, and API content remains in the linked files. Do not duplicate those definitions here.
 
@@ -72,8 +72,8 @@ Preserve Nest/Postgres/Flutter. Do not claim production Device Owner / MDM / fin
 |-------|--------|--------|
 | **R0** Foundation | Auth, tenants, branches, Compose, CI | Delivered |
 | **R1** Installment core | Inventory → KYC → application → contract → sandbox PromptPay + Merchant Web / Customer Android | Delivered (R1a–R1f) |
-| **R2** Device | Provisioning, enrollment, bind, policy, commands, recovery | **In progress (stubs).** DM1/DM2 API stubs exist. Phases 1–7 below replace a single “AMAPI then lock” burst |
-| **R3** SaaS operations | Super Admin billing, notifications, reporting, hardening | Unchanged; non-device work may proceed in parallel |
+| **R2** Device | Provisioning, enrollment, bind, policy, commands, recovery | **Android lab COMPLETE** (Phases 1–4 + recovery). Phase 5–6 iOS BLOCKED; Phase 7 production validation unclaimed |
+| **R3** SaaS operations | Super Admin billing, notifications, reporting, hardening | Next parallel track; LINE sandbox P0 done; production LINE BLOCKED |
 
 R2 remains a **provisioning and enrollment platform** plus later policy automation. Do not implement all phases at once.
 
@@ -134,11 +134,11 @@ See D-041+ in the Decision Log and [../device-management/OPEN-DECISIONS.md](../d
 
 ## 9. Next implementation phase
 
-**Software (this repo):** Phase 1 Shared Enrollment Foundation — see [../superpowers/plans/2026-11-14-phase1-shared-enrollment-foundation.md](../superpowers/plans/2026-11-14-phase1-shared-enrollment-foundation.md) (to be executed only after this documentation revision is accepted).
+**Software (this repo):** R2 Android lab closed (D-068). Prefer **R3** SaaS slices next. Do **not** start Phase 5 until ABM + MDM vendor credentials exist. Phase 7 only after evidence for in-scope platforms.
 
 **People:** authorized lab Android (do not factory-reset without asking); Apple Business + MDM vendor still required before Phase 5. Google AMAPI inquiry remains optional/historical ([../device-management/OPERATOR-PACKET.md](../device-management/OPERATOR-PACKET.md)).
 
-Wizard: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md).
+Wizard: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md). Roadmap: [../roadmap/CURRENT-PHASE.md](../roadmap/CURRENT-PHASE.md).
 
 ## 10. Definition of Done for commercial pilot
 

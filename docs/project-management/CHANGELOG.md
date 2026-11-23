@@ -4,6 +4,7 @@
 
 ### Added
 
+- **R2 Android lab closeout (D-068):** recovery types `REPLACE` / `UNENROLL` / `RELEASE` / `CONTRACT_CLOSE` (plus existing `REENROLL`); Merchant Web `DeviceRecoveryPanel`; CURRENT-PHASE marks Android lab COMPLETE (iOS / production DO still BLOCKED)
 - Merchant Web **MUI adapter UI**: `ThemeProvider` + compact enterprise theme; `./ui` primitives reimplemented with Material UI; presentation-only — no `/api/v1`, auth, RBAC, or handler changes
 - Design spec `docs/superpowers/specs/2026-11-22-merchant-web-mui-adapter-ui-design.md` and plan `docs/superpowers/plans/2026-11-22-merchant-web-mui-adapter-ui.md`
 - Decisions **UI-MUI-001…UI-MUI-006**: MUI stack (merchant-web only), full app scope, compact density + MIP tokens, adapter kit preserving `./ui` exports, logic freeze, no hybrid CSS+MUI on pages

@@ -181,7 +181,19 @@ Ack/result. Replay-safe.
 
 ### POST `/devices/:id/recovery-requests`
 
-Types: `REENROLL`, `REPLACE`, `UNENROLL`, `RELEASE`, `CONTRACT_CLOSE`. Reason required. Approval if tenant policy requires.
+**Auth:** Staff JWT with `devices.enroll`. Tenant-scoped device. Non-empty `reason` required.
+
+**Lab:** requests are auto-`APPROVED` (no separate approval queue). Shared cleanup always runs: cancel open enrollment sessions (clear `device_id`), expire open commands, clear `agentTokenHash`, reset desired/platform policy to `NONE`, purge soft location, cancel PENDING lock approvals, audit `RECOVERY`.
+
+| Type | Device status | Active binding | Notes |
+|------|---------------|----------------|-------|
+| `REENROLL` | `PENDING_ENROLL` | unchanged | Prepare for new QR after wipe/FRP |
+| `REPLACE` | `UNENROLLED` | `ACTIVE` → `REPLACED` | Retire hardware; contract may bind a new device later |
+| `UNENROLL` | `UNENROLLED` | `ACTIVE` → `UNBOUND` | End management; no remote wipe |
+| `RELEASE` | `UNENROLLED` | `ACTIVE` → `UNBOUND` | Same DB effect as `UNENROLL`; distinct audit prefix |
+| `CONTRACT_CLOSE` | `UNENROLLED` | `ACTIVE` → `UNBOUND` | Same DB effect; audit prefix for payoff/close |
+
+No DPC wipe from this API. If already unbound / `UNENROLLED`, cleanup is a no-op on bindings and a new APPROVED recovery row is still created.
 
 ---
 
