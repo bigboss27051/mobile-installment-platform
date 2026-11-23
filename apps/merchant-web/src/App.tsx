@@ -1,13 +1,23 @@
 import { FormEvent, useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import {
   ApiError,
   apiRequest,
   getAccessToken,
   login,
   setAccessToken,
+  subscribeAuthExpired,
 } from './api';
+import { DevicesPage } from './devices-page';
 import { EnrollPage } from './enroll-page';
 import { KycPanel } from './kyc-panel';
+import { LineLinkPanel } from './line-link-panel';
+import { LineSettingsPage } from './line-settings-page';
+import { PolicyPage } from './policy-page';
 import { LanguageSwitch, useI18n } from './i18n-context';
 import {
   Alert,
@@ -22,6 +32,7 @@ import {
   Spinner,
   Table,
 } from './ui';
+import { MIP_TOKENS } from './ui/theme';
 
 type AppPage =
   | 'products'
@@ -29,7 +40,10 @@ type AppPage =
   | 'customers'
   | 'applications'
   | 'contracts'
-  | 'enroll';
+  | 'devices'
+  | 'policy'
+  | 'enroll'
+  | 'line';
 
 type TenantMe = {
   name: string;
@@ -43,8 +57,41 @@ const PAGES: AppPage[] = [
   'customers',
   'applications',
   'contracts',
+  'devices',
+  'policy',
   'enroll',
+  'line',
 ];
+
+const DRAWER_WIDTH = 220;
+
+const drawerPaperSx = {
+  width: DRAWER_WIDTH,
+  boxSizing: 'border-box',
+  bgcolor: MIP_TOKENS.sidebar,
+  color: '#fff',
+  border: 'none',
+} as const;
+
+function navButtonSx(active: boolean) {
+  return {
+    display: 'block',
+    width: '100%',
+    m: 0,
+    px: 1.5,
+    py: 1,
+    minHeight: MIP_TOKENS.inputHeight,
+    border: 0,
+    borderRadius: 1,
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontFamily: 'inherit',
+    fontSize: 14,
+    fontWeight: active ? 600 : 400,
+    color: '#fff',
+    bgcolor: active ? 'primary.main' : 'transparent',
+  } as const;
+}
 
 async function runAction(
   action: () => Promise<void>,
@@ -62,73 +109,158 @@ async function runAction(
 export function App() {
   const { t, apiError } = useI18n();
   const [token, setToken] = useState<string | null>(getAccessToken());
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [page, setPage] = useState<AppPage>('contracts');
   const [error, setError] = useState<string | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
 
+  useEffect(() => {
+    return subscribeAuthExpired(() => {
+      setToken(null);
+      setSessionExpired(true);
+      setError(null);
+      setLogoutOpen(false);
+    });
+  }, []);
+
   if (!token) {
     return (
       <LoginForm
+        sessionExpired={sessionExpired}
         onLoggedIn={(accessToken) => {
           setAccessToken(accessToken);
           setToken(accessToken);
+          setSessionExpired(false);
         }}
       />
     );
   }
 
-  return (
-    <div className={`app-shell${navOpen ? ' nav-open' : ''}`}>
-      {navOpen ? (
-        <button
+  function renderSidebar() {
+    return (
+    <Box
+      component="nav"
+      aria-label="Main"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+        p: 2,
+        height: '100%',
+        '& .lang-switch button': {
+          color: '#fff',
+          borderColor: 'rgba(255, 255, 255, 0.35)',
+          backgroundColor: 'transparent',
+        },
+        '& .lang-switch button.active': {
+          color: '#fff',
+          bgcolor: 'primary.main',
+          borderColor: 'primary.main',
+        },
+      }}
+    >
+      <Box sx={{ fontWeight: 700, mb: 1.5 }}>{t('nav.brand')}</Box>
+      <LanguageSwitch />
+      {PAGES.map((item) => (
+        <Box
+          component="button"
+          key={item}
           type="button"
-          className="app-backdrop"
-          aria-label="Close menu"
-          onClick={() => setNavOpen(false)}
-        />
-      ) : null}
-      <nav className="app-sidebar" aria-label="Main">
-        <div className="app-sidebar__brand">{t('nav.brand')}</div>
-        <LanguageSwitch />
-        {PAGES.map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={page === item ? 'active' : undefined}
-            onClick={() => {
-              setPage(item);
-              setError(null);
-              setNavOpen(false);
-            }}
-          >
-            {t(`nav.${item}`)}
-          </button>
-        ))}
-        <button type="button" onClick={() => setLogoutOpen(true)}>
-          {t('nav.logout')}
-        </button>
-      </nav>
-      <div className="app-main">
-        <div className="app-topbar">
-          <Button type="button" variant="secondary" onClick={() => setNavOpen(true)}>
+          onClick={() => {
+            setPage(item);
+            setError(null);
+            setNavOpen(false);
+          }}
+          sx={navButtonSx(page === item)}
+        >
+          {t(`nav.${item}`)}
+        </Box>
+      ))}
+      <Box component="button" type="button" onClick={() => setLogoutOpen(true)} sx={navButtonSx(false)}>
+        {t('nav.logout')}
+      </Box>
+    </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Drawer
+        variant="temporary"
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': drawerPaperSx,
+        }}
+      >
+        {renderSidebar()}
+      </Drawer>
+      <Drawer
+        variant="permanent"
+        open
+        elevation={0}
+        sx={{
+          display: { xs: 'none', md: 'block' },
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': drawerPaperSx,
+        }}
+      >
+        {renderSidebar()}
+      </Drawer>
+      <Box component="main" sx={{ flex: 1, minWidth: 0, p: { xs: 2, md: 3 } }}>
+        <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', mb: 2 }}>
+          <Button type="button" variant="ghost" onClick={() => setNavOpen(true)}>
             {t('nav.menu')}
           </Button>
-        </div>
+        </Box>
         {error ? (
-          <div className="mip-toast">
+          <Box
+            sx={{
+              position: 'fixed',
+              zIndex: 30,
+              top: 2,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 'min(480px, calc(100% - 32px))',
+              '& .MuiAlert-root': {
+                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
+              },
+              '& .MuiAlert-message': {
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 1.5,
+                width: '100%',
+              },
+            }}
+          >
             <Alert tone="error">
               <span>{error}</span>
-              <button
+              <Box
+                component="button"
                 type="button"
-                className="mip-toast__close"
                 aria-label={t('common.dismiss')}
                 onClick={() => setError(null)}
+                sx={{
+                  flex: 'none',
+                  m: 0,
+                  p: 0,
+                  border: 0,
+                  bgcolor: 'transparent',
+                  color: 'inherit',
+                  font: 'inherit',
+                  fontSize: 18,
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                }}
               >
                 ×
-              </button>
+              </Box>
             </Alert>
-          </div>
+          </Box>
         ) : null}
         {logoutOpen ? (
           <ConfirmDialog
@@ -151,13 +283,22 @@ export function App() {
           <ApplicationsPage onError={setError} apiError={apiError} />
         ) : null}
         {page === 'contracts' ? <ContractsPage onError={setError} apiError={apiError} /> : null}
+        {page === 'devices' ? <DevicesPage onError={setError} apiError={apiError} /> : null}
+        {page === 'policy' ? <PolicyPage onError={setError} apiError={apiError} /> : null}
         {page === 'enroll' ? <EnrollPage onError={setError} apiError={apiError} /> : null}
-      </div>
-    </div>
+        {page === 'line' ? <LineSettingsPage onError={setError} apiError={apiError} /> : null}
+      </Box>
+    </Box>
   );
 }
 
-function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
+function LoginForm({
+  onLoggedIn,
+  sessionExpired = false,
+}: {
+  onLoggedIn: (token: string) => void;
+  sessionExpired?: boolean;
+}) {
   const { t, apiError } = useI18n();
   const [email, setEmail] = useState('owner@example.com');
   const [password, setPassword] = useState('Password1!');
@@ -174,11 +315,23 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
   }
 
   return (
-    <div className="login-screen">
-      <div className="login-card">
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: { xs: 2, md: 3 },
+        bgcolor: 'background.default',
+      }}
+    >
+      <Paper sx={{ width: '100%', maxWidth: MIP_TOKENS.loginMax, p: 3 }}>
         <LanguageSwitch />
-        <h1>{t('login.title')}</h1>
-        <form className="mip-form-grid" onSubmit={onSubmit}>
+        <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
+          {t('login.title')}
+        </Typography>
+        {sessionExpired ? <Alert tone="error">{t('login.sessionExpired')}</Alert> : null}
+        <Stack component="form" spacing={2} sx={{ maxWidth: MIP_TOKENS.formMax }} onSubmit={onSubmit}>
           <FormField label={t('login.email')} htmlFor="login-email" required>
             <Input
               id="login-email"
@@ -197,15 +350,15 @@ function LoginForm({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
               autoComplete="current-password"
             />
           </FormField>
-          <div className="mip-form-actions">
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" variant="primary">
               {t('login.submit')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Stack>
         {error ? <Alert tone="error">{error}</Alert> : null}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
 }
 
@@ -266,8 +419,14 @@ function ProductsPage({
   return (
     <Page title={t('products.title')}>
       <Section title={t('products.new')}>
-        <form
-          className="mip-form-grid mip-form-grid--2"
+        <Box
+          component="form"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 2,
+            maxWidth: MIP_TOKENS.formMax,
+          }}
           onSubmit={async (event) => {
             event.preventDefault();
             try {
@@ -289,16 +448,26 @@ function ProductsPage({
           <FormField label={t('products.brand')} htmlFor="product-brand" required>
             <Input id="product-brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
           </FormField>
-          <div className="mip-form-actions mip-form-grid__span">
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1}
+            sx={{ mt: 2, gridColumn: '1 / -1' }}
+          >
             <Button type="submit" variant="primary">
               {t('products.create')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Box>
       </Section>
       <Section title={t('products.variantTitle')}>
-        <form
-          className="mip-form-grid mip-form-grid--2"
+        <Box
+          component="form"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 2,
+            maxWidth: MIP_TOKENS.formMax,
+          }}
           onSubmit={async (event) => {
             event.preventDefault();
             try {
@@ -345,12 +514,16 @@ function ProductsPage({
           <FormField label={t('products.price')} htmlFor="variant-price" required>
             <Input id="variant-price" value={price} onChange={(e) => setPrice(e.target.value)} />
           </FormField>
-          <div className="mip-form-actions mip-form-grid__span">
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1}
+            sx={{ mt: 2, gridColumn: '1 / -1' }}
+          >
             <Button type="submit" variant="primary" disabled={!productId}>
               {t('products.variantCreate')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Box>
         {variants.length === 0 ? (
           <EmptyState>{t('products.variantsEmpty')}</EmptyState>
         ) : (
@@ -468,8 +641,14 @@ function InventoryPage({
   return (
     <Page title={t('inventory.title')}>
       <Section title={t('inventory.new')}>
-        <form
-          className="mip-form-grid mip-form-grid--2"
+        <Box
+          component="form"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 2,
+            maxWidth: MIP_TOKENS.formMax,
+          }}
           onSubmit={async (event) => {
             event.preventDefault();
             if (!imei.trim() && !serial.trim()) {
@@ -526,12 +705,16 @@ function InventoryPage({
               onChange={(e) => setSerial(e.target.value)}
             />
           </FormField>
-          <div className="mip-form-actions mip-form-grid__span">
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1}
+            sx={{ mt: 2, gridColumn: '1 / -1' }}
+          >
             <Button type="submit" variant="primary">
               {t('inventory.receive')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Box>
       </Section>
       <Section title={t('inventory.title')}>
         {loading ? (
@@ -611,8 +794,14 @@ function CustomersPage({
   return (
     <Page title={t('customers.title')}>
       <Section title={t('customers.new')}>
-        <form
-          className="mip-form-grid mip-form-grid--2"
+        <Box
+          component="form"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 2,
+            maxWidth: MIP_TOKENS.formMax,
+          }}
           onSubmit={async (event) => {
             event.preventDefault();
             await runAction(
@@ -642,7 +831,7 @@ function CustomersPage({
           <FormField label={t('customers.phone')} htmlFor="customer-phone" required>
             <Input id="customer-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </FormField>
-          <div className="mip-form-grid__span">
+          <Box sx={{ gridColumn: '1 / -1' }}>
             <FormField
               label={t('customers.nationalId')}
               htmlFor="customer-nid"
@@ -655,13 +844,17 @@ function CustomersPage({
                 onChange={(e) => setNationalId(e.target.value)}
               />
             </FormField>
-          </div>
-          <div className="mip-form-actions mip-form-grid__span">
+          </Box>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1}
+            sx={{ mt: 2, gridColumn: '1 / -1' }}
+          >
             <Button type="submit" variant="primary">
               {t('customers.create')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Box>
       </Section>
       <Section title={t('customers.title')}>
         {loading ? (
@@ -698,13 +891,20 @@ function CustomersPage({
         )}
       </Section>
       {selectedId ? (
-        <KycPanel
-          customerId={selectedId}
-          customerName={rows.find((row) => row.id === selectedId)?.fullName ?? ''}
-          onError={onError}
-          apiError={apiError}
-          onUpdated={refresh}
-        />
+        <>
+          <KycPanel
+            customerId={selectedId}
+            customerName={rows.find((row) => row.id === selectedId)?.fullName ?? ''}
+            onError={onError}
+            apiError={apiError}
+            onUpdated={refresh}
+          />
+          <LineLinkPanel
+            customerId={selectedId}
+            onError={onError}
+            apiError={apiError}
+          />
+        </>
       ) : null}
     </Page>
   );
@@ -777,8 +977,10 @@ function ApplicationsPage({
   return (
     <Page title={t('applications.title')}>
       <Section title={t('applications.new')}>
-        <form
-          className="mip-form-grid"
+        <Stack
+          component="form"
+          spacing={2}
+          sx={{ maxWidth: MIP_TOKENS.formMax }}
           onSubmit={async (event) => {
             event.preventDefault();
             if (!customerId || !imeiUnitId || !planId) {
@@ -843,7 +1045,14 @@ function ApplicationsPage({
               ))}
             </Select>
           </FormField>
-          <div className="mip-form-grid mip-form-grid--2">
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+              gap: 2,
+              maxWidth: MIP_TOKENS.formMax,
+            }}
+          >
             <FormField label={t('applications.principal')} htmlFor="app-principal" required>
               <Input
                 id="app-principal"
@@ -858,13 +1067,13 @@ function ApplicationsPage({
                 onChange={(e) => setDownPayment(e.target.value)}
               />
             </FormField>
-          </div>
-          <div className="mip-form-actions">
+          </Box>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" variant="primary">
               {t('applications.create')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Stack>
       </Section>
       <Section title={t('applications.title')}>
         {loading ? (
@@ -886,7 +1095,7 @@ function ApplicationsPage({
                   <td>{row.id}</td>
                   <td>{row.status}</td>
                   <td>
-                    <div className="mip-inline-actions">
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                       <Button
                         type="button"
                         variant="secondary"
@@ -929,7 +1138,7 @@ function ApplicationsPage({
                       >
                         {t('applications.approve')}
                       </Button>
-                    </div>
+                    </Stack>
                   </td>
                 </tr>
               ))}
@@ -1005,8 +1214,10 @@ function ContractsPage({
   return (
     <Page title={t('contracts.title')}>
       <Section title={t('contracts.new')}>
-        <form
-          className="mip-form-grid"
+        <Stack
+          component="form"
+          spacing={2}
+          sx={{ maxWidth: MIP_TOKENS.formMax }}
           onSubmit={async (event) => {
             event.preventDefault();
             if (!applicationId) {
@@ -1042,12 +1253,12 @@ function ContractsPage({
               ))}
             </Select>
           </FormField>
-          <div className="mip-form-actions">
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
             <Button type="submit" variant="primary">
               {t('contracts.create')}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Stack>
       </Section>
       <Section title={t('contracts.list')}>
         {loading ? (
@@ -1069,7 +1280,7 @@ function ContractsPage({
                   <td>{row.id}</td>
                   <td>{row.status}</td>
                   <td>
-                    <div className="mip-inline-actions">
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                       <Button
                         type="button"
                         variant="secondary"
@@ -1106,7 +1317,7 @@ function ContractsPage({
                       >
                         {t('contracts.activate')}
                       </Button>
-                    </div>
+                    </Stack>
                   </td>
                 </tr>
               ))}
@@ -1137,8 +1348,10 @@ function ContractsPage({
               ))}
             </tbody>
           </Table>
-          <form
-            className="mip-form-grid"
+          <Stack
+            component="form"
+            spacing={2}
+            sx={{ maxWidth: MIP_TOKENS.formMax }}
             onSubmit={async (event) => {
               event.preventDefault();
               await runAction(
@@ -1167,13 +1380,41 @@ function ContractsPage({
                 onChange={(e) => setAmount(e.target.value)}
               />
             </FormField>
-            <div className="mip-form-actions">
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
               <Button type="submit" variant="primary">
                 {t('contracts.createIntent')}
               </Button>
-            </div>
-          </form>
-          {qr ? <pre className="mip-pre">{JSON.stringify(qr, null, 2)}</pre> : null}
+            </Stack>
+          </Stack>
+          {qr &&
+          typeof qr === 'object' &&
+          qr !== null &&
+          'imageUrlPng' in qr &&
+          typeof (qr as { imageUrlPng?: unknown }).imageUrlPng === 'string' &&
+          (qr as { imageUrlPng: string }).imageUrlPng ? (
+            <Stack spacing={1}>
+              <img
+                src={(qr as { imageUrlPng: string }).imageUrlPng}
+                alt="PromptPay QR"
+                width={240}
+                height={240}
+              />
+              {'hostedInstructionsUrl' in qr &&
+              typeof (qr as { hostedInstructionsUrl?: unknown }).hostedInstructionsUrl ===
+                'string' &&
+              (qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl ? (
+                <a
+                  href={(qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {(qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl}
+                </a>
+              ) : null}
+            </Stack>
+          ) : qr ? (
+            <pre className="mip-pre">{JSON.stringify(qr, null, 2)}</pre>
+          ) : null}
         </Section>
       ) : null}
     </Page>

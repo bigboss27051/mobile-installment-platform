@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { CatalogModule } from './catalog/catalog.module';
@@ -17,6 +19,9 @@ import { PortalModule } from './portal/portal.module';
 import { PlansModule } from './plans/plans.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './common/storage/storage.module';
+import { NotificationsModule } from './common/notifications/notifications.module';
+import { LineModule } from './line/line.module';
+import { StaffModule } from './staff/staff.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { LineNotificationsModule } from './line/line-notifications.module';
 
@@ -27,7 +32,15 @@ import { LineNotificationsModule } from './line/line-notifications.module';
       envFilePath: ['../.env', '.env'],
       validationSchema: envValidationSchema,
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: Number(process.env.THROTTLE_GLOBAL_LIMIT ?? 120),
+      },
+    ]),
     AuthzModule,
+    NotificationsModule,
     HealthModule,
     PrismaModule,
     TenantsModule,
@@ -40,11 +53,19 @@ import { LineNotificationsModule } from './line/line-notifications.module';
     KycModule,
     CatalogModule,
     InventoryModule,
+    StaffModule,
     PaymentsModule,
     PortalModule,
     StorageModule,
     OcrModule,
     LineNotificationsModule,
+    LineModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

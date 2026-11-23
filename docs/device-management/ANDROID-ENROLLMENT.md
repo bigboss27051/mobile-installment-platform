@@ -10,7 +10,7 @@
 
 | Mode | Typical trigger | Device state | Pilot role |
 |------|-----------------|--------------|------------|
-| **QR code** | Welcome **6 taps** (or OEM equivalent) → camera | New / factory reset | **Default shop path** — custom DPC extras (D-057) |
+| **QR code** | Welcome **6 taps** (or OEM equivalent) → camera | New / factory reset **after FRP cleared** | **Default shop path** — custom DPC extras (D-057). See [FRP-AND-REENROLL.md](./FRP-AND-REENROLL.md) |
 | **Custom DPC + Device Owner** | QR download + checksum, or lab ADB | New / reset / lab | **Prototype + intended commercial stack** |
 | **Android Management API QR** | Same 6-tap; Google DPC | New / reset | **Evaluated alternative only.** EMI lock forbidden without Google exception (D-054) |
 | **Zero-touch** | First boot, IMEI/serial pre-registered | New from participating reseller | **When reseller registered the unit** (D-049 still applies). Unregistered walk-in uses QR |
@@ -31,11 +31,12 @@ D-042 (AMAPI as primary EMM) is **superseded for implementation**. Keep AMAPI do
 
 1. Staff: customer + **ACTIVE** contract + Android + consent.  
 2. Backend: `enrollment_sessions` + hashed token; wizard shows QR (`QR_GENERATED`).  
-3. Customer: power on new/reset phone → Welcome → 6 taps → scan.  
+3. Customer: power on new/reset phone → Welcome. If **FRP** asks for a previous Google account, unlock that first (platform cannot skip it).  
 4. Wi-Fi **on the device**.  
-5. Setup Wizard downloads DPC (checksum verified) → Device Owner provisioning.  
-6. DPC: owner init → check-in (`ENROLLING`) → staff verify IMEI (`VERIFYING`) → activate → bind (`COMPLETED`).  
-7. Heartbeat starts. Restrictive policy is **not** applied at handover (desired `NONE`).
+5. 6 taps → scan a **current** QR (old QR after wipe is invalid).  
+6. Setup Wizard downloads DPC (checksum verified) → Device Owner provisioning.  
+7. DPC: owner init → check-in (`ENROLLING`) → staff verify IMEI (`VERIFYING`) → activate → bind (`COMPLETED`).  
+8. Heartbeat starts. Restrictive policy is **not** applied at handover (desired `NONE`).
 
 UI states: [DEVICE-PROVISIONING-ENROLLMENT.md](./DEVICE-PROVISIONING-ENROLLMENT.md). No computer is required for **normal** customer enrollment. ADB owner is **lab-only**.
 

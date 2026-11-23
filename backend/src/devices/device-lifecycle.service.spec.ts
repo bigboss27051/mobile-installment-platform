@@ -12,6 +12,7 @@ import {
   PlatformRole,
 } from '@prisma/client';
 import { DeviceLifecycleService } from './device-lifecycle.service';
+import { DeviceLocationService } from './device-location.service';
 
 describe('DeviceLifecycleService', () => {
   const prisma = {
@@ -22,7 +23,9 @@ describe('DeviceLifecycleService', () => {
     contract: { findFirst: jest.fn() },
     device: {
       findFirst: jest.fn(),
+      findMany: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     deviceActivation: {
       findFirst: jest.fn(),
@@ -34,10 +37,21 @@ describe('DeviceLifecycleService', () => {
       update: jest.fn(),
     },
     deviceAuditEvent: { create: jest.fn() },
+    deviceLocationSample: {
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
-  const service = new DeviceLifecycleService(prisma as never);
+  const locations = new DeviceLocationService(prisma as never);
+  const lockApprovals = {
+    cancelPendingForDevice: jest.fn().mockResolvedValue(0),
+  };
+  const service = new DeviceLifecycleService(
+    prisma as never,
+    locations,
+    lockApprovals as never,
+  );
   const tenantCtx = {
     tenantId: 'tenant-a',
     userId: 'user-1',
@@ -78,15 +92,32 @@ describe('DeviceLifecycleService', () => {
       id: 'd1',
       platform: 'ANDROID',
       status: DeviceLifecycleStatus.ACTIVE,
+      lastHeartbeatAt: new Date('2026-11-21T12:00:00.000Z'),
+      lastLocationLat: null,
+      lastLocationLng: null,
+      lastLocationAccuracyM: null,
+      lastLocationSource: null,
+      lastLocationAt: null,
       enrollmentSession: { status: EnrollmentSessionStatus.QR_GENERATED },
       imeiUnit: { imei: '359999999999999' },
+      policyState: {
+        desiredPresentation: 'LOCK',
+        platformState: 'LOCK_TASK',
+        policyVersion: 4,
+      },
+      commands: [],
     });
     const view = await service.getDashboard(tenantCtx, 'd1');
     expect(view).toEqual(
       expect.objectContaining({
         id: 'd1',
-        desiredPresentation: 'NONE',
-        platformState: 'NONE',
+        desiredPresentation: 'LOCK',
+        platformState: 'LOCK_TASK',
+        policyVersion: 4,
+        lastHeartbeatAt: '2026-11-21T12:00:00.000Z',
+        lastKnownLocation: null,
+        locationUpdatedAt: null,
+        lastCommand: null,
         enrollmentStatus: 'QR_GENERATED',
         outstandingBalance: null,
       }),
@@ -96,6 +127,125 @@ describe('DeviceLifecycleService', () => {
     prisma.device.findFirst.mockResolvedValueOnce(null);
     await expect(service.getDashboard(tenantCtx, 'other')).rejects.toBeInstanceOf(
       NotFoundException,
+    );
+  });
+
+  it('lists only tenant devices with masked IMEI', async () => {
+    prisma.device.findMany.mockResolvedValueOnce([
+      {
+        id: 'd1',
+        platform: 'ANDROID',
+        status: DeviceLifecycleStatus.ACTIVE,
+        lastHeartbeatAt: new Date('2026-11-21T13:00:00.000Z'),
+        imeiUnit: { imei: '359999999999999' },
+        policyState: {
+          desiredPresentation: 'NONE',
+          platformState: 'NONE',
+          policyVersion: 1,
+        },
+        enrollmentSession: { status: EnrollmentSessionStatus.COMPLETED },
+      },
+    ]);
+    const rows = await service.listDevices(tenantCtx, {});
+    expect(rows).toHaveLength(1);
+    expect(rows[0].maskedImei).toBe('••••9999');
+    expect(JSON.stringify(rows)).not.toContain('359999999999999');
+    expect(prisma.device.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ tenantId: 'tenant-a' }),
+      }),
+    );
+  });
+
+  it('includes last command summary on the dashboard', async () => {
+    prisma.device.findFirst.mockResolvedValueOnce({
+      id: 'd1',
+      platform: 'ANDROID',
+      status: DeviceLifecycleStatus.ACTIVE,
+      lastHeartbeatAt: null,
+      lastLocationLat: null,
+      lastLocationLng: null,
+      lastLocationAccuracyM: null,
+      lastLocationSource: null,
+      lastLocationAt: null,
+      enrollmentSession: { status: EnrollmentSessionStatus.COMPLETED },
+      imeiUnit: { imei: '359999999999999' },
+      policyState: {
+        desiredPresentation: 'RESTRICT',
+        platformState: 'PACKAGES_SUSPENDED',
+        policyVersion: 6,
+      },
+      commands: [
+        {
+          id: 'cmd-9',
+          type: 'START_PACKAGE_SUSPEND',
+          status: 'ACKED_SUCCESS',
+          resultCode: 'PACKAGES_SUSPENDED:3',
+          ackedAt: new Date('2026-11-21T13:10:00.000Z'),
+        },
+      ],
+    });
+    const view = await service.getDashboard(tenantCtx, 'd1');
+    expect(view.lastCommand).toEqual({
+      id: 'cmd-9',
+      type: 'START_PACKAGE_SUSPEND',
+      status: 'ACKED_SUCCESS',
+      resultCode: 'PACKAGES_SUSPENDED:3',
+      ackedAt: '2026-11-21T13:10:00.000Z',
+    });
+  });
+
+  it('returns location history for tenant device and audits read', async () => {
+    prisma.device.findFirst.mockResolvedValueOnce({ id: 'd1' });
+    prisma.deviceLocationSample.findMany.mockResolvedValueOnce([
+      {
+        id: 's1',
+        lat: { toString: () => '13.75' },
+        lng: { toString: () => '100.50' },
+        accuracyMeters: 100,
+        source: 'NETWORK',
+        capturedAt: new Date('2026-11-21T12:00:00.000Z'),
+      },
+    ]);
+    prisma.deviceAuditEvent.create.mockResolvedValueOnce({});
+
+    const history = await service.getLocationHistory(tenantCtx, 'd1');
+    expect(history.samples).toHaveLength(1);
+    expect(history.samples[0].source).toBe('NETWORK');
+    expect(prisma.deviceAuditEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'LOCATION_READ',
+          deviceId: 'd1',
+        }),
+      }),
+    );
+
+    prisma.device.findFirst.mockResolvedValueOnce(null);
+    await expect(
+      service.getLocationHistory(tenantCtx, 'other'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('returns heartbeat freshness and 410 when never seen', async () => {
+    const recent = new Date(Date.now() - 30_000);
+    prisma.device.findFirst.mockResolvedValueOnce({
+      id: 'd1',
+      lastHeartbeatAt: recent,
+      policyState: { policyVersion: 3 },
+    });
+    const hb = await service.getHeartbeat(tenantCtx, 'd1');
+    expect(hb.lastHeartbeatAt).toBe(recent.toISOString());
+    expect(hb.policyVersion).toBe(3);
+    expect(hb.fresh).toBe(true);
+
+    prisma.device.findFirst.mockResolvedValueOnce({
+      id: 'd1',
+      lastHeartbeatAt: null,
+      policyState: null,
+    });
+    await expect(service.getHeartbeat(tenantCtx, 'd1')).rejects.toBeInstanceOf(
+      GoneException,
     );
   });
 
@@ -189,10 +339,56 @@ describe('DeviceLifecycleService', () => {
     expect(prisma.device.create).not.toHaveBeenCalled();
   });
 
+  it('activates an existing check-in device without creating a second device', async () => {
+    prisma.deviceActivation.findFirst.mockResolvedValue(null);
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      ...session,
+      deviceId: 'dev-checked-in',
+      status: EnrollmentSessionStatus.ENROLLING,
+    });
+    prisma.contract.findFirst.mockResolvedValue(contract);
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-checked-in',
+      tenantId: 'tenant-a',
+      imeiUnitId: 'imei-1',
+      status: DeviceLifecycleStatus.PENDING_ENROLL,
+    });
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-checked-in',
+      tenantId: 'tenant-a',
+      imeiUnitId: 'imei-1',
+      status: DeviceLifecycleStatus.ACTIVE,
+    });
+    prisma.deviceActivation.create.mockResolvedValue({
+      id: 'act-ci',
+      tenantId: 'tenant-a',
+      deviceId: 'dev-checked-in',
+      enrollmentSessionId: 'sess-1',
+      contractId: 'c1',
+      customerId: 'cust-1',
+      reason: 'after check-in',
+      shopCode: null,
+      createdAt: new Date(),
+    });
+    prisma.deviceEnrollmentSession.update.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+
+    const result = await service.activate(
+      tenantCtx,
+      { enrollmentSessionId: 'sess-1', contractId: 'c1', reason: 'after check-in' },
+      'idem-checkin',
+    );
+
+    expect(result.deviceId).toBe('dev-checked-in');
+    expect(prisma.device.create).not.toHaveBeenCalled();
+    expect(prisma.device.update).toHaveBeenCalled();
+  });
+
   it('creates device + activation without calling AMAPI or Apple', async () => {
     prisma.deviceActivation.findFirst.mockResolvedValue(null);
     prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(session);
     prisma.contract.findFirst.mockResolvedValue(contract);
+    prisma.device.findFirst.mockResolvedValue(null);
     prisma.device.create.mockResolvedValue({
       id: 'dev-new',
       tenantId: 'tenant-a',

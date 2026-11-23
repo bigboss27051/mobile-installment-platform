@@ -4,6 +4,16 @@
 
 ### Added
 
+- **RBAC branch scope + ops hardening (D-071):** `UserBranchAssignment`; STAFF inventory scoped by `branchIds`; OWNER `GET/PUT /api/v1/staff/:userId/branches`; Nest throttler on login/OTP; `GET /api/v1/health/ready`; `OPS-HARDENING-CHECKLIST.md` + `PDPA-OFFBOARDING-CHECKLIST.md`
+- **Android shop software pack (D-070):** DPC `lab`/`shop` flavors; `GET /api/v1/devices/enrollment/dpc-config-status`; Merchant Web enroll preflight; `SHOP-FLOOR-ANDROID-RUNBOOK.md`; checksum script outputs Android base64url
+- **Stripe PromptPay (D-069):** `StripePaymentAdapter`, `PAYMENT_PROVIDER=stripe`, webhook `/webhooks/payments/stripe`; Merchant Web + Customer Flutter prefer `imageUrlPng` / hosted URL; CI default remains sandbox
+- **OTP SMS port stub:** `OTP_CHANNEL=sandbox|sms` + `BlockedSmsAdapter` (`SMS_OTP_BLOCKED`)
+- **Ops / DPC / legal packs:** `backend/Dockerfile`, `docs/operations/PRODUCTION-DEPLOY.md`, `DPC-HOSTING-CHECKLIST.md`, `scripts/dpc-apk-checksum.sh`, FRP shop-floor SOP, `LEGAL-COUNSEL-PACKET.md`
+- **R2 Android lab closeout (D-068):** recovery types `REPLACE` / `UNENROLL` / `RELEASE` / `CONTRACT_CLOSE` (plus existing `REENROLL`); Merchant Web `DeviceRecoveryPanel`; CURRENT-PHASE marks Android lab COMPLETE (iOS / production DO still BLOCKED)
+- Merchant Web **MUI adapter UI**: `ThemeProvider` + compact enterprise theme; `./ui` primitives reimplemented with Material UI; presentation-only — no `/api/v1`, auth, RBAC, or handler changes
+- Design spec `docs/superpowers/specs/2026-11-22-merchant-web-mui-adapter-ui-design.md` and plan `docs/superpowers/plans/2026-11-22-merchant-web-mui-adapter-ui.md`
+- Decisions **UI-MUI-001…UI-MUI-006**: MUI stack (merchant-web only), full app scope, compact density + MIP tokens, adapter kit preserving `./ui` exports, logic freeze, no hybrid CSS+MUI on pages
+
 - Stock units may be received with a 15-digit IMEI or a serial number. Wi-Fi-only devices do not need an IMEI.
 - DPC check-in: `POST /api/v1/devices/enroll/check-in` for a hashed `enc_` token, and `apps/android-dpc` reads QR extras then posts that call. Hardware check-in is not run. Not production Device Owner.
 - D-057 custom DPC + QR Device Owner as Android implementation; D-058 `QR_GENERATED` + business vs platform lock

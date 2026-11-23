@@ -7,6 +7,8 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -14,14 +16,31 @@ import { PermissionsGuard } from '../common/authz/permissions.guard';
 import { RequirePermissions } from '../common/authz/require-permissions.decorator';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
+import { DeviceCommandsService } from './device-commands.service';
 import { DeviceLifecycleService } from './device-lifecycle.service';
+import { DeviceLockApprovalService } from './device-lock-approval.service';
+import { DevicePolicySettingsService } from './device-policy-settings.service';
+import { DeviceRecoveryService } from './device-recovery.service';
 import { ActivateDeviceDto } from './dto/activate-device.dto';
 import { BindContractDto, UnbindContractDto } from './dto/bind-contract.dto';
+import { CreateRecoveryRequestDto } from './dto/create-recovery-request.dto';
+import { EnqueueDeviceCommandDto } from './dto/enqueue-device-command.dto';
+import { EvaluateOverdueDto } from './dto/evaluate-overdue.dto';
+import { ResolveLockApprovalDto } from './dto/resolve-lock-approval.dto';
+import { UpdateDevicePolicySettingsDto } from './dto/update-device-policy-settings.dto';
+import { OverdueLockOrchestrator } from './overdue-lock.orchestrator';
 
 @Controller('devices')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class DeviceLifecycleController {
-  constructor(private readonly lifecycle: DeviceLifecycleService) {}
+  constructor(
+    private readonly lifecycle: DeviceLifecycleService,
+    private readonly commands: DeviceCommandsService,
+    private readonly recovery: DeviceRecoveryService,
+    private readonly overdueLock: OverdueLockOrchestrator,
+    private readonly policySettings: DevicePolicySettingsService,
+    private readonly lockApprovals: DeviceLockApprovalService,
+  ) {}
 
   @Post('activate')
   @RequirePermissions('devices.activate')
@@ -37,6 +56,105 @@ export class DeviceLifecycleController {
     return { data: activation };
   }
 
+  @Post('policy/evaluate-overdue')
+  @RequirePermissions('devices.command')
+  async evaluateOverdue(
+    @Body() dto: EvaluateOverdueDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @CurrentUser() user: TenantContext,
+  ) {
+    if (!idempotencyKey?.trim()) {
+      throw new BadRequestException('Idempotency-Key header is required.');
+    }
+    const data = await this.overdueLock.evaluateTenant(
+      user,
+      dto.reason,
+      idempotencyKey,
+    );
+    return { data };
+  }
+
+  @Get('policy/settings')
+  @RequirePermissions('devices.policy.config')
+  async getPolicySettings(@CurrentUser() user: TenantContext) {
+    return { data: await this.policySettings.getOrCreate(user) };
+  }
+
+  @Put('policy/settings')
+  @RequirePermissions('devices.policy.config')
+  async putPolicySettings(
+    @Body() dto: UpdateDevicePolicySettingsDto,
+    @CurrentUser() user: TenantContext,
+  ) {
+    return { data: await this.policySettings.update(user, dto) };
+  }
+
+  @Get('policy/lock-approvals')
+  @RequirePermissions('devices.command')
+  async listLockApprovals(
+    @CurrentUser() user: TenantContext,
+    @Query('status') status?: string,
+  ) {
+    return {
+      data: await this.lockApprovals.list(user, status ?? 'PENDING'),
+    };
+  }
+
+  @Post('policy/lock-approvals/:approvalId/approve')
+  @RequirePermissions('devices.command')
+  async approveLock(
+    @Param('approvalId', ParseUUIDPipe) approvalId: string,
+    @Body() dto: ResolveLockApprovalDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @CurrentUser() user: TenantContext,
+  ) {
+    if (!idempotencyKey?.trim()) {
+      throw new BadRequestException('Idempotency-Key header is required.');
+    }
+    return {
+      data: await this.lockApprovals.approve(
+        user,
+        approvalId,
+        dto.reason,
+        idempotencyKey,
+      ),
+    };
+  }
+
+  @Post('policy/lock-approvals/:approvalId/reject')
+  @RequirePermissions('devices.command')
+  async rejectLock(
+    @Param('approvalId', ParseUUIDPipe) approvalId: string,
+    @Body() dto: ResolveLockApprovalDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @CurrentUser() user: TenantContext,
+  ) {
+    if (!idempotencyKey?.trim()) {
+      throw new BadRequestException('Idempotency-Key header is required.');
+    }
+    return {
+      data: await this.lockApprovals.reject(
+        user,
+        approvalId,
+        dto.reason,
+        idempotencyKey,
+      ),
+    };
+  }
+
+  @Get()
+  async listDevices(
+    @CurrentUser() user: TenantContext,
+    @Query('platform') platform?: string,
+    @Query('status') status?: string,
+  ) {
+    const devices = await this.lifecycle.listDevices(user, {
+      platform,
+      status,
+    });
+    return { data: devices };
+  }
+
   @Get(':id')
   async getDashboard(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -44,6 +162,25 @@ export class DeviceLifecycleController {
   ) {
     const device = await this.lifecycle.getDashboard(user, id);
     return { data: device };
+  }
+
+  @Get(':id/heartbeat')
+  async getHeartbeat(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const heartbeat = await this.lifecycle.getHeartbeat(user, id);
+    return { data: heartbeat };
+  }
+
+  @Get(':id/location-history')
+  @RequirePermissions('devices.location.read')
+  async getLocationHistory(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const history = await this.lifecycle.getLocationHistory(user, id);
+    return { data: history };
   }
 
   @Get(':id/activation')
@@ -83,5 +220,27 @@ export class DeviceLifecycleController {
     }
     const binding = await this.lifecycle.unbindContract(user, id, dto, idempotencyKey);
     return { data: binding };
+  }
+
+  @Post(':id/commands')
+  @RequirePermissions('devices.command')
+  async enqueueCommand(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: EnqueueDeviceCommandDto,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const command = await this.commands.enqueue(user, id, dto);
+    return { data: command };
+  }
+
+  @Post(':id/recovery-requests')
+  @RequirePermissions('devices.enroll')
+  async createRecoveryRequest(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CreateRecoveryRequestDto,
+    @CurrentUser() user: TenantContext,
+  ) {
+    const recovery = await this.recovery.request(user, id, dto);
+    return { data: recovery };
   }
 }

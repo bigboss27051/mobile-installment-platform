@@ -17,6 +17,19 @@ function jsonResponse(status: number, body: unknown): Promise<Response> {
   );
 }
 
+async function checkConsentAndFrp(container: HTMLElement) {
+  const boxes = Array.from(
+    container.querySelectorAll('input[type="checkbox"]'),
+  ) as HTMLInputElement[];
+  for (const box of boxes) {
+    if (!box.checked) {
+      await act(async () => {
+        box.click();
+      });
+    }
+  }
+}
+
 describe('EnrollPage QR issue button', () => {
   let root: Root;
   const fetchMock = vi.fn();
@@ -25,6 +38,8 @@ describe('EnrollPage QR issue button', () => {
     act(() => {
       root.unmount();
     });
+    document.body.replaceChildren();
+    fetchMock.mockReset();
     vi.unstubAllGlobals();
   });
 
@@ -32,6 +47,12 @@ describe('EnrollPage QR issue button', () => {
     vi.stubGlobal('fetch', fetchMock);
     const qrCalls: string[] = [];
     fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (
+        (init?.method ?? 'GET') === 'GET' &&
+        String(path).includes('/api/v1/devices/enrollment/dpc-config-status')
+      ) {
+        return jsonResponse(200, { data: { configured: true, missing: [] } });
+      }
       if ((init?.method ?? 'GET') === 'GET' && String(path).includes('/api/v1/contracts')) {
         return jsonResponse(200, {
           data: [
@@ -100,10 +121,7 @@ describe('EnrollPage QR issue button', () => {
     expect((container.querySelector('#enroll-contract-id') as HTMLSelectElement).value).toBe(
       '22222222-2222-4222-8222-222222222222',
     );
-    const consent = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    await act(async () => {
-      consent.click();
-    });
+    await checkConsentAndFrp(container);
     const form = container.querySelector('form') as HTMLFormElement;
     await act(async () => {
       form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -133,5 +151,127 @@ describe('EnrollPage QR issue button', () => {
       refresh?.click();
     });
     expect(qrCalls).toEqual(['POST', 'POST']);
+  });
+
+  it('disables Android create when DPC config is incomplete', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (String(path).includes('/dpc-config-status')) {
+        return jsonResponse(200, {
+          data: {
+            configured: false,
+            missing: ['DPC_DOWNLOAD_URL', 'DPC_PACKAGE_CHECKSUM'],
+          },
+        });
+      }
+      if ((init?.method ?? 'GET') === 'GET' && String(path).includes('/api/v1/contracts')) {
+        return jsonResponse(200, {
+          data: [
+            {
+              id: '22222222-2222-4222-8222-222222222222',
+              status: 'ACTIVE',
+              principal: '8000.00',
+              termMonths: 6,
+            },
+          ],
+        });
+      }
+      return jsonResponse(200, { data: [] });
+    });
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <EnrollPage onError={() => undefined} apiError={(message) => message} />
+        </I18nProvider>,
+      );
+    });
+
+    expect(container.querySelector('[data-testid="enroll-dpc-missing"]')).toBeTruthy();
+    expect(container.textContent).toContain('DPC_DOWNLOAD_URL');
+    const submit = Array.from(container.querySelectorAll('button')).find((button) =>
+      (button.textContent ?? '').includes('สร้างเซสชัน'),
+    ) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
+  });
+
+  it('blocks create session until Android FRP checklist is complete', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (String(path).includes('/dpc-config-status')) {
+        return jsonResponse(200, { data: { configured: true, missing: [] } });
+      }
+      if ((init?.method ?? 'GET') === 'GET' && String(path).includes('/api/v1/contracts')) {
+        return jsonResponse(200, {
+          data: [
+            {
+              id: '22222222-2222-4222-8222-222222222222',
+              status: 'ACTIVE',
+              principal: '8000.00',
+              termMonths: 6,
+            },
+          ],
+        });
+      }
+      if (init?.method === 'POST') {
+        return jsonResponse(201, {
+          data: {
+            id: '11111111-1111-4111-8111-111111111111',
+            status: 'WAITING_FOR_DEVICE',
+            platform: 'ANDROID',
+            expiresAt: future,
+            contractId: '22222222-2222-4222-8222-222222222222',
+          },
+        });
+      }
+      return jsonResponse(200, { data: [] });
+    });
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    const errors: Array<string | null> = [];
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <EnrollPage
+            onError={(message) => {
+              errors.push(message);
+            }}
+            apiError={(message) => message}
+          />
+        </I18nProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain('FRP');
+    expect(container.textContent).toMatch(/ไม่สามารถปลด FRP|cannot clear FRP/i);
+
+    const consent = container.querySelector(
+      '[data-testid="enroll-consent"]',
+    ) as HTMLInputElement;
+    await act(async () => {
+      consent.click();
+    });
+
+    const form = container.querySelector('form') as HTMLFormElement;
+    await act(async () => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(errors.at(-1)).toMatch(/FRP/);
+    expect(
+      fetchMock.mock.calls.some((call) => String(call[0]).includes('enrollment-sessions')),
+    ).toBe(false);
+
+    await checkConsentAndFrp(container);
+    await act(async () => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    expect(
+      fetchMock.mock.calls.some((call) => String(call[0]).includes('enrollment-sessions')),
+    ).toBe(true);
   });
 });

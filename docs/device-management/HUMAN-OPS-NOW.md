@@ -12,6 +12,10 @@ This list can run **in parallel with Phase 1 software**.
 
 Dedicated GMS test phone. Do not wipe a personal device. Confirm wipe approval in chat before any factory reset.
 
+**FRP:** After wipe, GMS may require the previous Google account before Setup Wizard / QR Device Owner can continue. Prefer FRP-free lab stock (no personal Google before first DO) or keep the lab Google credentials available. See [FRP-AND-REENROLL.md](./FRP-AND-REENROLL.md). The platform does not bypass FRP.
+
+**Shop floor (software pack D-070):** [SHOP-FLOOR-ANDROID-RUNBOOK.md](./SHOP-FLOOR-ANDROID-RUNBOOK.md) — still not a multi-SKU / Play approval claim.
+
 ## 1. Submit AMAPI permissible-usage inquiry (DM0-006) — optional
 
 Printable steps + shopping list: [OPERATOR-PACKET.md](./OPERATOR-PACKET.md).  
@@ -33,7 +37,7 @@ Need **3+ GMS** SKUs the merchant actually sells (Samsung / Xiaomi / OPPO / vivo
 Checklist: [PHYSICAL-LAB-RUNBOOK.md](./PHYSICAL-LAB-RUNBOOK.md)  
 Results table: [COMPATIBILITY-MATRIX-RESULTS.md](./COMPATIBILITY-MATRIX-RESULTS.md)
 
-Do **not** disable Play Protect. Do **not** put Wi-Fi passwords in QR. Staff enter Wi-Fi **on the phone**.
+Do **not** disable Play Protect. Do **not** put Wi-Fi passwords in QR. Staff enter Wi-Fi **on the phone**. Do **not** promise that wipe + old QR restores Device Owner — FRP may block first, then a **new** QR is required.
 
 Zero-touch: only if a reseller has already registered the IMEI; otherwise QR at the counter.
 

@@ -12,7 +12,7 @@ Related: [ANDROID-ENROLLMENT.md](./ANDROID-ENROLLMENT.md), [IOS-ENROLLMENT.md](.
 | Short-lived enrollment sessions; hashed tokens | Exact MDM vendor SKU |
 | No secrets in QR; no Play Protect-off SOP | Min OS / SKU matrix (lab) |
 | Consent captured; legal **wording** later (D-051) | IMEI vs hardware fingerprint as bind key |
-| One active contract binding per device/IMEI | Zero-touch / FRP after wipe |
+| One active contract binding per device/IMEI | Zero-touch / OEM FRP exemption (optional); wipe re-enroll SOP: [FRP-AND-REENROLL.md](./FRP-AND-REENROLL.md) |
 | Audit all restrict / enroll / unenroll | Hardware proof for production |
 | Emergency calling; no stealth; no Lost Mode collections | AMAPI EMI exception (D-054) — not required for DPC prototype |
 | Business lock state ≠ platform state | — |

@@ -1,6 +1,7 @@
 # Customer mobile (Flutter)
 
 R1f: OTP login, contracts, sandbox PromptPay.
+Lab completeness A: pay uses contract `outstandingBalance` from the API (not a hardcoded 100). Device/lock status is a first-class entry after login; OS lock on financed Android is the DPC’s job.
 
 IOS-B: Mango Lock screens (activation, enrollment, overdue, restricted, locked, balance, QR, pending, unlock, recovery). Open **Lock screens (preview)** on login to exercise UI without MDM.
 

@@ -4,7 +4,9 @@ import 'api.dart';
 import 'lock/lock_models.dart';
 import 'lock/lock_repository.dart';
 import 'lock/lock_screens.dart';
+import 'outstanding_pay.dart';
 import 'payment_status.dart';
+import 'promptpay_qr.dart';
 
 void main() {
   runApp(const CustomerApp());
@@ -71,6 +73,10 @@ class _LoginPageState extends State<LoginPage> {
               TextField(controller: code, decoration: const InputDecoration(labelText: 'OTP')),
             if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
             const SizedBox(height: 12),
+            const Text(
+              'OS lock is enforced by the shop DPC on the financed phone — this app shows status and payment only.',
+              style: TextStyle(fontSize: 12),
+            ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).push(
@@ -160,38 +166,67 @@ class _ContractsPageState extends State<ContractsPage> {
                 ),
               );
             },
-            child: const Text('Lock status'),
+            child: const Text('Device / lock status'),
           ),
         ],
       ),
-      body: FutureBuilder(
-        future: future,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final rows = snapshot.data!;
-          return ListView.builder(
-            itemCount: rows.length,
-            itemBuilder: (context, index) {
-              final row = rows[index] as Map<String, dynamic>;
-              return ListTile(
-                title: Text(row['id'] as String),
-                subtitle: Text('${row['status']} · ${row['financedAmount']} ${row['currency']}'),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => ContractDetailPage(
-                        api: widget.api,
-                        contractId: row['id'] as String,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => LockShell(repository: ApiLockRepository(widget.api)),
+                  ),
+                );
+              },
+              child: const Text('Open device / lock status'),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Status comes from the platform API. The financed Android phone is locked by the DPC, not by this Flutter screen alone.',
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder(
+              future: future,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final rows = snapshot.data!;
+                return ListView.builder(
+                  itemCount: rows.length,
+                  itemBuilder: (context, index) {
+                    final row = rows[index] as Map<String, dynamic>;
+                    return ListTile(
+                      title: Text(row['id'] as String),
+                      subtitle: Text(
+                        '${row['status']} · ${row['financedAmount']} ${row['currency']}',
                       ),
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => ContractDetailPage(
+                              api: widget.api,
+                              contractId: row['id'] as String,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -365,27 +400,58 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
               padding: const EdgeInsets.all(16),
               children: [
                 Text('Status ${contract!['status']}'),
+                Text(
+                  'Outstanding ${contract!['outstandingBalance'] ?? '—'} ${contract!['currency']}',
+                ),
                 ...items.map(
                   (item) => ListTile(
                     title: Text('Installment ${item['seq']}'),
                     subtitle: Text('Due ${item['totalDue']} paid ${item['amountPaid']}'),
                   ),
                 ),
-                FilledButton(
-                  onPressed: () async {
-                    final created = await widget.api.createIntent(
-                      contractId: widget.contractId,
-                      amount: '100.00',
-                      idempotencyKey: DateTime.now().millisecondsSinceEpoch.toString(),
+                Builder(
+                  builder: (context) {
+                    final amount = payAmountFromContract(contract!);
+                    if (amount == null) {
+                      return const Text('Nothing outstanding to pay.');
+                    }
+                    return FilledButton(
+                      onPressed: () async {
+                        final created = await widget.api.createIntent(
+                          contractId: widget.contractId,
+                          amount: amount,
+                          idempotencyKey:
+                              DateTime.now().millisecondsSinceEpoch.toString(),
+                        );
+                        setState(() => intent = created);
+                      },
+                      child: Text('Pay $amount PromptPay (sandbox)'),
                     );
-                    setState(() => intent = created);
                   },
-                  child: const Text('Pay 100.00 PromptPay'),
                 ),
                 if (intent != null) ...[
                   Text('Intent ${intent!['status']}'),
                   Text(paid ? 'Paid (server confirmed)' : 'Not paid until webhook succeeds'),
-                  Text(jsonPreview(intent!['qrPayload'])),
+                  Builder(
+                    builder: (context) {
+                      final vm = PromptPayQrViewModel.fromPayload(
+                        intent!['qrPayload'],
+                      );
+                      if (vm.imageUrlPng != null) {
+                        return Column(
+                          children: [
+                            Image.network(vm.imageUrlPng!, width: 200, height: 200),
+                            if (vm.hostedInstructionsUrl != null)
+                              Text(vm.hostedInstructionsUrl!),
+                          ],
+                        );
+                      }
+                      if (vm.hostedInstructionsUrl != null) {
+                        return Text(vm.hostedInstructionsUrl!);
+                      }
+                      return Text(jsonPreview(intent!['qrPayload']));
+                    },
+                  ),
                 ],
                 if (error != null) Text(error!, style: const TextStyle(color: Colors.red)),
               ],

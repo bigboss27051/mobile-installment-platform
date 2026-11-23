@@ -23,6 +23,7 @@ Legend: **Accepted** (implement against) · **Pending** (lab, vendor, or legal c
 | D-053 | AMAPI enterprise-per-tenant is **moot for DPC path**; keep if AMAPI enrollment is ever revived. |
 | D-058 | `QR_GENERATED` session state; business vs platform lock fields. |
 | Existing | Lost Mode forbidden for collections. Emergency calling. No lock from unverified payments. Factory reset is not collections. QR once ≠ permanent post-wipe lock. |
+| D-060 | FRP after wipe is Google/OEM; platform does not remote-clear FRP; re-enroll = unlock FRP out-of-band + **new** QR/session. See [FRP-AND-REENROLL.md](./FRP-AND-REENROLL.md). |
 
 ## Still pending
 
@@ -33,7 +34,7 @@ Legend: **Accepted** (implement against) · **Pending** (lab, vendor, or legal c
 | Hosted APK URL + checksum on target OEM Setup Wizards | Lab |
 | Exact MDM vendor (Jamf, Mosyle, SimpleMDM, …) | Adapter exists; vendor SKU not chosen |
 | Compatibility matrix rows (Samsung/Xiaomi/OPPO/vivo + iOS versions) | Hardware lab — [DM0-LAB-PROTOCOL.md](./DM0-LAB-PROTOCOL.md) |
-| Factory-reset re-enrollment (Zero-touch / OEM / FRP) | Must not claim permanence |
+| Zero-touch / OEM FRP exemption proof | D-060 SOP done; ZT still BLOCKED without reseller/lab proof |
 | Per-merchant ABM signup success in Thailand | Ops, not architecture |
 | IMEI vs hardware fingerprint as bind key | Duplicate handling |
 | Contract disclosure / consent text | D-051 draft — counsel must review |

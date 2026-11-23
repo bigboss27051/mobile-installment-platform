@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "mip-android-dpc"
 include(":app")
+include(":lab-target")

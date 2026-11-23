@@ -17,6 +17,8 @@ import {
 } from '@prisma/client';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeviceLockApprovalService } from './device-lock-approval.service';
+import { DeviceLocationService } from './device-location.service';
 
 const ACTIVATABLE_SESSION_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.NOT_STARTED,
@@ -30,7 +32,11 @@ const ACTIVATABLE_SESSION_STATUSES: EnrollmentSessionStatus[] = [
 
 @Injectable()
 export class DeviceLifecycleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly locations: DeviceLocationService,
+    private readonly lockApprovals: DeviceLockApprovalService,
+  ) {}
 
   async activate(
     ctx: TenantContext,
@@ -103,7 +109,12 @@ export class DeviceLifecycleService {
     }
 
     if (session.deviceId) {
-      throw new ConflictException('ALREADY_ACTIVATED');
+      const existingActivation = await this.prisma.deviceActivation.findFirst({
+        where: { deviceId: session.deviceId, tenantId },
+      });
+      if (existingActivation) {
+        throw new ConflictException('ALREADY_ACTIVATED');
+      }
     }
 
     const hardwareFingerprint = createHash('sha256')
@@ -111,15 +122,30 @@ export class DeviceLifecycleService {
       .digest('hex');
 
     const created = await this.prisma.$transaction(async (tx) => {
-      const device = await tx.device.create({
-        data: {
-          tenantId,
-          imeiUnitId: session.imeiUnitId,
-          platform: session.platform,
-          status: DeviceLifecycleStatus.ACTIVE,
-          hardwareFingerprint,
-        },
-      });
+      let device = session.deviceId
+        ? await tx.device.findFirst({
+            where: { id: session.deviceId, tenantId },
+          })
+        : null;
+      if (session.deviceId && !device) {
+        throw new NotFoundException('Device not found.');
+      }
+      if (!device) {
+        device = await tx.device.create({
+          data: {
+            tenantId,
+            imeiUnitId: session.imeiUnitId,
+            platform: session.platform,
+            status: DeviceLifecycleStatus.ACTIVE,
+            hardwareFingerprint,
+          },
+        });
+      } else if (device.status !== DeviceLifecycleStatus.ACTIVE) {
+        device = await tx.device.update({
+          where: { id: device.id },
+          data: { status: DeviceLifecycleStatus.ACTIVE },
+        });
+      }
       const activation = await tx.deviceActivation.create({
         data: {
           tenantId,
@@ -161,11 +187,66 @@ export class DeviceLifecycleService {
     );
   }
 
+  async listDevices(
+    ctx: TenantContext,
+    filters: { platform?: string; status?: string },
+  ) {
+    const tenantId = this.requireTenant(ctx);
+    const rows = await this.prisma.device.findMany({
+      where: {
+        tenantId,
+        ...(filters.platform ? { platform: filters.platform as never } : {}),
+        ...(filters.status
+          ? { status: filters.status as DeviceLifecycleStatus }
+          : {}),
+      },
+      include: {
+        imeiUnit: true,
+        policyState: true,
+        enrollmentSession: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+    });
+    return rows.map((device) => {
+      const imei = device.imeiUnit?.imei;
+      const maskedImei =
+        imei && imei.length > 4 ? `••••${imei.slice(-4)}` : null;
+      return {
+        id: device.id,
+        platform: device.platform,
+        status: device.status,
+        enrollmentStatus: device.enrollmentSession?.status ?? 'NOT_ENROLLED',
+        desiredPresentation:
+          device.policyState?.desiredPresentation ?? ('NONE' as const),
+        platformState: device.policyState?.platformState ?? ('NONE' as const),
+        policyVersion: device.policyState?.policyVersion ?? 0,
+        lastHeartbeatAt: device.lastHeartbeatAt?.toISOString() ?? null,
+        maskedImei,
+      };
+    });
+  }
+
   async getDashboard(ctx: TenantContext, deviceId: string) {
     const tenantId = this.requireTenant(ctx);
     const device = await this.prisma.device.findFirst({
       where: { id: deviceId, tenantId },
-      include: { enrollmentSession: true, imeiUnit: true },
+      include: {
+        enrollmentSession: true,
+        imeiUnit: true,
+        policyState: true,
+        commands: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            type: true,
+            status: true,
+            resultCode: true,
+            ackedAt: true,
+          },
+        },
+      },
     });
     if (!device) {
       throw new NotFoundException('Device not found.');
@@ -173,15 +254,90 @@ export class DeviceLifecycleService {
     const imei = device.imeiUnit?.imei;
     const maskedImei =
       imei && imei.length > 4 ? `••••${imei.slice(-4)}` : null;
+    const last = device.commands[0];
     return {
       id: device.id,
       platform: device.platform,
       status: device.status,
       enrollmentStatus: device.enrollmentSession?.status ?? 'NOT_ENROLLED',
-      desiredPresentation: 'NONE' as const,
-      platformState: 'NONE' as const,
+      desiredPresentation:
+        device.policyState?.desiredPresentation ?? ('NONE' as const),
+      platformState: device.policyState?.platformState ?? ('NONE' as const),
+      policyVersion: device.policyState?.policyVersion ?? 0,
+      lastHeartbeatAt: device.lastHeartbeatAt?.toISOString() ?? null,
+      lastCommand: last
+        ? {
+            id: last.id,
+            type: last.type,
+            status: last.status,
+            resultCode: last.resultCode,
+            ackedAt: last.ackedAt?.toISOString() ?? null,
+          }
+        : null,
       outstandingBalance: null as string | null,
       maskedImei,
+      lastKnownLocation: this.locations.mapLastKnown(device),
+      locationUpdatedAt: device.lastLocationAt?.toISOString() ?? null,
+    };
+  }
+
+  async getLocationHistory(ctx: TenantContext, deviceId: string) {
+    const tenantId = this.requireTenant(ctx);
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, tenantId },
+      select: { id: true },
+    });
+    if (!device) {
+      throw new NotFoundException('Device not found.');
+    }
+    const samples = await this.prisma.deviceLocationSample.findMany({
+      where: { deviceId: device.id, tenantId },
+      orderBy: { capturedAt: 'desc' },
+      take: 100,
+    });
+    if (ctx.userId) {
+      await this.prisma.deviceAuditEvent.create({
+        data: {
+          tenantId,
+          deviceId: device.id,
+          actorUserId: ctx.userId,
+          action: DeviceAuditAction.LOCATION_READ,
+          reason: 'staff location-history',
+        },
+      });
+    }
+    return {
+      deviceId: device.id,
+      samples: samples.map((s) => ({
+        id: s.id,
+        lat: Number(s.lat),
+        lng: Number(s.lng),
+        accuracyMeters: s.accuracyMeters,
+        source: s.source,
+        capturedAt: s.capturedAt.toISOString(),
+      })),
+    };
+  }
+
+  async getHeartbeat(ctx: TenantContext, deviceId: string) {
+    const tenantId = this.requireTenant(ctx);
+    const device = await this.prisma.device.findFirst({
+      where: { id: deviceId, tenantId },
+      include: { policyState: true },
+    });
+    if (!device) {
+      throw new NotFoundException('Device not found.');
+    }
+    if (!device.lastHeartbeatAt) {
+      throw new GoneException('HEARTBEAT_NEVER_SEEN');
+    }
+    const ageMs = Date.now() - device.lastHeartbeatAt.getTime();
+    return {
+      deviceId: device.id,
+      lastHeartbeatAt: device.lastHeartbeatAt.toISOString(),
+      policyVersion: device.policyState?.policyVersion ?? 0,
+      ageMs,
+      fresh: ageMs <= 5 * 60 * 1000,
     };
   }
 
@@ -346,6 +502,11 @@ export class DeviceLifecycleService {
       });
       return unbound;
     });
+    await this.lockApprovals.cancelPendingForDevice(
+      tenantId,
+      device.id,
+      `cancel:unbind ${reason}`,
+    );
     return updated;
   }
 

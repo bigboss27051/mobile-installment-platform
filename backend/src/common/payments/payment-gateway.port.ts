@@ -6,7 +6,7 @@ export interface CreatePromptPayIntentInput {
 }
 
 export interface PromptPayIntentResult {
-  provider: 'sandbox';
+  provider: 'sandbox' | 'stripe';
   providerRef: string;
   qrPayload: Record<string, unknown>;
 }

@@ -1,9 +1,9 @@
 # Master Execution Plan
 
 **Product:** Mobile Installment SaaS Platform (Thailand pilot)  
-**Updated:** 2026-11-14  
-**Status:** R1 installment core complete on `develop`. Device work is **R2** as a Device Provisioning & Enrollment Platform. Next **software** slice is **Phase 1 — Shared Enrollment Foundation**, then **Phase 2 — Android QR Provisioning**. Hardware wipe still requires human approval.  
-**Scope of this update:** Android shop enrollment is **QR custom DPC / Device Owner** (D-057). iPhone enrollment remains **merchant-assisted Apple Configurator + Apple Business / MDM** (D-043). No application source code is changed by this revision.
+**Updated:** 2026-11-23  
+**Status:** R1 installment core complete. **R2 Android lab COMPLETE** (Phases 1–4 + recovery closeout, D-068). Next software: **R3** SaaS ops in parallel; **Phase 5–6 iOS** BLOCKED on ABM/MDM; **Phase 7** production validation unclaimed. Hardware wipe still requires human approval.  
+**Scope of this update:** Status refresh only — Android QR custom DPC / Device Owner (D-057); iPhone remains merchant-assisted Configurator + ABM / MDM (D-043).
 
 This document is the index for the dual-track master plan. Detailed product, architecture, database, and API content remains in the linked files. Do not duplicate those definitions here.
 
@@ -72,8 +72,8 @@ Preserve Nest/Postgres/Flutter. Do not claim production Device Owner / MDM / fin
 |-------|--------|--------|
 | **R0** Foundation | Auth, tenants, branches, Compose, CI | Delivered |
 | **R1** Installment core | Inventory → KYC → application → contract → sandbox PromptPay + Merchant Web / Customer Android | Delivered (R1a–R1f) |
-| **R2** Device | Provisioning, enrollment, bind, policy, commands, recovery | **In progress (stubs).** DM1/DM2 API stubs exist. Phases 1–7 below replace a single “AMAPI then lock” burst |
-| **R3** SaaS operations | Super Admin billing, notifications, reporting, hardening | Unchanged; non-device work may proceed in parallel |
+| **R2** Device | Provisioning, enrollment, bind, policy, commands, recovery | **Android lab COMPLETE** (Phases 1–4 + recovery). Phase 5–6 iOS BLOCKED; Phase 7 production validation unclaimed |
+| **R3** SaaS operations | Super Admin billing, notifications, reporting, hardening | Next parallel track; LINE sandbox P0 done; production LINE BLOCKED |
 
 R2 remains a **provisioning and enrollment platform** plus later policy automation. Do not implement all phases at once.
 
@@ -89,6 +89,7 @@ R2 remains a **provisioning and enrollment platform** plus later policy automati
 8. Bind device to the installment contract (one active binding per IMEI/device).  
 9. Apply authorized policies (REMINDER / RESTRICT / LOCK via shared engine).  
 10. Heartbeat and management events.  
+10a. Soft location **only** while desired policy is RESTRICT/LOCK (D-061 / Phase 3g): last-known + short arrears history; purge when current.  
 11. Verified payment → unlock orchestrator.  
 12. Recovery, reassignment, unenrollment, replacement, contract termination.
 
@@ -112,7 +113,7 @@ Estimates assume one focused team, existing DM1/DM2 stubs, and **no** parallel p
 |-------|--------|----------|------------|
 | **1 — Shared Enrollment Foundation** | Registry, sessions, tokens, identity, activation, contract bind, merchant wizard states including `QR_GENERATED`, dashboard fields | **1.5–2 weeks** | Done stubs; expand tests + statuses |
 | **2 — Android QR Provisioning** | Kotlin DPC, Device Owner, QR extras, DPC install, registration, activation on **authorized** lab devices | **2–3 weeks** | Phase 1; lab phone (ask before wipe) |
-| **3 — Android Locking Prototype** | Package restrict, Lock Task Mode, Mango Lock UI, lock/unlock commands, reboot recovery | **2–3 weeks** | Phase 2 Device Owner evidence |
+| **3 — Android Locking Prototype** | Package restrict, Lock Task Mode, Mango Lock UI, lock/unlock commands, reboot recovery; **3g soft location when RESTRICT/LOCK (D-061)** | **2–3 weeks** (+ 3g slice) | Phase 2 Device Owner evidence; 3g after 3f HTTPS |  
 | **4 — Payment Integration** | Verified payment → policy; Payment-to-Unlock; offline retry | **1.5–2 weeks** | Phase 3 + R1 payments |
 | **5 — iOS Enrollment** | Configurator, Apple Business, supervised enroll, MDM adapter, bind | **2–3 weeks** | Phase 1; ABM + vendor (**often BLOCKED** on Apple ops) |
 | **6 — iOS Locking** | Single App Mode, MDM restrictions, Mango Lock UI, payment unlock | **1.5–2 weeks** | Phase 5 + 4 orchestrator |
@@ -133,11 +134,11 @@ See D-041+ in the Decision Log and [../device-management/OPEN-DECISIONS.md](../d
 
 ## 9. Next implementation phase
 
-**Software (this repo):** Phase 1 Shared Enrollment Foundation — see [../superpowers/plans/2026-11-14-phase1-shared-enrollment-foundation.md](../superpowers/plans/2026-11-14-phase1-shared-enrollment-foundation.md) (to be executed only after this documentation revision is accepted).
+**Software (this repo):** R2 Android lab closed (D-068). Prefer **R3** SaaS slices next. Do **not** start Phase 5 until ABM + MDM vendor credentials exist. Phase 7 only after evidence for in-scope platforms.
 
 **People:** authorized lab Android (do not factory-reset without asking); Apple Business + MDM vendor still required before Phase 5. Google AMAPI inquiry remains optional/historical ([../device-management/OPERATOR-PACKET.md](../device-management/OPERATOR-PACKET.md)).
 
-Wizard: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md).
+Wizard: [../device-management/ENROLLMENT-WIZARD-MOCKUP.md](../device-management/ENROLLMENT-WIZARD-MOCKUP.md). Roadmap: [../roadmap/CURRENT-PHASE.md](../roadmap/CURRENT-PHASE.md).
 
 ## 10. Definition of Done for commercial pilot
 

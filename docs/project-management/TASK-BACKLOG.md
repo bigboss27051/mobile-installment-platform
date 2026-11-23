@@ -41,5 +41,37 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | DM2-001 | Activation + contract bind + isolation tests | P0 | Backend | DONE (stub; no AMAPI/Apple HTTP) |
 | DM2-002 | Merchant Web enroll wizard session + stub QR | P1 | Frontend | DONE (stub QR; not production DO) |
 | R2-P1-001 | Shared enrollment foundation: `QR_GENERATED` + `NOT_STARTED`, policy presentation fields, dashboard GET | P0 | Backend/Web | DONE |
-| R2-P2-001 | Custom DPC QR extras (replace Cloud DPC stub) + Device Owner check-in on authorized lab phone | P0 | Android/Backend | IN_PROGRESS (check-in code on develop; hardware NOT RUN; ask before wipe) |
+| R2-P2-001 | Custom DPC QR extras (replace Cloud DPC stub) + Device Owner check-in on authorized lab phone | P0 | Android/Backend | DONE (Pad 6 DO + check-in; ask before wipe) |
+| R2-P3-001 | Phase 3a Lock Task command loop: enqueue/poll/ack + DPC Lock Task Mode (lab) | P0 | Android/Backend | DONE (lab; not production) |
+| R2-P3-002 | Phase 3b package suspend (RESTRICT): START/STOP_PACKAGE_SUSPEND + DPC setPackagesSuspended | P0 | Android/Backend | DONE (lab; empty target SKU noted) |
+| R2-P3-003 | Phase 3c reboot recovery: agent policy GET + LockHomeAlias persistent HOME after reboot | P0 | Android/Backend | DONE (Pad 6 cold reboot → MangoLock HOME + LOCKED; MIUI note) |
+| R2-P3-004 | Phase 3d agent heartbeat + live staff dashboard policy fields | P0 | Android/Backend/Web | DONE (unit + Merchant Web panel; lab Pad heartbeat optional) |
+| R2-P3-005 | Non-empty RESTRICT: QUERY_ALL_PACKAGES + lab proof on Pad 6 | P0 | Android | DONE (WPS/mediaeditor suspended=true; lab-target optional) |
+| R2-P3-006 | Merchant Web device command enqueue (reason + devices.command) | P1 | Frontend | DONE (panel after bind; unit tests) |
+| R2-P3-007 | Staff GET /devices list + Merchant Web Devices page | P1 | Backend/Web | DONE (tenant isolation + masked IMEI) |
+| R2-P3-008 | Lab HTTPS agent host (TLS listen + pinned lab CA + Pad heartbeat) | P0 | Backend/Android | DONE (adb-reverse HTTPS proven; LAN same-subnet proven 2026-11-22) |
+| R2-P3-009 | Phase 3g soft location (arrears-only): heartbeat location when RESTRICT/LOCK, last-known + 14d history, staff read + purge (D-061) | P1 | Android/Backend/Web | DONE (Pad LOCK locationAccepted + purge on NONE) |
+| R2-P4-001 | Phase 4a payment-to-unlock: verified sandbox webhook → outstanding 0 → STOP_LOCK/SUSPEND enqueue (idempotent) | P0 | Backend | DONE (unit + Pad E2E 2026-11-21) |
+| R2-P4-002 | Phase 4b overdue auto-lock: staff evaluate-overdue → START_LOCK_TASK (lab jump-to-LOCK) | P0 | Backend | DONE (unit + Pad E2E 2026-11-21) |
+| R2-P4-003 | Phase 4c overdue evaluate cron: env-gated + system actor + PG advisory lock + boot/tick logs (D-064) | P1 | Backend | DONE (unit) |
+| R2-P4-004 | Phase 4d overdue ladder: 1/3/7d → REMINDER/RESTRICT/LOCK (escalate-only; D-065) | P0 | Backend | DONE (unit) |
+| R2-P4-005 | Android lab completeness A: DPC REMINDER notify + LOCK emergency dial; portal outstanding; Flutter pay outstanding | P0 | Android/Flutter/Backend | DONE (unit; lab; not production DO) |
+| R2-P2-002 | FRP after wipe: SOP + Merchant Web checklist + REENROLL after FRP cleared (no remote bypass) | P0 | Docs/Product/Backend | DONE (lab: wipe → reinstall DO via dpm + check-in + HTTPS HB + lock loop; full Welcome QR optional; REENROLL clears device_id) |
+| R2-P4-006 | LAN HTTPS lab: Pad agent heartbeat over Wi‑Fi to host `:3443` without adb reverse | P0 | Android/Backend | DONE (Pad 6 2026-11-22; `192.168.68.110` → `192.168.68.108`; `0.1.17-lab`; not production DO) |
+| R2-P4-007 | Welcome QR lab: post-wipe QR Device Owner + LAN HTTPS check-in (`ENROLLING`) | P1 | Android/Docs | DONE (Pad 6 2026-11-22; DO via QR/`0.1.17-lab`; check-in via LabProvisioning after DO; not production) |
+| R2-P4-008 | WorkManager + FCM poller: WM periodic/OneTime + FCM wake on restrictive enqueue; push-token API | P0 | Android/Backend | DONE (Pad 6 E2E 2026-11-22; `0.1.18-lab`; FCM POLL_NOW → CommandPollWorker; not production DO) |
 | P3-002 | Phase 3a RBAC permission codes + guard on critical mutates | P0 | Backend | DONE (OWNER/STAFF bundles; no branch scope) |
+| R3-P0-001 | LINE sandbox: schema + NotificationChannelPort + adapter + webhook idempotency (D-066) | P0 | Backend | DONE (unit) |
+| R3-P0-002 | LINE customer link invites + consume via LINK token | P0 | Backend | DONE (unit) |
+| R3-P0-003 | LINE installment read replies (BALANCE/NEXT/HISTORY) | P0 | Backend | DONE (unit) |
+| R3-P0-004 | LINE payment confirmation + manual reminder templates | P0 | Backend | DONE (unit; sandbox send) |
+| R3-P0-005 | Merchant Web LINE settings + customer link panel | P1 | Frontend | DONE (thin UI) |
+| R3-P0-006 | Production LINE Messaging API | P2 | Backend | BLOCKED (provider + consent) |
+| R2-P4-009 | Merchant policy settings + lock approval queue (thresholds, cron toggle, requireLockApproval) | P0 | Backend/Web | DONE (unit; lab; not production DO) |
+| R2-P4-010 | Recovery types REPLACE/UNENROLL/RELEASE/CONTRACT_CLOSE + Merchant Web recovery panel (Android lab closeout) | P0 | Backend/Web | DONE (unit; lab; not production DO) |
+| PAY-P0-001 | Stripe PromptPay adapter + webhook + client QR display (D-069) | P0 | Backend/Web/Flutter | DONE (unit; needs Stripe env for live) |
+| PAY-P0-002 | OTP_CHANNEL + BlockedSmsAdapter (SMS_OTP_BLOCKED until vendor) | P1 | Backend | DONE (unit; SMS still BLOCKED) |
+| OPS-P0-001 | PRODUCTION-DEPLOY.md + backend Dockerfile + DPC hosting checklist + legal counsel packet | P1 | Docs/Ops | DONE (docs only; not live host claim) |
+| R2-SHOP-001 | Android shop software pack: DPC flavors + dpc-config-status + enroll preflight + shop runbook (D-070) | P0 | Android/Backend/Web/Docs | DONE (software; not multi-SKU / Play claim) |
+| RBAC-P0-001 | Staff branch assignments + inventory branch scope + OWNER assignment APIs (D-071) | P0 | Backend | DONE (unit; contracts/apps branch scope deferred) |
+| OPS-P0-002 | Auth/OTP throttler + `/health/ready` + OPS/PDPA checklists (D-071) | P0 | Backend/Docs | DONE (unit; not production cutover claim) |

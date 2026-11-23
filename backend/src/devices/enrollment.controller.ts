@@ -17,6 +17,18 @@ import { TenantContext } from '../common/tenant/tenant-context';
 import { CreateEnrollmentSessionDto } from './dto/create-enrollment-session.dto';
 import { EnrollmentService } from './enrollment.service';
 
+@Controller('devices/enrollment')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+export class EnrollmentDpcConfigController {
+  constructor(private readonly enrollment: EnrollmentService) {}
+
+  @Get('dpc-config-status')
+  @RequirePermissions('devices.enroll')
+  dpcConfigStatus() {
+    return { data: this.enrollment.getDpcConfigStatus() };
+  }
+}
+
 @Controller('devices/enrollment-sessions')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class EnrollmentController {

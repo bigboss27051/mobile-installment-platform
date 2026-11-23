@@ -1,54 +1,52 @@
 # Project Status
 
-**Updated:** 2026-11-18  
-**Current Phase:** R1f complete; R2 Phase 1 (shared enrollment foundation) done; Phase 2 custom DPC QR check-in code on `develop` (lab hardware NOT RUN). Next: one authorized lab device check-in (ask before any factory reset). Commercial Device Owner **BLOCKED**.  
+**Updated:** 2026-11-23  
+**Current Phase:** R2 Android lab COMPLETE + **Stripe PromptPay** adapter (D-069) + production readiness docs. Next: human Stripe webhook/SMS/counsel/multi-SKU; R3; iOS BLOCKED.  
 **Branch:** `develop`  
-**Codebase:** NestJS backend R0–R1e plus R1f customer OTP/`/me` portal, Merchant Web, Customer Android on `develop`; CI on push/PR
+**Codebase:** NestJS backend R0–R1f + R2 Android lab + Stripe gateway; Merchant Web; Customer Android; CI on push/PR (sandbox payments)
 
 ## Summary
 
-R0 foundation plus **R1a–R1f** are delivered on `develop`. R1f adds tenant `slug`, sandbox customer OTP JWT (`typ=customer`), customer-scoped contract/payment APIs, Merchant Web critical ops, and Customer Android OTP/contract/QR pay. Staff sandbox payments from R1e remain. **Phase 3a RBAC** (permission codes + guard on decide/activate/enroll/bind/unbind) is in place; full role matrix + branch scope are not. Omise live adapter, SMS OTP, refunds, and MDM are not claimed complete.
+R0–R1f delivered. R2 Android lab closed (D-068). Stripe PromptPay wired behind `PaymentGatewayPort` (D-069); OTP SMS port is **BLOCKED** until vendor keys; deploy/DPC/legal packets landed without claiming production DO or financing-lock clearance. Omise primary (D-034), refunds, and iOS MDM remain incomplete/BLOCKED.
 
 ## Completed
 
 - Phase 0 product discovery + sign-off
-- Decisions D-001..D-040 (`DECISION-LOG.md`)
-- R0–R1e as previously recorded
-- R1f: customer OTP sandbox auth, public tenant slug, `/me` contracts/intents, Merchant Web (Vite React), Customer Android (Flutter) critical paths, CI jobs for web + Flutter tests
+- Decisions D-001..D-068 (`DECISION-LOG.md`)
+- R0–R1f as previously recorded
+- R2 Android Phases 1–4 lab + `R2-P4-010` recovery closeout
 - `.github/workflows/ci.yml` for backend + merchant-web + customer-android
 
-## In Progress
+## In Progress / Next
 
-- **Human:** Authorized Android lab device (ask before factory reset). ABM + MDM vendor still BLOCKED for iOS. AMAPI Google form is optional/historical, not the lock path.
-- **Software next:** Phase 3 Android locking prototype is gated on a real Device Owner check-in from a lab device. Check-in unit tests cover replay idempotency, tenant-scoped device lookup, and CHECK_IN audit. No kiosk yet.
+- **R3** SaaS operations (Super Admin, billing separation, reporting, hardening) — LINE sandbox P0 done; production LINE BLOCKED
+- **Human / external:** Apple ABM + MDM vendor before Phase 5; multi-SKU / Zero-touch lab (`DM0-001`) still BLOCKED without additional hardware
+- Optional Pad E2E of policy approval queue (not required for Android lab complete)
 
-## Follow-ups (R0 / early Phase 3)
+## Follow-ups
 
-- Expand RBAC beyond Phase 3a (new roles from USER-ROLES.md, branch-scoped staff rules)
-- Swagger polish on `/api/v1` endpoints
-- BullMQ worker wiring and job definitions
+- Expand RBAC beyond Phase 3a (branch-scoped staff rules)
 - Production Omise/Opn adapter (BLOCKED on credentials)
-- Production OCR vendor integration (BLOCKED on credentials/proof)
 - SMS OTP adapter (BLOCKED)
-- Device/MDM integrations (BLOCKED on hardware/proof)
+- Phase 5–6 iOS MDM lab (BLOCKED on Apple)
+- Phase 7 commercial validation / security review for device
 
 ## Blocked
 
 - External integrations remain BLOCKED until credentials/hardware
+- Production DO/MDM/financing lock claims
 
 ## Next Session Entry Point
 
 1. `docs/roadmap/CURRENT-PHASE.md`  
 2. `docs/project-management/MASTER-EXECUTION-PLAN.md`  
-3. `docs/superpowers/plans/2026-11-14-phase1-shared-enrollment-foundation.md` — R2 Phase 1, already delivered (`R2-P1-001` in TASK-BACKLOG)  
-4. Lab phones only with explicit wipe approval  
-5. `docs/superpowers/specs/2026-11-12-r1f-merchant-web-customer-android-design.md` — R1f reference  
-6. `docs/superpowers/plans/2026-11-12-r1f-merchant-web-customer-android.md`
+3. R3 backlog / Super Admin slice (if continuing SaaS)  
+4. Or Phase 5 iOS only after ABM + vendor MDM credentials  
+5. Lab phones only with explicit wipe approval  
 
 ## Do Not
 
 - Scaffold remaining apps in one shot
 - Mark device/payment integrations production-ready without validation
-- Claim Phase 3 RBAC or BullMQ production-ready until implemented and tested
-- Claim live Omise, SMS OTP, refunds, or device unlock from payment webhooks
-- Claim production OCR integration complete without real credentials/evidence
+- Claim live Omise, SMS OTP, refunds, or device unlock from unverified webhooks
+- Claim production Device Owner / MDM / financing lock

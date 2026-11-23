@@ -42,6 +42,23 @@ export function canIssueEnrollmentQr(
   return platform === 'ANDROID' && showsAndroidQr(status) && !hasQrPayload;
 }
 
+export type AndroidFrpChecklist = {
+  frpClearedOrNotApplicable: boolean;
+  newQrAfterWipe: boolean;
+  noRemoteFrpBypass: boolean;
+};
+
+/** Staff attestation before create session / issue QR (D-060). */
+export function isAndroidFrpChecklistComplete(
+  checklist: AndroidFrpChecklist,
+): boolean {
+  return (
+    checklist.frpClearedOrNotApplicable &&
+    checklist.newQrAfterWipe &&
+    checklist.noRemoteFrpBypass
+  );
+}
+
 export function canStaffCancel(status: string): boolean {
   return OPEN_STATUSES.has(status);
 }

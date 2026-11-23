@@ -2,11 +2,13 @@
 
 Prototype Device Owner / MDM lab success is **not** commercial approval. Treat **lab prototype** and **pilot production** as separate milestones (D-046, D-054, D-057).
 
+**2026-11-23 note:** Stripe PromptPay adapter is wired for pilot payments (D-069). Financing lock legal/enterprise clearance remains **Unverified**. Counsel packet: [LEGAL-COUNSEL-PACKET.md](./LEGAL-COUNSEL-PACKET.md). Ops host checklist: [PRODUCTION-DEPLOY.md](../operations/PRODUCTION-DEPLOY.md).
+
 ## Android gates
 
 | Gate | Why | Status |
 |------|-----|--------|
-| Google Android Enterprise / custom DPC distribution eligibility | Shop QR download vs Play | **Unverified** |
+| Google Android Enterprise / custom DPC distribution eligibility | Shop QR download vs Play | **Unverified** (hosting checklist only) |
 | Device financing / EMI policy | AMAPI explicitly forbids payment-based restriction (D-054). Custom DPC may still conflict with Play / Enterprise / OEM policies | **Unverified** — do not claim legal clearance |
 | Manufacturer compatibility | 6-tap, DO, suspend, lock-task | Matrix **NOT RUN** on shop SKUs |
 | Factory-reset re-enrollment | DO does not survive ordinary wipe | Zero-touch / OEM / FRP **unverified** for this product |

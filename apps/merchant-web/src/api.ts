@@ -1,5 +1,29 @@
 const TOKEN_KEY = 'mip.staff.accessToken';
 
+type AuthExpiredListener = () => void;
+const authExpiredListeners = new Set<AuthExpiredListener>();
+
+export function subscribeAuthExpired(listener: AuthExpiredListener): () => void {
+  authExpiredListeners.add(listener);
+  return () => {
+    authExpiredListeners.delete(listener);
+  };
+}
+
+function notifyAuthExpired(): void {
+  for (const listener of authExpiredListeners) {
+    listener();
+  }
+}
+
+function handleUnauthorized(path: string): never {
+  setAccessToken(null);
+  if (!path.includes('/auth/login')) {
+    notifyAuthExpired();
+  }
+  throw new ApiError('Unauthorized', 401);
+}
+
 export function getAccessToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -33,8 +57,7 @@ export async function apiRequest<T>(
   }
   const response = await fetch(path, { ...init, headers });
   if (response.status === 401) {
-    setAccessToken(null);
-    throw new ApiError('Unauthorized', 401);
+    handleUnauthorized(path);
   }
   const body = (await response.json().catch(() => ({}))) as {
     data?: T;
@@ -54,8 +77,7 @@ export async function apiUpload<T>(path: string, body: FormData): Promise<T> {
   }
   const response = await fetch(path, { method: 'POST', body, headers });
   if (response.status === 401) {
-    setAccessToken(null);
-    throw new ApiError('Unauthorized', 401);
+    handleUnauthorized(path);
   }
   const payload = (await response.json().catch(() => ({}))) as {
     data?: T;

@@ -24,6 +24,7 @@
 | R-020 | Copying competitor Play Protect / skip-Apple-ID SOP causes security or review failure | High | Medium | D-044, D-047; do not require Protect-off | Open |
 | R-021 | Google AMAPI Permissible Usage forbids EMI/payment-based device control | Critical | High | Do not implement AMAPI overdue lock. Custom DPC path (D-057) still needs **separate** Google/Play/OEM policy review for commercial financing | Open |
 | R-023 | Custom DPC sideload / checksum / OEM Setup Wizard rejects QR extras | High | High | Compatibility matrix; Play-hosted DPC as production gate; lab on real SKUs | Open |
-| R-024 | Staff believe one QR scan survives every factory reset | High | High | Document re-enroll; Zero-touch optional; wizard copy after wipe | Open |
+| R-024 | Staff believe one QR scan survives every factory reset | High | High | Document re-enroll; Zero-touch optional; wizard copy after wipe; [FRP-AND-REENROLL.md](../device-management/FRP-AND-REENROLL.md) | Open |
+| R-026 | GMS FRP after wipe blocks re-provision until previous Google account unlocks; personal accounts on lab/shop units strand operators | High | High | D-060; FRP-free lab stock preferred; shop SOP before wipe; Merchant Web FRP checklist before new QR; no remote bypass | Open |
 | R-025 | Mixing Android DPM and Apple MDM in one service causes wrong commands | High | Medium | Separate adapters; shared policy engine only | Open |
 | R-022 | Configurator-added iOS devices have a 30-day user release from RM/MDM | High | High | Disclose; prefer ADE when serials in ABM; legal review | Open |

@@ -113,6 +113,71 @@ describe('InventoryService', () => {
     expect(tx.imeiUnit.create).not.toHaveBeenCalled();
   });
 
+  it('rejects STAFF receive into unassigned branch', async () => {
+    const staffCtx = {
+      tenantId: 'tenant-a',
+      userId: 'staff-1',
+      role: PlatformRole.MERCHANT_STAFF,
+      branchIds: ['b1'],
+    };
+    await expect(
+      service.receive(staffCtx, {
+        branchId: 'b2',
+        variantId: 'v1',
+        imei: '356938035643809',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(tx.branch.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('allows STAFF receive into assigned branch', async () => {
+    const staffCtx = {
+      tenantId: 'tenant-a',
+      userId: 'staff-1',
+      role: PlatformRole.MERCHANT_STAFF,
+      branchIds: ['b1'],
+    };
+    tx.branch.findFirst.mockResolvedValue({ id: 'b1', tenantId: 'tenant-a' });
+    tx.productVariant.findFirst.mockResolvedValue({
+      id: 'v1',
+      tenantId: 'tenant-a',
+    });
+    tx.imeiUnit.create.mockResolvedValue({
+      id: 'u1',
+      imei: '356938035643809',
+      status: ImeiStatus.AVAILABLE,
+      branchId: 'b1',
+    });
+    tx.stockMovement.create.mockResolvedValue({ id: 'm1' });
+
+    await expect(
+      service.receive(staffCtx, {
+        branchId: 'b1',
+        variantId: 'v1',
+        imei: '356938035643809',
+      }),
+    ).resolves.toMatchObject({ id: 'u1' });
+  });
+
+  it('scopes STAFF list to assigned branches', async () => {
+    const staffCtx = {
+      tenantId: 'tenant-a',
+      userId: 'staff-1',
+      role: PlatformRole.MERCHANT_STAFF,
+      branchIds: ['b1'],
+    };
+    prisma.imeiUnit.findMany.mockResolvedValue([]);
+    await service.listImeiUnits(staffCtx, {});
+    expect(prisma.imeiUnit.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tenantId: 'tenant-a',
+          branchId: { in: ['b1'] },
+        }),
+      }),
+    );
+  });
+
   it('receives a Wi-Fi-only unit by serial', async () => {
     tx.branch.findFirst.mockResolvedValue({ id: 'b1', tenantId: 'tenant-a' });
     tx.productVariant.findFirst.mockResolvedValue({

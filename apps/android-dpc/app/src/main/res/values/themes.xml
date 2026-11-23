@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Mip.Dpc" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/mip_teal</item>
+        <item name="android:statusBarColor">@color/mip_teal</item>
+        <item name="android:navigationBarColor">@color/mip_teal_deep</item>
+        <item name="colorPrimary">@color/mip_teal</item>
+        <item name="colorAccent">@color/mip_sand</item>
+    </style>
+
+    <style name="Theme.Mip.Dpc.Lab" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@color/mip_sand</item>
+        <item name="android:statusBarColor">@color/mip_teal</item>
+        <item name="android:navigationBarColor">@color/mip_teal</item>
+        <item name="colorPrimary">@color/mip_teal</item>
+        <item name="colorAccent">@color/mip_teal</item>
+    </style>
+</resources>

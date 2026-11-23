@@ -16,6 +16,7 @@ import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   buildAndroidEnrollmentQrPayload,
+  diagnoseDpcQrSettings,
   resolveDpcQrSettings,
 } from './enrollment-qr';
 import { issueEnrollmentToken } from './enrollment-token';
@@ -25,6 +26,7 @@ const QR_ISSUABLE_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.QR_GENERATED,
 ];
 
+/** Blocks a second create for the same contract+platform. RECOVERY_REQUIRED does not block — staff must be able to start a new session after wipe/FRP. */
 const OPEN_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.NOT_STARTED,
   EnrollmentSessionStatus.WAITING_FOR_DEVICE,
@@ -33,7 +35,6 @@ const OPEN_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.ENROLLING,
   EnrollmentSessionStatus.VERIFYING,
   EnrollmentSessionStatus.ACTIVATING,
-  EnrollmentSessionStatus.RECOVERY_REQUIRED,
 ];
 
 @Injectable()
@@ -126,6 +127,10 @@ export class EnrollmentService {
   async getById(ctx: TenantContext, id: string) {
     const session = await this.findOwned(ctx, id);
     return this.toPublic(await this.expireIfNeeded(session));
+  }
+
+  getDpcConfigStatus() {
+    return diagnoseDpcQrSettings(process.env);
   }
 
   async cancel(ctx: TenantContext, id: string) {

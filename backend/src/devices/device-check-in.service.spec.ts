@@ -16,6 +16,7 @@ describe('DeviceCheckInService', () => {
     device: {
       findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     deviceAuditEvent: { create: jest.fn() },
     $transaction: jest.fn(),
@@ -118,7 +119,14 @@ describe('DeviceCheckInService', () => {
 
     expect(result.deviceId).toBe('dev-1');
     expect(result.deviceOwner).toBe(true);
-    expect(prisma.device.create).toHaveBeenCalled();
+    expect(result.agentToken).toMatch(/^dat_/);
+    expect(prisma.device.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          agentTokenHash: expect.any(String),
+        }),
+      }),
+    );
     expect(prisma.deviceEnrollmentSession.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -171,7 +179,12 @@ describe('DeviceCheckInService', () => {
       id: 'dev-existing',
       tenantId: 'tenant-a',
     });
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-existing',
+      tenantId: 'tenant-a',
+    });
     prisma.deviceEnrollmentSession.update.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
 
     const result = await service.checkIn(rawToken, { deviceOwner: true });
 
@@ -205,5 +218,29 @@ describe('DeviceCheckInService', () => {
         reason: 'dpc-check-in serial=SN-123',
       }),
     });
+  });
+
+  it('rotates agentTokenHash when reusing an existing device row', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(session);
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-existing',
+      tenantId: 'tenant-a',
+    });
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-existing',
+      tenantId: 'tenant-a',
+    });
+    prisma.deviceEnrollmentSession.update.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+
+    const result = await service.checkIn(rawToken, { deviceOwner: true });
+    expect(result.agentToken).toMatch(/^dat_/);
+    expect(prisma.device.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          agentTokenHash: expect.any(String),
+        }),
+      }),
+    );
   });
 });

@@ -14,6 +14,10 @@ import {
   Branch,
   StockMovement,
 } from '@prisma/client';
+import {
+  assertBranchAccess,
+  branchIdFilter,
+} from '../common/authz/branch-scope';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReceiveImeiDto } from './dto/receive-imei.dto';
@@ -32,6 +36,7 @@ export class InventoryService {
 
   async receive(ctx: TenantContext, input: ReceiveImeiDto): Promise<ImeiUnit> {
     const tenantId = this.requireTenantId(ctx);
+    assertBranchAccess(ctx, input.branchId);
     const imei = input.imei?.trim() || null;
     const serial = input.serial?.trim() || null;
     if (!imei && !serial) {
@@ -116,6 +121,8 @@ export class InventoryService {
 
     return this.prisma.$transaction(async (tx) => {
       const imeiUnit = await this.getImeiUnitOrThrow(tx, tenantId, imeiUnitId);
+      assertBranchAccess(ctx, imeiUnit.branchId);
+      assertBranchAccess(ctx, input.toBranchId);
 
       if (imeiUnit.status !== ImeiStatus.AVAILABLE) {
         throw new ConflictException('IMEI unit must be AVAILABLE to transfer.');
@@ -168,6 +175,7 @@ export class InventoryService {
 
     return this.prisma.$transaction(async (tx) => {
       const imeiUnit = await this.getImeiUnitOrThrow(tx, tenantId, imeiUnitId);
+      assertBranchAccess(ctx, imeiUnit.branchId);
 
       if (imeiUnit.status !== ImeiStatus.AVAILABLE) {
         throw new ConflictException('IMEI unit must be AVAILABLE to reserve.');
@@ -208,6 +216,7 @@ export class InventoryService {
 
     return this.prisma.$transaction(async (tx) => {
       const imeiUnit = await this.getImeiUnitOrThrow(tx, tenantId, imeiUnitId);
+      assertBranchAccess(ctx, imeiUnit.branchId);
 
       if (imeiUnit.status !== ImeiStatus.RESERVED) {
         throw new ConflictException('IMEI unit must be RESERVED to release.');
@@ -248,6 +257,7 @@ export class InventoryService {
 
     return this.prisma.$transaction(async (tx) => {
       const imeiUnit = await this.getImeiUnitOrThrow(tx, tenantId, imeiUnitId);
+      assertBranchAccess(ctx, imeiUnit.branchId);
 
       if (imeiUnit.status !== ImeiStatus.RESERVED) {
         throw new ConflictException('IMEI unit must be RESERVED to mark sold.');
@@ -284,12 +294,20 @@ export class InventoryService {
     filters: ListImeiUnitsFilters,
   ): Promise<(ImeiUnit & { variant: ProductVariant; branch: Branch })[]> {
     const tenantId = this.requireTenantId(ctx);
+    if (filters.branchId) {
+      assertBranchAccess(ctx, filters.branchId);
+    }
+    const scope = branchIdFilter(ctx);
     return this.prisma.imeiUnit.findMany({
       where: {
         tenantId,
         imei: filters.imei,
-        branchId: filters.branchId,
         status: filters.status,
+        ...(filters.branchId
+          ? { branchId: filters.branchId }
+          : scope.branchId
+            ? { branchId: scope.branchId }
+            : {}),
       },
       orderBy: { createdAt: 'desc' },
       include: { variant: true, branch: true },
@@ -313,6 +331,7 @@ export class InventoryService {
       throw new NotFoundException('IMEI unit not found.');
     }
 
+    assertBranchAccess(ctx, imeiUnit.branchId);
     return imeiUnit;
   }
 

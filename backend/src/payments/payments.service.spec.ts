@@ -55,7 +55,22 @@ describe('PaymentsService', () => {
     parseWebhookEvent: jest.fn(),
   };
 
-  const service = new PaymentsService(prisma as never, gateway as never);
+  const paymentUnlock = {
+    onVerifiedPayment: jest.fn().mockResolvedValue({
+      applied: false,
+      reason: 'NO_ANDROID_BINDING',
+      commandIds: [],
+    }),
+  };
+  const lineNotify = {
+    onVerifiedPayment: jest.fn().mockResolvedValue(undefined),
+  };
+  const service = new PaymentsService(
+    prisma as never,
+    gateway as never,
+    paymentUnlock as never,
+    lineNotify as never,
+  );
 
   const tenantCtx = {
     tenantId: 'tenant-a',
@@ -569,7 +584,7 @@ describe('PaymentsService', () => {
       service.handleSandboxWebhook(Buffer.from('{}'), {
         'x-mip-signature': 'bad',
       }),
-    ).rejects.toThrow('Invalid sandbox webhook signature.');
+    ).rejects.toThrow('Invalid payment webhook signature.');
 
     expect(gateway.parseWebhookEvent).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();

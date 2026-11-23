@@ -61,7 +61,7 @@ flowchart LR
 | Push | FCM/APNs | R3 |
 | SMS | Thai SMS provider | consent required |
 | Email | SMTP/API | transactional |
-| LINE | LINE Messaging API | consent required; due/overdue reminders and payment confirmations |
+| LINE | LINE Messaging API | R3-P0 **sandbox** adapter + per-tenant config (D-066); production BLOCKED until provider + consent templates; due/overdue reminders and payment confirmations |
 
 The LINE pilot uses a merchant-owned Official Account. Customers explicitly link
 their account after customer OTP authentication and can unlink in-app, send

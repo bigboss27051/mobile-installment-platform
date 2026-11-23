@@ -147,12 +147,29 @@ Staff. Last heartbeat + freshness. `410` if never seen.
 Staff with **device restrict** permission for RESTRICT/LOCK (levels ≥3).  
 Body: `{ "type", "presentation?": "REMINDER|RESTRICT|LOCK|UNLOCK", "level?", "reason", "expiresAt" }`  
 `Idempotency-Key` required.  
-Creates `QUEUED` command; HTTP 201 ≠ executed.  
+Creates `QUEUED` command; HTTP 201 ≠ executed.
 iOS unsupported type → `422 UNSUPPORTED_CAPABILITY` (no silent no-op success).
 
-### POST `/devices/:id/heartbeat` (device-agent)
+### POST `/devices/policy/evaluate-overdue`
 
-Device JWT. Body: connectivity, policy version, battery optional — **no** location tracking unless separately consented and specified (currently **not in scope**).
+**Auth:** Staff JWT + tenant.
+**Authz:** `devices.command` (same as device commands).
+**Headers:** `Idempotency-Key` required — replay with the same key returns the stored summary without re-enqueueing.
+**Body:** `{ "reason": "non-empty staff reason" }`
+
+**Purpose:** Tenant batch overdue evaluation (Phase 4d ladder, D-065). Scans ACTIVE Android bindings; computes overdue days from the oldest unpaid past-due installment (Asia/Bangkok): ≥1 → `REMINDER` (desired+audit only, `commandId` null), ≥3 → `RESTRICT` + `START_PACKAGE_SUSPEND`, ≥7 → `LOCK` + `START_LOCK_TASK`. Escalate-only (skips if already at/above target). Day marker `overdue-ladder:{ymd}:{target}`.
+
+**Response `200`:** `{ "data": { "evaluatedAt", "timezone": "Asia/Bangkok", "scannedBindings", "locked": [{ "deviceId", "contractId", "commandId", "target", "reason" }], "skipped": [{ "deviceId", "contractId", "reason" }], "replay"?: true } }`
+
+Does not unlock (Phase 4a / staff STOP). Optional cron: `OVERDUE_EVALUATE_CRON` (D-064) uses the same `evaluateTenant` path.
+
+### POST `/devices/agent/heartbeat` (device-agent)
+
+Header `X-Device-Agent-Token` (`dat_…` from check-in). Body: `{ connectivity?, policyVersion?, batteryPercent?, location? }`. Updates `devices.last_heartbeat_at`. Optional `location` (`lat`, `lng`, `accuracyMeters?`, `source`, `capturedAt`) only when desired policy is `RESTRICT` or `LOCK` (D-061); otherwise `400 LOCATION_NOT_ALLOWED`. Staff see heartbeat on `GET /devices/:id` / `GET /devices/:id/heartbeat` (`410 HEARTBEAT_NEVER_SEEN` if never), and last-known on device detail.
+
+### GET `/devices/:id/location-history`
+
+Staff. Requires `devices.location.read`. Tenant-scoped samples (newest first). Audited as `LOCATION_READ`.
 
 ### POST `/devices/:id/command-acks` (device-agent)
 
@@ -164,7 +181,19 @@ Ack/result. Replay-safe.
 
 ### POST `/devices/:id/recovery-requests`
 
-Types: `REENROLL`, `REPLACE`, `UNENROLL`, `RELEASE`, `CONTRACT_CLOSE`. Reason required. Approval if tenant policy requires.
+**Auth:** Staff JWT with `devices.enroll`. Tenant-scoped device. Non-empty `reason` required.
+
+**Lab:** requests are auto-`APPROVED` (no separate approval queue). Shared cleanup always runs: cancel open enrollment sessions (clear `device_id`), expire open commands, clear `agentTokenHash`, reset desired/platform policy to `NONE`, purge soft location, cancel PENDING lock approvals, audit `RECOVERY`.
+
+| Type | Device status | Active binding | Notes |
+|------|---------------|----------------|-------|
+| `REENROLL` | `PENDING_ENROLL` | unchanged | Prepare for new QR after wipe/FRP |
+| `REPLACE` | `UNENROLLED` | `ACTIVE` → `REPLACED` | Retire hardware; contract may bind a new device later |
+| `UNENROLL` | `UNENROLLED` | `ACTIVE` → `UNBOUND` | End management; no remote wipe |
+| `RELEASE` | `UNENROLLED` | `ACTIVE` → `UNBOUND` | Same DB effect as `UNENROLL`; distinct audit prefix |
+| `CONTRACT_CLOSE` | `UNENROLLED` | `ACTIVE` → `UNBOUND` | Same DB effect; audit prefix for payoff/close |
+
+No DPC wipe from this API. If already unbound / `UNENROLLED`, cleanup is a no-op on bindings and a new APPROVED recovery row is still created.
 
 ---
 

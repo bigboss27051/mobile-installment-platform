@@ -76,6 +76,11 @@ export class PortalService {
       take: 20,
     });
 
+    let outstanding = new Prisma.Decimal('0.00');
+    for (const item of scheduleItems) {
+      outstanding = outstanding.plus(remainingBalance(item.totalDue, item.amountPaid));
+    }
+
     return {
       id: contract.id,
       status: contract.status,
@@ -86,6 +91,7 @@ export class PortalService {
       interestMethod: contract.interestMethod,
       annualRate: contract.annualRate.toFixed(2),
       currency: contract.currency,
+      outstandingBalance: outstanding.toFixed(2),
       scheduleItems: scheduleItems.map(
         (item): PortalScheduleItem => ({
           id: item.id,

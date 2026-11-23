@@ -89,14 +89,14 @@ describe('merchant error notice and logout confirm', () => {
     await act(async () => {
       buttonByText(container.querySelector('nav') as ParentNode, 'ออกจากระบบ')?.click();
     });
-    const dialog = container.querySelector('[role="alertdialog"]');
+    const dialog = document.querySelector('[role="alertdialog"]');
     expect(dialog?.textContent).toContain('ออกจากระบบ?');
     expect(localStorage.getItem('mip.staff.accessToken')).toBe('token');
 
     await act(async () => {
       buttonByText(dialog as ParentNode, 'อยู่ต่อ')?.click();
     });
-    expect(container.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
     expect(container.textContent).not.toContain('เข้าสู่ระบบร้านค้า');
     expect(localStorage.getItem('mip.staff.accessToken')).toBe('token');
     expect(container.textContent).toContain('สร้างสัญญา');
@@ -121,7 +121,7 @@ describe('merchant error notice and logout confirm', () => {
     await act(async () => {
       buttonByText(container.querySelector('nav') as ParentNode, 'ออกจากระบบ')?.click();
     });
-    const dialog = container.querySelector('[role="alertdialog"]');
+    const dialog = document.querySelector('[role="alertdialog"]');
     await act(async () => {
       buttonByText(dialog as ParentNode, 'ออกจากระบบ')?.click();
     });
@@ -231,5 +231,44 @@ describe('merchant error notice and logout confirm', () => {
       principal: '12000.00',
       downPayment: '2000.00',
     });
+  });
+});
+
+describe('session expired redirect', () => {
+  let root: Root;
+  const fetchMock = vi.fn();
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    document.body.innerHTML = '';
+    localStorage.clear();
+    fetchMock.mockClear();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows login with session-expired message after a mid-session 401', async () => {
+    localStorage.setItem('mip.staff.accessToken', 'expired-token');
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockImplementation(() =>
+      jsonResponse(401, { error: { message: 'Unauthorized' } }),
+    );
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <App />
+        </I18nProvider>,
+      );
+    });
+
+    expect(localStorage.getItem('mip.staff.accessToken')).toBeNull();
+    expect(container.textContent).toContain('เข้าสู่ระบบร้านค้า');
+    expect(container.textContent).toContain('เซสชันหมดอายุ — กรุณาเข้าสู่ระบบอีกครั้ง');
+    expect(container.textContent).not.toContain('ยังไม่มีสัญญา');
   });
 });

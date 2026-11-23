@@ -11,6 +11,7 @@ import {
   EnrollmentSessionStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { issueDeviceAgentToken } from './device-agent-token';
 import { hashEnrollmentToken } from './enrollment-token';
 
 const CHECKIN_OPEN: EnrollmentSessionStatus[] = [
@@ -91,6 +92,8 @@ export class DeviceCheckInService {
       .update(`${session.tenantId}:${session.imeiUnitId}`)
       .digest('hex');
 
+    const agentToken = issueDeviceAgentToken();
+
     const result = await this.prisma.$transaction(async (tx) => {
       let device = session.deviceId
         ? await tx.device.findFirst({
@@ -110,7 +113,13 @@ export class DeviceCheckInService {
             platform: session.platform,
             status: DeviceLifecycleStatus.ENROLLED,
             hardwareFingerprint,
+            agentTokenHash: agentToken.hash,
           },
+        });
+      } else {
+        device = await tx.device.update({
+          where: { id: device.id },
+          data: { agentTokenHash: agentToken.hash },
         });
       }
       await tx.deviceEnrollmentSession.update({
@@ -139,6 +148,7 @@ export class DeviceCheckInService {
       sessionId: session.id,
       deviceId: result.id,
       deviceOwner: true,
+      agentToken: agentToken.raw,
       lastErrorCode: null as string | null,
     };
   }

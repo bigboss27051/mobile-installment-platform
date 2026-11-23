@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException,
@@ -27,9 +28,12 @@ import {
   PAYMENT_GATEWAY,
   PaymentGatewayPort,
 } from '../common/payments/payment-gateway.port';
+import { IgnorableStripeEventError } from '../common/payments/stripe-payment.adapter';
 import { allocateFifo } from '../common/payments/allocate-fifo';
 import { parseThbMoneyString } from '../common/schedule/money';
 import { TenantContext } from '../common/tenant/tenant-context';
+import { PaymentUnlockOrchestrator } from '../devices/payment-unlock.orchestrator';
+import { LineNotifyService } from '../line/line-notify.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 type PaymentIntentRecord = Prisma.PaymentIntentGetPayload<
@@ -85,9 +89,13 @@ export type SandboxWebhookSummary = {
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject(PAYMENT_GATEWAY) private readonly gateway: PaymentGatewayPort,
+    private readonly paymentUnlock: PaymentUnlockOrchestrator,
+    private readonly lineNotify: LineNotifyService,
   ) {}
 
   async createIntent(
@@ -223,13 +231,28 @@ export class PaymentsService {
   async handleSandboxWebhook(
     rawBody: Buffer,
     headers: Record<string, string | string[] | undefined>,
-  ): Promise<SandboxWebhookSummary> {
+  ): Promise<SandboxWebhookSummary | { ignored: true; type: string }> {
+    return this.handleProviderWebhook(rawBody, headers);
+  }
+
+  async handleProviderWebhook(
+    rawBody: Buffer,
+    headers: Record<string, string | string[] | undefined>,
+  ): Promise<SandboxWebhookSummary | { ignored: true; type: string }> {
     const normalizedHeaders = this.normalizeHeaders(headers);
     if (!this.gateway.verifyWebhookSignature(normalizedHeaders, rawBody)) {
-      throw new UnauthorizedException('Invalid sandbox webhook signature.');
+      throw new UnauthorizedException('Invalid payment webhook signature.');
     }
 
-    const event = this.gateway.parseWebhookEvent(rawBody);
+    let event;
+    try {
+      event = this.gateway.parseWebhookEvent(rawBody);
+    } catch (error: unknown) {
+      if (error instanceof IgnorableStripeEventError) {
+        return { ignored: true, type: error.eventType };
+      }
+      throw error;
+    }
     const amount = this.parseWebhookAmount(event.amount);
 
     const existing = await this.findTransactionByProviderEventId(
@@ -240,7 +263,7 @@ export class PaymentsService {
     }
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      const summary = await this.prisma.$transaction(async (tx) => {
         const intent = await this.lockIntentByProviderRef(
           tx,
           event.providerRef,
@@ -414,9 +437,56 @@ export class PaymentsService {
               amount: allocation.amount,
             })),
             replay: false,
+            tenantId: intent.tenantId,
+            contractId: intent.contractId,
           },
         };
       });
+
+      if (
+        summary.data.status === PaymentTransactionStatus.SUCCEEDED &&
+        !summary.data.replay &&
+        'tenantId' in summary.data &&
+        'contractId' in summary.data
+      ) {
+        try {
+          await this.paymentUnlock.onVerifiedPayment({
+            tenantId: summary.data.tenantId as string,
+            contractId: summary.data.contractId as string,
+            paymentTransactionId: summary.data.transactionId,
+          });
+        } catch (unlockError: unknown) {
+          this.logger.error(
+            `payment-unlock failed tx=${summary.data.transactionId}`,
+            unlockError instanceof Error ? unlockError.stack : undefined,
+          );
+        }
+        try {
+          await this.lineNotify.onVerifiedPayment({
+            tenantId: summary.data.tenantId as string,
+            contractId: summary.data.contractId as string,
+            paymentTransactionId: summary.data.transactionId,
+            amount: summary.data.amount,
+          });
+        } catch (lineError: unknown) {
+          this.logger.error(
+            `line-notify failed tx=${summary.data.transactionId}`,
+            lineError instanceof Error ? lineError.stack : undefined,
+          );
+        }
+      }
+
+      const { tenantId: _t, contractId: _c, ...publicData } = summary.data as {
+        providerEventId: string;
+        transactionId: string;
+        amount: string;
+        status: PaymentTransactionStatus;
+        allocations: { scheduleItemId: string; amount: string }[];
+        replay: boolean;
+        tenantId?: string;
+        contractId?: string;
+      };
+      return { data: publicData };
     } catch (error: unknown) {
       if (this.isUniqueConstraintViolation(error)) {
         const replay = await this.findTransactionByProviderEventId(

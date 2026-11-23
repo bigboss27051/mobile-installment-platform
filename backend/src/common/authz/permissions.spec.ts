@@ -13,6 +13,11 @@ describe('permissionsForRole', () => {
         'devices.bind',
         'devices.unbind',
         'notifications.manage',
+        'devices.command',
+        'devices.location.read',
+        'line.config',
+        'line.link',
+        'line.notify',
       ]),
     );
     expect(hasPermission(PlatformRole.MERCHANT_OWNER, 'devices.unbind')).toBe(
@@ -34,6 +39,9 @@ describe('permissionsForRole', () => {
       false,
     );
     expect(
+      hasPermission(PlatformRole.MERCHANT_STAFF, 'devices.location.read'),
+    ).toBe(true);
+    expect(
       hasPermission(PlatformRole.MERCHANT_STAFF, 'applications.decide'),
     ).toBe(true);
     expect(
@@ -50,5 +58,26 @@ describe('permissionsForRole', () => {
   it('returns empty permissions when role is null', () => {
     expect(permissionsForRole(null)).toEqual([]);
     expect(hasPermission(null, 'devices.enroll')).toBe(false);
+  });
+
+  it('gives devices.policy.config to OWNER but not STAFF', () => {
+    expect(
+      hasPermission(PlatformRole.MERCHANT_OWNER, 'devices.policy.config'),
+    ).toBe(true);
+    expect(
+      hasPermission(PlatformRole.MERCHANT_STAFF, 'devices.policy.config'),
+    ).toBe(false);
+    expect(
+      hasPermission(PlatformRole.SUPER_ADMIN, 'devices.policy.config'),
+    ).toBe(true);
+  });
+
+  it('gives staff.branches.manage to OWNER but not STAFF', () => {
+    expect(
+      hasPermission(PlatformRole.MERCHANT_OWNER, 'staff.branches.manage'),
+    ).toBe(true);
+    expect(
+      hasPermission(PlatformRole.MERCHANT_STAFF, 'staff.branches.manage'),
+    ).toBe(false);
   });
 });
