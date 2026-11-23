@@ -44,9 +44,14 @@ docker compose up -d
 docker compose ps   # postgres should be healthy on 5433, redis on 6379
 corepack enable
 pnpm install
+ln -s ../.env backend/.env   # first-time setup on macOS/Linux; skip if it already exists
 pnpm --filter @mip/backend exec prisma migrate dev
 pnpm --filter @mip/backend start:dev
 ```
+
+Prisma CLI runs in `backend/` and does not load the root `.env` automatically.
+The ignored `backend/.env` symlink lets Prisma use the same configuration as NestJS
+without copying credentials.
 
 Health check:
 
