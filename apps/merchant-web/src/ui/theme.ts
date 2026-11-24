@@ -15,7 +15,8 @@ export const MIP_TOKENS = {
   pageMax: 1200,
   formMax: 720,
   loginMax: 420,
-  fontFamily: 'Inter, Sarabun, system-ui, sans-serif',
+  fontFamily:
+    '"IBM Plex Sans Thai", "Noto Sans Thai", Sarabun, "Leelawadee UI", Thonburi, system-ui, sans-serif',
 } as const;
 
 export const mipTheme = createTheme({
@@ -45,20 +46,98 @@ export const mipTheme = createTheme({
   shape: { borderRadius: MIP_TOKENS.radius },
   typography: {
     fontFamily: MIP_TOKENS.fontFamily,
-    h1: { fontSize: 24, fontWeight: 600 },
-    h2: { fontSize: 18, fontWeight: 600 },
-    body1: { fontSize: 15 },
-    body2: { fontSize: 14 },
-    caption: { fontSize: 12 },
+    fontSize: 15,
+    fontWeightRegular: 400,
+    fontWeightMedium: 500,
+    fontWeightBold: 700,
+    h1: {
+      fontFamily: 'var(--mip-font-heading)',
+      fontSize: 'var(--mip-font-size-3xl)',
+      fontWeight: 600,
+      lineHeight: 'var(--mip-leading-tight)',
+      letterSpacing: 'var(--mip-tracking-tight)',
+    },
+    h2: {
+      fontFamily: 'var(--mip-font-heading)',
+      fontSize: 'var(--mip-font-size-xl)',
+      fontWeight: 600,
+      lineHeight: 1.4,
+      letterSpacing: '-0.006em',
+    },
+    h3: {
+      fontFamily: 'var(--mip-font-heading)',
+      fontSize: 'var(--mip-font-size-lg)',
+      fontWeight: 600,
+      lineHeight: 1.45,
+    },
+    subtitle1: {
+      fontSize: 'var(--mip-font-size-lg)',
+      fontWeight: 500,
+      lineHeight: 'var(--mip-leading-normal)',
+    },
+    subtitle2: {
+      fontSize: 'var(--mip-font-size-md)',
+      fontWeight: 600,
+      lineHeight: 1.45,
+    },
+    body1: {
+      fontSize: 'var(--mip-font-size-lg)',
+      fontWeight: 400,
+      lineHeight: 'var(--mip-leading-relaxed)',
+    },
+    body2: {
+      fontSize: 'var(--mip-font-size-md)',
+      fontWeight: 400,
+      lineHeight: 'var(--mip-leading-normal)',
+    },
+    button: {
+      fontSize: 'var(--mip-font-size-md)',
+      fontWeight: 600,
+      lineHeight: 1.5,
+      letterSpacing: 'var(--mip-tracking-wide)',
+      textTransform: 'none',
+    },
+    caption: {
+      fontSize: 'var(--mip-font-size-xs)',
+      fontWeight: 400,
+      lineHeight: 1.45,
+      letterSpacing: 'var(--mip-tracking-wide)',
+    },
+    overline: {
+      fontSize: 'var(--mip-font-size-xs)',
+      fontWeight: 600,
+      lineHeight: 1.4,
+      letterSpacing: '0.04em',
+      textTransform: 'none',
+    },
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+        },
+        body: {
+          fontFamily: 'var(--mip-font)',
+          fontVariantNumeric: 'tabular-nums',
+        },
+        'button, input, select, textarea': {
+          fontFamily: 'inherit',
+        },
+      },
+    },
     MuiButton: {
       defaultProps: { size: 'medium' },
       styleOverrides: {
         root: {
           minHeight: MIP_TOKENS.inputHeight,
-          textTransform: 'none',
+          fontFamily: 'inherit',
+          fontSize: 'var(--mip-font-size-md)',
           fontWeight: 600,
+          lineHeight: 1.5,
+          letterSpacing: 'var(--mip-tracking-wide)',
+          textTransform: 'none',
         },
       },
     },
@@ -67,13 +146,109 @@ export const mipTheme = createTheme({
     },
     MuiInputBase: {
       styleOverrides: {
-        root: { minHeight: MIP_TOKENS.inputHeight },
+        root: {
+          minHeight: MIP_TOKENS.inputHeight,
+          fontFamily: 'inherit',
+          fontSize: 'var(--mip-input-size)',
+          lineHeight: 'var(--mip-leading-normal)',
+        },
+        input: {
+          fontVariantNumeric: 'tabular-nums',
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          fontSize: 'var(--mip-label-size)',
+          fontWeight: 500,
+          lineHeight: 1.45,
+        },
+      },
+    },
+    MuiFormHelperText: {
+      styleOverrides: {
+        root: {
+          fontSize: 'var(--mip-helper-size)',
+          fontWeight: 400,
+          lineHeight: 1.45,
+        },
       },
     },
     MuiTableCell: {
       styleOverrides: {
-        root: { fontSize: 14 },
-        head: { fontWeight: 600, backgroundColor: MIP_TOKENS.bg },
+        root: {
+          fontSize: 'var(--mip-font-size-md)',
+          lineHeight: 'var(--mip-leading-normal)',
+          fontVariantNumeric: 'tabular-nums',
+        },
+        head: {
+          fontSize: 'var(--mip-font-size-sm)',
+          fontWeight: 600,
+          letterSpacing: 'var(--mip-tracking-wide)',
+          lineHeight: 1.4,
+          color: MIP_TOKENS.textSecondary,
+          backgroundColor: MIP_TOKENS.bg,
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontFamily: 'inherit',
+          fontSize: 'var(--mip-font-size-xs)',
+          fontWeight: 500,
+          lineHeight: 1.45,
+          height: 'auto',
+        },
+        label: {
+          lineHeight: 1.45,
+          paddingTop: 2,
+          paddingBottom: 2,
+        },
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          fontSize: 'var(--mip-font-size-xl)',
+          fontWeight: 600,
+          lineHeight: 1.4,
+          letterSpacing: '-0.006em',
+        },
+      },
+    },
+    MuiDialogContentText: {
+      styleOverrides: {
+        root: {
+          fontSize: 'var(--mip-font-size-md)',
+          lineHeight: 'var(--mip-leading-relaxed)',
+        },
+      },
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          fontSize: 'var(--mip-font-size-xs)',
+          fontWeight: 500,
+          lineHeight: 1.45,
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        message: {
+          fontSize: 'var(--mip-font-size-md)',
+          lineHeight: 'var(--mip-leading-normal)',
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          fontSize: 'var(--mip-font-size-md)',
+          lineHeight: 'var(--mip-leading-normal)',
+        },
       },
     },
     MuiPaper: {

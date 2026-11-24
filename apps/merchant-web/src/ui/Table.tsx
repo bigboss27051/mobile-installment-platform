@@ -16,12 +16,21 @@ export function Table({ className, children, ...rest }: TableHTMLAttributes<HTML
             textAlign: 'left',
             padding: '8px 12px',
             borderBottom: `1px solid ${MIP_TOKENS.border}`,
-            fontSize: 14,
+            fontVariantNumeric: 'tabular-nums',
+          },
+          '& td': {
+            fontSize: 'var(--mip-font-size-md)',
+            fontWeight: 'var(--mip-weight-regular)',
+            lineHeight: 'var(--mip-leading-normal)',
             color: MIP_TOKENS.text,
           },
           '& th': {
             backgroundColor: MIP_TOKENS.bg,
-            fontWeight: 600,
+            fontSize: 'var(--mip-font-size-sm)',
+            fontWeight: 'var(--mip-weight-semibold)',
+            lineHeight: 1.4,
+            letterSpacing: 'var(--mip-tracking-wide)',
+            color: MIP_TOKENS.textSecondary,
           },
         }}
       >

@@ -21,10 +21,38 @@
   --mip-space-5: 24px;
   --mip-space-6: 32px;
   --mip-space-7: 48px;
-  --mip-font: Inter, Sarabun, system-ui, sans-serif;
-  --mip-title-size: 24px;
-  --mip-section-size: 18px;
-  --mip-label-size: 14px;
-  --mip-input-size: 15px;
-  --mip-helper-size: 12px;
+  /* One family for Thai + Latin so mixed strings share metrics. */
+  --mip-font: "IBM Plex Sans Thai", "Noto Sans Thai", Sarabun, "Leelawadee UI", Thonburi,
+    system-ui, sans-serif;
+  --mip-font-heading: var(--mip-font);
+  --mip-font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
+  --mip-font-size-xs: 12px;
+  --mip-font-size-sm: 13px;
+  --mip-font-size-md: 14px;
+  --mip-font-size-lg: 15px;
+  --mip-font-size-xl: 18px;
+  --mip-font-size-2xl: 20px;
+  --mip-font-size-3xl: 24px;
+  --mip-weight-regular: 400;
+  --mip-weight-medium: 500;
+  --mip-weight-semibold: 600;
+  --mip-weight-bold: 700;
+  --mip-leading-tight: 1.35;
+  --mip-leading-normal: 1.55;
+  --mip-leading-relaxed: 1.7;
+  --mip-tracking-tight: -0.011em;
+  --mip-tracking-normal: 0;
+  --mip-tracking-wide: 0.01em;
+  --mip-title-size: var(--mip-font-size-3xl);
+  --mip-section-size: var(--mip-font-size-xl);
+  --mip-label-size: var(--mip-font-size-md);
+  --mip-input-size: var(--mip-font-size-lg);
+  --mip-helper-size: var(--mip-font-size-xs);
+}
+
+@media (max-width: 767px) {
+  :root {
+    --mip-font-size-3xl: 22px;
+    --mip-font-size-2xl: 18px;
+  }
 }

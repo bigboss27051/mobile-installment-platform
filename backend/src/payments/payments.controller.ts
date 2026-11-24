@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/tenant/current-user.decorator';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { RecordCollectionDto } from './dto/record-collection.dto';
 import { PaymentsService } from './payments.service';
 
 @Controller()
@@ -37,6 +38,26 @@ export class PaymentsController {
       idempotencyKey,
     );
     return { data: intent };
+  }
+
+  @Post('contracts/:id/collections')
+  async recordCollection(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: RecordCollectionDto,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @CurrentUser() user: TenantContext,
+  ) {
+    if (!idempotencyKey?.trim()) {
+      throw new BadRequestException('Idempotency-Key header is required.');
+    }
+    const collection = await this.payments.recordCollection(
+      user,
+      id,
+      dto.amount,
+      dto.method,
+      idempotencyKey,
+    );
+    return { data: collection };
   }
 
   @Get('payment-intents/:id')

@@ -85,3 +85,4 @@
 | UI-MUI-004 | 2026-11-22 | **Adapter kit**: keep `./ui` export names and prop contracts; reimplement with MUI under the hood | Pages and tests stay stable; supersedes CSS-kit implementation path only | Accepted |
 | UI-MUI-005 | 2026-11-22 | **Logic freeze**: no API, auth, RBAC, validations, calculations, or handler behavior changes | Presentation-only pass; limits regression while restyling | Accepted |
 | UI-MUI-006 | 2026-11-22 | **No hybrid** of legacy custom CSS kit + ad-hoc MUI on pages; adapters are the single presentation surface | Avoids dual styling stacks and one-off MUI imports in route files | Accepted |
+| UI-008 | 2026-11-24 | Merchant Web type uses **one family**, IBM Plex Sans Thai (Thai + Latin), with CSS tokens for size, weight, and leading. Monospace only for JSON payloads | Inter + Sarabun split mixed strings across two metrics and clipped Thai vowels on tight MUI heading line-heights | Accepted |

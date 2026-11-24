@@ -73,6 +73,20 @@ export type PaymentIntentResponse = {
   updatedAt: Date;
 };
 
+export type CollectionMethod = 'CASH' | 'TRANSFER';
+
+export type StaffCollectionResponse = {
+  intentId: string;
+  transactionId: string;
+  amount: string;
+  method: CollectionMethod;
+  status: 'SUCCEEDED';
+  replay: boolean;
+  allocations: { scheduleItemId: string; amount: string }[];
+};
+
+const STAFF_COLLECTION_PROVIDER = 'staff';
+
 export type SandboxWebhookSummary = {
   data: {
     providerEventId: string;
@@ -199,6 +213,202 @@ export class PaymentsService {
       return this.toResponse(updatedIntent);
     } catch (error: unknown) {
       await this.markIntentFailed(tenantId, intent.id);
+      throw error;
+    }
+  }
+
+  async recordCollection(
+    ctx: TenantContext,
+    contractId: string,
+    amountInput: string,
+    method: CollectionMethod,
+    idempotencyKey: string | undefined,
+  ): Promise<StaffCollectionResponse> {
+    const tenantId = this.requireTenantId(ctx);
+    if (this.isCustomer(ctx)) {
+      throw new ForbiddenException(
+        'Customers cannot record counter collections.',
+      );
+    }
+    this.requireMutateRole(ctx);
+    const normalizedIdempotencyKey = this.requireIdempotencyKey(idempotencyKey);
+    const amount = this.parseIntentAmount(amountInput);
+    if (amount.lte(0)) {
+      throw new UnprocessableEntityException(
+        'Amount must be greater than 0 and not exceed outstanding balance.',
+      );
+    }
+
+    const existing = await this.findByIdempotencyKey(
+      tenantId,
+      normalizedIdempotencyKey,
+    );
+    if (existing) {
+      this.assertCollectionIdempotency(existing, contractId, amount, method);
+      return this.toStaffCollection(existing, true);
+    }
+
+    const contract = await this.prisma.contract.findFirst({
+      where: { id: contractId, tenantId },
+      select: { id: true, status: true },
+    });
+    if (!contract) {
+      throw new NotFoundException('Contract not found.');
+    }
+    if (contract.status !== ContractStatus.ACTIVE) {
+      throw new ConflictException(
+        'Collections can only be recorded for ACTIVE contracts.',
+      );
+    }
+
+    const outstanding = await this.computeOutstanding(tenantId, contract.id);
+    if (amount.gt(outstanding)) {
+      throw new UnprocessableEntityException(
+        'Amount must be greater than 0 and not exceed outstanding balance.',
+      );
+    }
+
+    const intentId = randomUUID();
+    const providerEventId = `staff:${intentId}`;
+    try {
+      const settled = await this.prisma.$transaction(async (tx) => {
+        const scheduleItems = await this.lockScheduleItemsForAllocation(
+          tx,
+          tenantId,
+          contract.id,
+        );
+        let allocations;
+        try {
+          allocations = allocateFifo(
+            scheduleItems.map((item) => ({
+              id: item.id,
+              seq: item.seq,
+              totalDue: item.totalDue.toFixed(2),
+              amountPaid: item.amountPaid.toFixed(2),
+              status: item.status,
+            })),
+            amount.toFixed(2),
+          );
+        } catch (error: unknown) {
+          throw new UnprocessableEntityException(
+            error instanceof Error
+              ? error.message
+              : 'Amount must be greater than 0 and not exceed outstanding balance.',
+          );
+        }
+
+        const intent = await tx.paymentIntent.create({
+          data: {
+            id: intentId,
+            tenantId,
+            contractId: contract.id,
+            amount,
+            currency: 'THB',
+            idempotencyKey: normalizedIdempotencyKey,
+            status: PaymentIntentStatus.SUCCEEDED,
+            provider: STAFF_COLLECTION_PROVIDER,
+            providerRef: method,
+            qrPayloadJson: Prisma.JsonNull,
+            createdByUserId: ctx.userId,
+            createdByCustomerId: null,
+          },
+        });
+
+        const transaction = await tx.paymentTransaction.create({
+          data: {
+            tenantId,
+            paymentIntentId: intent.id,
+            providerEventId,
+            amount,
+            status: PaymentTransactionStatus.SUCCEEDED,
+            rawEventJson: {
+              source: 'staff',
+              method,
+              recordedByUserId: ctx.userId,
+            },
+            verifiedAt: new Date(),
+          },
+        });
+
+        for (const allocation of allocations) {
+          await tx.paymentScheduleItem.update({
+            where: { id: allocation.scheduleItemId },
+            data: {
+              amountPaid: new Prisma.Decimal(allocation.nextAmountPaid),
+              status: allocation.nextStatus,
+            },
+          });
+        }
+
+        if (allocations.length > 0) {
+          await tx.allocation.createMany({
+            data: allocations.map((allocation) => ({
+              tenantId,
+              paymentTransactionId: transaction.id,
+              scheduleItemId: allocation.scheduleItemId,
+              amount: new Prisma.Decimal(allocation.amount),
+            })),
+          });
+        }
+
+        await tx.ledgerEntry.createMany({
+          data: [
+            {
+              tenantId,
+              paymentTransactionId: transaction.id,
+              domain: LedgerDomain.INSTALLMENT,
+              direction: LedgerDirection.DEBIT,
+              accountCode:
+                method === 'CASH' ? 'CASH_ON_HAND' : 'BANK_TRANSFER',
+              amount,
+            },
+            {
+              tenantId,
+              paymentTransactionId: transaction.id,
+              domain: LedgerDomain.INSTALLMENT,
+              direction: LedgerDirection.CREDIT,
+              accountCode: 'INSTALLMENT_RECEIVABLE',
+              amount,
+            },
+          ],
+        });
+
+        return { intent, transaction, allocations };
+      });
+
+      await this.notifyVerifiedPayment({
+        tenantId,
+        contractId: contract.id,
+        paymentTransactionId: settled.transaction.id,
+        amount: amount.toFixed(2),
+      });
+
+      return {
+        intentId: settled.intent.id,
+        transactionId: settled.transaction.id,
+        amount: amount.toFixed(2),
+        method,
+        status: 'SUCCEEDED',
+        replay: false,
+        allocations: settled.allocations.map((allocation) => ({
+          scheduleItemId: allocation.scheduleItemId,
+          amount: allocation.amount,
+        })),
+      };
+    } catch (error: unknown) {
+      if (error instanceof UnprocessableEntityException) {
+        throw error;
+      }
+      if (this.isUniqueConstraintViolation(error)) {
+        const winner = await this.findByIdempotencyKey(
+          tenantId,
+          normalizedIdempotencyKey,
+        );
+        if (winner) {
+          this.assertCollectionIdempotency(winner, contractId, amount, method);
+          return this.toStaffCollection(winner, true);
+        }
+      }
       throw error;
     }
   }
@@ -406,31 +616,12 @@ export class PaymentsService {
         'tenantId' in summary.data &&
         'contractId' in summary.data
       ) {
-        try {
-          await this.paymentUnlock.onVerifiedPayment({
-            tenantId: summary.data.tenantId as string,
-            contractId: summary.data.contractId as string,
-            paymentTransactionId: summary.data.transactionId,
-          });
-        } catch (unlockError: unknown) {
-          this.logger.error(
-            `payment-unlock failed tx=${summary.data.transactionId}`,
-            unlockError instanceof Error ? unlockError.stack : undefined,
-          );
-        }
-        try {
-          await this.lineNotify.onVerifiedPayment({
-            tenantId: summary.data.tenantId as string,
-            contractId: summary.data.contractId as string,
-            paymentTransactionId: summary.data.transactionId,
-            amount: summary.data.amount,
-          });
-        } catch (lineError: unknown) {
-          this.logger.error(
-            `line-notify failed tx=${summary.data.transactionId}`,
-            lineError instanceof Error ? lineError.stack : undefined,
-          );
-        }
+        await this.notifyVerifiedPayment({
+          tenantId: summary.data.tenantId as string,
+          contractId: summary.data.contractId as string,
+          paymentTransactionId: summary.data.transactionId,
+          amount: summary.data.amount,
+        });
       }
 
       const { tenantId: _t, contractId: _c, ...publicData } = summary.data as {
@@ -642,6 +833,90 @@ export class PaymentsService {
         throw new UnprocessableEntityException(error.message);
       }
       throw error;
+    }
+  }
+
+  private assertCollectionIdempotency(
+    intent: PaymentIntentRecord,
+    contractId: string,
+    amount: Prisma.Decimal,
+    method: CollectionMethod,
+  ): void {
+    if (
+      intent.contractId !== contractId ||
+      intent.amount.toFixed(2) !== amount.toFixed(2) ||
+      intent.provider !== STAFF_COLLECTION_PROVIDER ||
+      intent.providerRef !== method ||
+      intent.status !== PaymentIntentStatus.SUCCEEDED
+    ) {
+      throw new ConflictException(
+        'Idempotency-Key has already been used with a different payment intent payload.',
+      );
+    }
+  }
+
+  private async toStaffCollection(
+    intent: PaymentIntentRecord,
+    replay: boolean,
+  ): Promise<StaffCollectionResponse> {
+    const transaction = await this.prisma.paymentTransaction.findFirst({
+      where: { paymentIntentId: intent.id, tenantId: intent.tenantId },
+      include: { allocations: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (
+      !transaction ||
+      transaction.status !== PaymentTransactionStatus.SUCCEEDED
+    ) {
+      throw new ConflictException('Staff collection is not settled.');
+    }
+    const method = intent.providerRef === 'TRANSFER' ? 'TRANSFER' : 'CASH';
+    return {
+      intentId: intent.id,
+      transactionId: transaction.id,
+      amount: transaction.amount.toFixed(2),
+      method,
+      status: 'SUCCEEDED',
+      replay,
+      allocations: transaction.allocations.map((allocation) => ({
+        scheduleItemId: allocation.scheduleItemId,
+        amount: allocation.amount.toFixed(2),
+      })),
+    };
+  }
+
+  private async notifyVerifiedPayment(input: {
+    tenantId: string;
+    contractId: string;
+    paymentTransactionId: string | null;
+    amount: string;
+  }): Promise<void> {
+    if (!input.paymentTransactionId) {
+      return;
+    }
+    try {
+      await this.paymentUnlock.onVerifiedPayment({
+        tenantId: input.tenantId,
+        contractId: input.contractId,
+        paymentTransactionId: input.paymentTransactionId,
+      });
+    } catch (unlockError: unknown) {
+      this.logger.error(
+        `payment-unlock failed tx=${input.paymentTransactionId}`,
+        unlockError instanceof Error ? unlockError.stack : undefined,
+      );
+    }
+    try {
+      await this.lineNotify.onVerifiedPayment({
+        tenantId: input.tenantId,
+        contractId: input.contractId,
+        paymentTransactionId: input.paymentTransactionId,
+        amount: input.amount,
+      });
+    } catch (lineError: unknown) {
+      this.logger.error(
+        `line-notify failed tx=${input.paymentTransactionId}`,
+        lineError instanceof Error ? lineError.stack : undefined,
+      );
     }
   }
 

@@ -3,7 +3,8 @@
   padding-left: 1.25rem;
   display: grid;
   gap: var(--mip-space-2, 8px);
-  line-height: 1.45;
+  font-size: var(--mip-font-size-md);
+  line-height: var(--mip-leading-relaxed);
 }
 
 .mip-pre {
@@ -12,7 +13,11 @@
   color: #f8fafc;
   padding: var(--mip-space-3);
   border-radius: var(--mip-radius);
-  font-size: 12px;
+  font-family: var(--mip-font-mono);
+  font-size: var(--mip-font-size-xs);
+  font-weight: var(--mip-weight-regular);
+  line-height: var(--mip-leading-normal);
+  font-variant-numeric: tabular-nums;
   overflow-x: auto;
   max-width: var(--mip-form-max);
 }

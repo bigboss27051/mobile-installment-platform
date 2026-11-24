@@ -28,8 +28,9 @@ export function FormField({
         sx={{
           position: 'static',
           transform: 'none',
-          fontSize: 14,
-          fontWeight: 500,
+          fontSize: 'var(--mip-label-size)',
+          fontWeight: 'var(--mip-weight-medium)',
+          lineHeight: 1.45,
           color: 'text.primary',
           mb: 0,
         }}

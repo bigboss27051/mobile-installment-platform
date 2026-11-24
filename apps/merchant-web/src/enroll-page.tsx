@@ -395,8 +395,10 @@ export function EnrollPage({
               sx={{
                 height: 'auto',
                 borderRadius: `${MIP_TOKENS.radius}px`,
-                fontSize: 12,
-                fontWeight: 400,
+                fontSize: 'var(--mip-font-size-xs)',
+                fontWeight: 'var(--mip-weight-medium)',
+                lineHeight: 1.45,
+                letterSpacing: 'var(--mip-tracking-wide)',
                 ...{
                   ok: { bgcolor: '#dcfce7', color: '#166534' },
                   warn: { bgcolor: '#fef3c7', color: '#92400e' },

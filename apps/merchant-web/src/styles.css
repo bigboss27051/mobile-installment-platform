@@ -7,8 +7,20 @@
   background: var(--mip-bg);
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   margin: 0;
+  font-family: var(--mip-font);
+  font-size: var(--mip-font-size-lg);
+  font-weight: var(--mip-weight-regular);
+  line-height: var(--mip-leading-relaxed);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: break-word;
 }
 
 .lang-switch {
@@ -23,7 +35,10 @@ body {
   padding: 0 var(--mip-space-3);
   border: 1px solid var(--mip-border);
   border-radius: var(--mip-radius);
-  font-size: 12px;
+  font-size: var(--mip-font-size-sm);
+  font-weight: var(--mip-weight-medium);
+  line-height: var(--mip-leading-tight);
+  letter-spacing: var(--mip-tracking-normal);
   color: var(--mip-text);
   background: transparent;
   cursor: pointer;
@@ -40,7 +55,9 @@ body {
   display: flex;
   gap: var(--mip-space-2);
   align-items: flex-start;
-  font-size: 14px;
+  font-size: var(--mip-font-size-md);
+  font-weight: var(--mip-weight-regular);
+  line-height: var(--mip-leading-relaxed);
 }
 .check-row input {
   margin-top: 3px;

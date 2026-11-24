@@ -86,8 +86,10 @@ function navButtonSx(active: boolean) {
     cursor: 'pointer',
     textAlign: 'left',
     fontFamily: 'inherit',
-    fontSize: 14,
-    fontWeight: active ? 600 : 400,
+    fontSize: 'var(--mip-font-size-md)',
+    fontWeight: active ? 'var(--mip-weight-semibold)' : 'var(--mip-weight-medium)',
+    lineHeight: 'var(--mip-leading-normal)',
+    letterSpacing: '0.005em',
     color: '#fff',
     bgcolor: active ? 'primary.main' : 'transparent',
   } as const;
@@ -160,7 +162,17 @@ export function App() {
         },
       }}
     >
-      <Box sx={{ fontWeight: 700, mb: 1.5 }}>{t('nav.brand')}</Box>
+      <Box
+        sx={{
+          mb: 1.5,
+          fontSize: 'var(--mip-font-size-lg)',
+          fontWeight: 'var(--mip-weight-semibold)',
+          lineHeight: 'var(--mip-leading-tight)',
+          letterSpacing: 'var(--mip-tracking-tight)',
+        }}
+      >
+        {t('nav.brand')}
+      </Box>
       <LanguageSwitch />
       {PAGES.map((item) => (
         <Box
@@ -252,7 +264,8 @@ export function App() {
                   bgcolor: 'transparent',
                   color: 'inherit',
                   font: 'inherit',
-                  fontSize: 18,
+                  fontSize: 'var(--mip-font-size-xl)',
+                  fontWeight: 'var(--mip-weight-regular)',
                   lineHeight: 1,
                   cursor: 'pointer',
                 }}
