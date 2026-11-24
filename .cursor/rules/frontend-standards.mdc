@@ -12,3 +12,4 @@ alwaysApply: false
 - Call versioned APIs only; never embed secrets.
 - Consistent design system components; accessible forms.
 - Device enrollment UI (R2) follows docs/device-management/DEVICE-PROVISIONING-ENROLLMENT.md; never embed enrollment secrets in client source.
+- Never render a UUID. Show contract number, name, IMEI/serial, SKU, or a translated status. Keep the UUID only as a request id or form value.

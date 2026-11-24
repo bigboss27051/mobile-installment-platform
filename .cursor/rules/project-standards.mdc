@@ -19,3 +19,4 @@ alwaysApply: true
 - Do not claim Device Owner / MDM / live payments work without validation evidence.
 - Treat R2 as a Device Provisioning & Enrollment Platform (Phases 1–7). Android = custom DPC QR Device Owner (D-057); iOS = merchant-assisted Configurator/MDM (D-043). Follow docs/project-management/MASTER-EXECUTION-PLAN.md.
 - Enrollment tokens are short-lived; QR payloads contain no passwords or private keys; Play Protect disable is not a required step.
+- Never display a UUID. Staff, customer, and LINE text use a human identifier only: contract number (`C000001`), customer name, IMEI or serial, SKU, or a Thai status label. UUIDs stay in API paths and database keys (D-073, D-074).
