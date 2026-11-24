@@ -23,6 +23,17 @@ import { LineConfigService } from './line-config.service';
 import { LineInstallmentQueryService } from './line-installment-query.service';
 import { renderLineTemplate } from './line-template';
 
+const CONTRACT_STATUS_TH: Record<string, string> = {
+  DRAFT: 'ฉบับร่าง',
+  ACTIVE: 'เปิดใช้งาน',
+  CANCELLED: 'ยกเลิก',
+  CLOSED: 'ปิดสัญญา',
+};
+
+function contractStatusLabel(status: string): string {
+  return CONTRACT_STATUS_TH[status] ?? status;
+}
+
 @Injectable()
 export class LineNotifyService {
   private readonly logger = new Logger(LineNotifyService.name);
@@ -55,7 +66,7 @@ export class LineNotifyService {
       idempotencyKey: `payconfirm:${params.paymentTransactionId}`,
       vars: {
         customerName: contract.customer.fullName,
-        contractId: contract.id,
+        contractId: contract.contractNumber,
         amount: params.amount,
         outstandingBalance: (
           await this.installmentQuery.summarizeForCustomer(
@@ -66,7 +77,7 @@ export class LineNotifyService {
         ).selected?.outstandingBalance ?? '0.00',
         merchantName: await this.merchantName(params.tenantId),
         dueDate: '',
-        contractStatus: contract.status,
+        contractStatus: contractStatusLabel(contract.status),
       },
     });
   }
@@ -99,12 +110,12 @@ export class LineNotifyService {
       idempotencyKey: `reminder:${idempotencyKey}`,
       vars: {
         customerName: contract.customer.fullName,
-        contractId: contract.id,
+        contractId: contract.contractNumber,
         amount: selected.nextDueAmount ?? '0.00',
         dueDate: selected.nextDueDate ?? '-',
         outstandingBalance: selected.outstandingBalance,
         merchantName: await this.merchantName(tenantId),
-        contractStatus: contract.status,
+        contractStatus: contractStatusLabel(contract.status),
       },
     });
   }

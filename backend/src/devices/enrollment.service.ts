@@ -124,6 +124,18 @@ export class EnrollmentService {
     return { ...this.toPublic(created), enrollmentToken: token.raw };
   }
 
+  async findLatestOpen(ctx: TenantContext) {
+    const tenantId = this.requireTenant(ctx);
+    const session = await this.prisma.deviceEnrollmentSession.findFirst({
+      where: { tenantId, status: { in: OPEN_STATUSES } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!session) {
+      return null;
+    }
+    return this.toPublic(await this.expireIfNeeded(session));
+  }
+
   async getById(ctx: TenantContext, id: string) {
     const session = await this.findOwned(ctx, id);
     return this.toPublic(await this.expireIfNeeded(session));

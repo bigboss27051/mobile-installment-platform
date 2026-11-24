@@ -62,6 +62,7 @@ describe('PortalService', () => {
   it('returns outstandingBalance on contract detail', async () => {
     prisma.contract.findFirst.mockResolvedValue({
       id: 'c1',
+      contractNumber: 'C000001',
       status: ContractStatus.ACTIVE,
       principal: new Prisma.Decimal('12000.00'),
       downPayment: new Prisma.Decimal('2000.00'),
@@ -99,6 +100,7 @@ describe('PortalService', () => {
 
     const result = await service.getContract(customerCtx, 'c1');
 
+    expect(result.contractNumber).toBe('C000001');
     expect(result.outstandingBalance).toBe('1750.00');
     expect(result.scheduleItems).toHaveLength(2);
   });

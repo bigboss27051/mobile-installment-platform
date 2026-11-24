@@ -84,9 +84,9 @@ export function EnrollPage({
   apiError: (message: string) => string;
 }) {
   const { t } = useI18n();
-  const [contracts, setContracts] = useState<{ id: string; principal: string; termMonths: number }[]>(
-    [],
-  );
+  const [contracts, setContracts] = useState<
+    { id: string; contractNumber?: string; principal: string; termMonths: number }[]
+  >([]);
   const [contractsLoaded, setContractsLoaded] = useState(false);
   const [contractId, setContractId] = useState('');
   const [platform, setPlatform] = useState<'ANDROID' | 'IOS'>('ANDROID');
@@ -114,7 +114,13 @@ export function EnrollPage({
       try {
         const [rows, dpcStatus] = await Promise.all([
           apiRequest<
-            { id: string; status: string; principal: string; termMonths: number }[]
+            {
+              id: string;
+              contractNumber?: string;
+              status: string;
+              principal: string;
+              termMonths: number;
+            }[]
           >('/api/v1/contracts'),
           apiRequest<{ configured: boolean; missing: string[] }>(
             '/api/v1/devices/enrollment/dpc-config-status',
@@ -127,6 +133,16 @@ export function EnrollPage({
         );
         setDpcConfigured(dpcStatus.configured);
         setDpcMissing(dpcStatus.missing ?? []);
+        const open = await apiRequest<EnrollmentSession | null>(
+          '/api/v1/devices/enrollment-sessions/open',
+        ).catch(() => null);
+        if (open?.id) {
+          setSession(open);
+          setContractId(open.contractId);
+          if (open.platform === 'IOS' || open.platform === 'ANDROID') {
+            setPlatform(open.platform);
+          }
+        }
         onError(null);
       } catch (err) {
         onError(err instanceof ApiError ? apiError(err.message) : t('enroll.failed'));
@@ -387,7 +403,8 @@ export function EnrollPage({
               ) : null}
               {contracts.map((contract) => (
                 <option key={contract.id} value={contract.id}>
-                  {contract.principal} · {contract.termMonths}
+                  {contract.contractNumber ?? '—'} · {contract.termMonths} เดือน ·{' '}
+                  {contract.principal}
                 </option>
               ))}
             </Select>
@@ -488,7 +505,7 @@ export function EnrollPage({
 
       {session?.platform === 'ANDROID' && qr && viewStatus && showsAndroidQr(viewStatus) ? (
         <Section>
-          <p>{qr.format}</p>
+          <p>{t('enroll.qrKind')}</p>
           <p>{t('enroll.fingerprint', { hash: qr.payloadFingerprint })}</p>
           {qrHasWifiSecret ? (
             <Alert tone="error">{t('enroll.wifiForbidden')}</Alert>
@@ -553,7 +570,7 @@ export function EnrollPage({
                 {t('enroll.activateBind')}
               </Button>
             </Stack>
-            {deviceId ? <p>{t('enroll.bound', { id: deviceId })}</p> : null}
+            {deviceId ? <p>{t('enroll.bound')}</p> : null}
           </Stack>
         </Section>
       ) : null}

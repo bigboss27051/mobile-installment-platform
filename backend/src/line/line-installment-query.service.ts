@@ -3,8 +3,26 @@ import { Prisma, ScheduleItemStatus } from '@prisma/client';
 import { remainingBalance } from '../devices/lock-presentation';
 import { PrismaService } from '../prisma/prisma.service';
 
+const CONTRACT_STATUS_TH: Record<string, string> = {
+  DRAFT: 'ฉบับร่าง',
+  ACTIVE: 'เปิดใช้งาน',
+  CANCELLED: 'ยกเลิก',
+  CLOSED: 'ปิดสัญญา',
+};
+
+const SCHEDULE_STATUS_TH: Record<string, string> = {
+  PENDING: 'รอชำระ',
+  PARTIAL: 'ชำระบางส่วน',
+  PAID: 'ชำระครบ',
+};
+
+function thaiLabel(labels: Record<string, string>, code: string): string {
+  return labels[code] ?? code;
+}
+
 export type LineContractSummary = {
   contractId: string;
+  contractNumber: string;
   status: string;
   outstandingBalance: string;
   nextDueDate: string | null;
@@ -31,7 +49,13 @@ export class LineInstallmentQueryService {
   ): Promise<{ contracts: LineContractSummary[]; selected: LineContractSummary | null }> {
     const where: Prisma.ContractWhereInput = { tenantId, customerId };
     if (contractId) {
-      where.id = contractId;
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          contractId,
+        );
+      where.OR = isUuid
+        ? [{ id: contractId }, { contractNumber: contractId }]
+        : [{ contractNumber: contractId }];
     }
     const contracts = await this.prisma.contract.findMany({
       where,
@@ -43,7 +67,14 @@ export class LineInstallmentQueryService {
 
     const summaries: LineContractSummary[] = [];
     for (const contract of contracts) {
-      summaries.push(await this.summarizeContract(tenantId, contract.id, contract.status));
+      summaries.push(
+        await this.summarizeContract(
+          tenantId,
+          contract.id,
+          contract.contractNumber,
+          contract.status,
+        ),
+      );
     }
 
     const selected =
@@ -63,35 +94,36 @@ export class LineInstallmentQueryService {
     if (summaries.length > 1) {
       const lines = summaries.map(
         (s, i) =>
-          `${i + 1}) ${s.contractId.slice(0, 8)}… คงเหลือ ${s.outstandingBalance} บาท (${s.status})`,
+          `${i + 1}) ${s.contractNumber} คงเหลือ ${s.outstandingBalance} บาท (${thaiLabel(CONTRACT_STATUS_TH, s.status)})`,
       );
-      return `คุณมีหลายสัญญา ส่ง SELECT <เลข> หรือ BALANCE <contractId>\n${lines.join('\n')}`;
+      return `คุณมีหลายสัญญา ส่ง ยอด ตามด้วยเลขที่สัญญา เช่น ยอด C000001\n${lines.join('\n')}`;
     }
     const s = summaries[0];
-    return `สัญญา ${s.contractId}\nสถานะ ${s.status}\nยอดคงเหลือ ${s.outstandingBalance} บาท\nงวดถัดไป ${s.nextDueDate ?? '-'} (${s.nextDueAmount ?? '-'} บาท)\nชำระแล้ว ${s.paidCount} / คงเหลือ ${s.remainingCount} งวด`;
+    return `สัญญา ${s.contractNumber}\nสถานะ ${thaiLabel(CONTRACT_STATUS_TH, s.status)}\nยอดคงเหลือ ${s.outstandingBalance} บาท\nงวดถัดไป ${s.nextDueDate ?? '-'} (${s.nextDueAmount ?? '-'} บาท)\nชำระแล้ว ${s.paidCount} / คงเหลือ ${s.remainingCount} งวด`;
   }
 
   formatNextReply(s: LineContractSummary): string {
     if (!s.nextDueDate) {
-      return `สัญญา ${s.contractId}: ไม่มีงวดค้างชำระ`;
+      return `สัญญา ${s.contractNumber}: ไม่มีงวดค้างชำระ`;
     }
-    return `สัญญา ${s.contractId}\nงวดถัดไป ${s.nextDueDate}\nจำนวน ${s.nextDueAmount} บาท\nยอดคงเหลือรวม ${s.outstandingBalance} บาท`;
+    return `สัญญา ${s.contractNumber}\nงวดถัดไป ${s.nextDueDate}\nจำนวน ${s.nextDueAmount} บาท\nยอดคงเหลือรวม ${s.outstandingBalance} บาท`;
   }
 
   formatHistoryReply(s: LineContractSummary): string {
     if (s.history.length === 0) {
-      return `สัญญา ${s.contractId}: ยังไม่มีประวัติงวด`;
+      return `สัญญา ${s.contractNumber}: ยังไม่มีประวัติงวด`;
     }
     const lines = s.history.map(
       (h) =>
-        `#${h.seq} ${h.dueDate} ${h.status} due=${h.totalDue} paid=${h.amountPaid}`,
+        `งวด ${h.seq} ${h.dueDate} ${thaiLabel(SCHEDULE_STATUS_TH, h.status)} ครบกำหนด ${h.totalDue} ชำระแล้ว ${h.amountPaid}`,
     );
-    return `ประวัติงวด (ล่าสุด ${s.history.length})\n${lines.join('\n')}`;
+    return `สัญญา ${s.contractNumber}\nประวัติงวด (ล่าสุด ${s.history.length})\n${lines.join('\n')}`;
   }
 
   private async summarizeContract(
     tenantId: string,
     contractId: string,
+    contractNumber: string,
     status: string,
   ): Promise<LineContractSummary> {
     const items = await this.prisma.paymentScheduleItem.findMany({
@@ -132,6 +164,7 @@ export class LineInstallmentQueryService {
 
     return {
       contractId,
+      contractNumber,
       status,
       outstandingBalance: outstanding.toFixed(2),
       nextDueDate,

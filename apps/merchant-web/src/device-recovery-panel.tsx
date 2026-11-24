@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
+import { displayStatus } from './i18n';
 import { useI18n } from './i18n-context';
 import { Alert, Button, FormField, Input, Section, Select } from './ui';
 import { MIP_TOKENS } from './ui/theme';
@@ -61,7 +62,7 @@ export function DeviceRecoveryPanel({
       <p>{t('deviceRecovery.hint')}</p>
       {error ? <Alert tone="error">{error}</Alert> : null}
       {lastId ? (
-        <Alert tone="success">{t('deviceRecovery.approved', { id: lastId })}</Alert>
+        <Alert tone="success">{t('deviceRecovery.approved')}</Alert>
       ) : null}
       <Stack component="form" spacing={2} sx={{ maxWidth: MIP_TOKENS.formMax }} onSubmit={onSubmit}>
         <FormField label={t('deviceRecovery.type')} htmlFor="device-recovery-type" required>
@@ -72,7 +73,7 @@ export function DeviceRecoveryPanel({
           >
             {RECOVERY_TYPES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {displayStatus(t, 'recovery', value)}
               </option>
             ))}
           </Select>

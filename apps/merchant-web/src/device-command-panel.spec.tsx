@@ -85,6 +85,7 @@ describe('DeviceCommandPanel', () => {
       type: 'START_PACKAGE_SUSPEND',
       reason: 'lab overdue restrict',
     });
-    expect(container.textContent).toContain('cmd-lab-1');
+    expect(container.textContent).toContain('ส่งคำสั่งแล้ว รอเครื่องยืนยัน');
+    expect(container.textContent).not.toContain('cmd-lab-1');
   });
 });

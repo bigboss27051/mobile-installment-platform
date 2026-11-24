@@ -47,6 +47,9 @@ describe('EnrollPage QR issue button', () => {
     vi.stubGlobal('fetch', fetchMock);
     const qrCalls: string[] = [];
     fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (String(path).includes('/enrollment-sessions/open')) {
+        return jsonResponse(200, { data: null });
+      }
       if (
         (init?.method ?? 'GET') === 'GET' &&
         String(path).includes('/api/v1/devices/enrollment/dpc-config-status')
@@ -162,6 +165,9 @@ describe('EnrollPage QR issue button', () => {
   it('disables Android create when DPC config is incomplete', async () => {
     vi.stubGlobal('fetch', fetchMock);
     fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (String(path).includes('/enrollment-sessions/open')) {
+        return jsonResponse(200, { data: null });
+      }
       if (String(path).includes('/dpc-config-status')) {
         return jsonResponse(200, {
           data: {
@@ -207,6 +213,9 @@ describe('EnrollPage QR issue button', () => {
   it('blocks create session until Android FRP checklist is complete', async () => {
     vi.stubGlobal('fetch', fetchMock);
     fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (String(path).includes('/enrollment-sessions/open')) {
+        return jsonResponse(200, { data: null });
+      }
       if (String(path).includes('/dpc-config-status')) {
         return jsonResponse(200, { data: { configured: true, missing: [] } });
       }
@@ -269,7 +278,11 @@ describe('EnrollPage QR issue button', () => {
     });
     expect(errors.at(-1)).toMatch(/FRP/);
     expect(
-      fetchMock.mock.calls.some((call) => String(call[0]).includes('enrollment-sessions')),
+      fetchMock.mock.calls.some(
+        (call) =>
+          String(call[0]).includes('/api/v1/devices/enrollment-sessions') &&
+          !String(call[0]).includes('/open'),
+      ),
     ).toBe(false);
 
     await checkConsentAndFrp(container);
@@ -277,7 +290,60 @@ describe('EnrollPage QR issue button', () => {
       form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     });
     expect(
-      fetchMock.mock.calls.some((call) => String(call[0]).includes('enrollment-sessions')),
+      fetchMock.mock.calls.some(
+        (call) =>
+          (call[1] as RequestInit | undefined)?.method === 'POST' &&
+          String(call[0]).includes('/api/v1/devices/enrollment-sessions'),
+      ),
     ).toBe(true);
+  });
+
+  it('shows refresh and activate when an open session is resumed', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockImplementation((path: string) => {
+      if (String(path).includes('/enrollment-sessions/open')) {
+        return jsonResponse(200, {
+          data: {
+            id: '1674efea-1d9e-4ed5-8074-ad4d371e6ba2',
+            status: 'ENROLLING',
+            platform: 'ANDROID',
+            expiresAt: future,
+            contractId: '22222222-2222-4222-8222-222222222222',
+            lastErrorCode: null,
+          },
+        });
+      }
+      if (String(path).includes('/dpc-config-status')) {
+        return jsonResponse(200, { data: { configured: true, missing: [] } });
+      }
+      if (String(path).includes('/api/v1/contracts')) {
+        return jsonResponse(200, {
+          data: [
+            {
+              id: '22222222-2222-4222-8222-222222222222',
+              status: 'ACTIVE',
+              principal: '8000.00',
+              termMonths: 6,
+            },
+          ],
+        });
+      }
+      return jsonResponse(200, { data: null });
+    });
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <EnrollPage onError={() => undefined} apiError={(message) => message} />
+        </I18nProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain('รีเฟรชสถานะ');
+    expect(container.textContent).toContain('เปิดใช้งานและผูกสัญญา');
+    expect(container.textContent).toContain('1674efea-1d9e-4ed5-8074-ad4d371e6ba2');
   });
 });

@@ -27,6 +27,7 @@ export type PortalScheduleItem = {
 
 export type PortalContractListItem = {
   id: string;
+  contractNumber: string;
   status: string;
   principal: string;
   financedAmount: string;
@@ -49,6 +50,7 @@ export class PortalService {
     });
     return contracts.map((contract) => ({
       id: contract.id,
+      contractNumber: contract.contractNumber,
       status: contract.status,
       principal: contract.principal.toFixed(2),
       financedAmount: contract.financedAmount.toFixed(2),
@@ -83,6 +85,7 @@ export class PortalService {
 
     return {
       id: contract.id,
+      contractNumber: contract.contractNumber,
       status: contract.status,
       principal: contract.principal.toFixed(2),
       downPayment: contract.downPayment.toFixed(2),

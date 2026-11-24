@@ -8,6 +8,29 @@ import 'outstanding_pay.dart';
 import 'payment_status.dart';
 import 'promptpay_qr.dart';
 
+String contractNumberOf(Map<String, dynamic> row) {
+  final number = row['contractNumber'];
+  if (number is String && number.isNotEmpty) {
+    return number;
+  }
+  return '—';
+}
+
+String contractStatusLabel(String? status) {
+  switch (status) {
+    case 'DRAFT':
+      return 'ฉบับร่าง';
+    case 'ACTIVE':
+      return 'เปิดใช้งาน';
+    case 'CANCELLED':
+      return 'ยกเลิก';
+    case 'CLOSED':
+      return 'ปิดสัญญา';
+    default:
+      return status ?? '—';
+  }
+}
+
 void main() {
   runApp(const CustomerApp());
 }
@@ -196,9 +219,9 @@ class _ContractsPageState extends State<ContractsPage> {
                   itemBuilder: (context, index) {
                     final row = rows[index] as Map<String, dynamic>;
                     return ListTile(
-                      title: Text(row['id'] as String),
+                      title: Text(contractNumberOf(row)),
                       subtitle: Text(
-                        '${row['status']} · ${row['financedAmount']} ${row['currency']}',
+                        '${contractStatusLabel(row['status'] as String?)} · ${row['financedAmount']} ${row['currency']}',
                       ),
                       onTap: () {
                         Navigator.of(context).push(
@@ -261,13 +284,15 @@ class _ContractDetailPageState extends State<ContractDetailPage> {
         .cast<Map<String, dynamic>>();
     final paid = isServerConfirmedPaid(intent?['status'] as String?);
     return Scaffold(
-      appBar: AppBar(title: const Text('Contract')),
+      appBar: AppBar(
+        title: Text('สัญญา ${contractNumberOf(contract ?? <String, dynamic>{})}'),
+      ),
       body: contract == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                Text('Status ${contract!['status']}'),
+                Text('สถานะ ${contractStatusLabel(contract!['status'] as String?)}'),
                 Text(
                   'Outstanding ${contract!['outstandingBalance'] ?? '—'} ${contract!['currency']}',
                 ),

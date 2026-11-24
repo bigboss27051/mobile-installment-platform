@@ -64,10 +64,11 @@ describe('DeviceStatusPanel', () => {
     });
 
     expect(fetchMock).toHaveBeenCalled();
-    expect(container.textContent).toContain('LOCK');
-    expect(container.textContent).toContain('LOCK_TASK');
+    expect(container.textContent).toContain('ล็อก');
+    expect(container.textContent).toContain('ล็อกหน้าจอ');
     expect(container.textContent).toContain('2026-11-21T12:00:00.000Z');
     expect(container.textContent).toContain('13.75630');
-    expect(container.textContent).toContain('NETWORK');
+    expect(container.textContent).toContain('เครือข่าย');
+    expect(container.textContent).not.toContain('705f8cff-0000-4000-8000-000000000001');
   });
 });

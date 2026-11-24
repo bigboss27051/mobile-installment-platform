@@ -680,6 +680,7 @@ model ApprovalAction {
 model Contract {
   id             String         @id @default(uuid()) @db.Uuid
   tenantId       String         @map("tenant_id") @db.Uuid
+  contractNumber String         @map("contract_number")
   applicationId  String         @map("application_id") @db.Uuid
   customerId     String         @map("customer_id") @db.Uuid
   imeiUnitId     String         @map("imei_unit_id") @db.Uuid
@@ -706,6 +707,7 @@ model Contract {
   deviceActivations DeviceActivation[]
   deviceContractBindings DeviceContractBinding[]
 
+  @@unique([tenantId, contractNumber])
   @@index([tenantId, status])
   @@index([tenantId, applicationId])
   @@map("contracts")

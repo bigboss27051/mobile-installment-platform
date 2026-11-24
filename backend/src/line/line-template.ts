@@ -6,9 +6,9 @@ export function renderLineTemplate(body: string, vars: LineTemplateVars): string
 
 export const DEFAULT_LINE_TEMPLATES: Record<string, string> = {
   PAYMENT_CONFIRMATION:
-    'สวัสดี {{customerName}} ได้รับการชำระ {{amount}} บาท สำหรับสัญญา {{contractId}} แล้ว ยอดคงเหลือ {{outstandingBalance}} บาท — {{merchantName}}',
+    'สวัสดี {{customerName}} ได้รับการชำระ {{amount}} บาท สำหรับเลขที่สัญญา {{contractId}} แล้ว ยอดคงเหลือ {{outstandingBalance}} บาท — {{merchantName}}',
   PAYMENT_REMINDER:
-    'สวัสดี {{customerName}} งวดถัดไปครบกำหนด {{dueDate}} จำนวน {{amount}} บาท สัญญา {{contractId}} ยอดคงเหลือ {{outstandingBalance}} บาท — {{merchantName}}',
+    'สวัสดี {{customerName}} งวดถัดไปครบกำหนด {{dueDate}} จำนวน {{amount}} บาท เลขที่สัญญา {{contractId}} ยอดคงเหลือ {{outstandingBalance}} บาท — {{merchantName}}',
   CONTRACT_INFO:
-    'สัญญา {{contractId}} สถานะ {{contractStatus}} ยอดคงเหลือ {{outstandingBalance}} บาท — {{merchantName}}',
+    'เลขที่สัญญา {{contractId}} สถานะ {{contractStatus}} ยอดคงเหลือ {{outstandingBalance}} บาท — {{merchantName}}',
 };

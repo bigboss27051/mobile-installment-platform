@@ -264,4 +264,28 @@ describe('EnrollmentService', () => {
       NotFoundException,
     );
   });
+
+  it('returns the newest open session so a reloaded enroll page can resume it', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      id: 'sess-open',
+      status: 'ENROLLING',
+      platform: 'ANDROID',
+      expiresAt: new Date(Date.now() + 60_000),
+      contractId: 'c1',
+      qrFingerprint: null,
+      lastErrorCode: null,
+    });
+
+    const found = await service.findLatestOpen(tenantCtx);
+
+    expect(found?.id).toBe('sess-open');
+    expect(found?.status).toBe('ENROLLING');
+    expect(prisma.deviceEnrollmentSession.findFirst).toHaveBeenCalledWith({
+      where: {
+        tenantId: 'tenant-a',
+        status: { in: expect.arrayContaining(['ENROLLING', 'QR_GENERATED']) },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  });
 });

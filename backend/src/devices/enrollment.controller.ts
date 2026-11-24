@@ -48,6 +48,13 @@ export class EnrollmentController {
     return { data: session };
   }
 
+  @Get('open')
+  @RequirePermissions('devices.enroll')
+  async open(@CurrentUser() user: TenantContext) {
+    const session = await this.enrollment.findLatestOpen(user);
+    return { data: session };
+  }
+
   @Get(':id')
   async getById(
     @Param('id', new ParseUUIDPipe()) id: string,

@@ -27,6 +27,7 @@ import { KycPanel } from './kyc-panel';
 import { LineLinkPanel } from './line-link-panel';
 import { LineSettingsPage } from './line-settings-page';
 import { PolicyPage } from './policy-page';
+import { displayStatus } from './i18n';
 import { LanguageSwitch, useI18n } from './i18n-context';
 import {
   Alert,
@@ -395,7 +396,7 @@ function ProductsPage({
   const { t } = useI18n();
   const [rows, setRows] = useState<{ id: string; name: string; brand: string }[]>([]);
   const [variants, setVariants] = useState<
-    { id: string; sku: string; color: string; storage: string; productName: string }[]
+    { id: string; sku: string; color: string; storage: string; price: string; productName: string }[]
   >([]);
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -416,7 +417,7 @@ function ProductsPage({
         await Promise.all(
           products.map(async (product) => {
             const items = await apiRequest<
-              { id: string; sku: string; color: string; storage: string }[]
+              { id: string; sku: string; color: string; storage: string; price: string }[]
             >(`/api/v1/products/${product.id}/variants`);
             return items.map((item) => ({ ...item, productName: product.name }));
           }),
@@ -565,7 +566,7 @@ function ProductsPage({
                     {variant.productName} {variant.color} {variant.storage}
                   </td>
                   <td>{variant.sku}</td>
-                  <td>{variant.id}</td>
+                  <td>{variant.price}</td>
                 </tr>
               ))}
             </tbody>
@@ -758,7 +759,7 @@ function InventoryPage({
                 <tr key={row.id}>
                   <td>{row.imei ?? '—'}</td>
                   <td>{row.serial ?? '—'}</td>
-                  <td>{row.status}</td>
+                  <td>{displayStatus(t, 'imei', row.status)}</td>
                 </tr>
               ))}
             </tbody>
@@ -942,6 +943,7 @@ function ApplicationsPage({
 }) {
   const { t } = useI18n();
   const [rows, setRows] = useState<{ id: string; status: string; customerId: string }[]>([]);
+  const [customerNames, setCustomerNames] = useState<Record<string, string>>({});
   const [customers, setCustomers] = useState<{ id: string; fullName: string; phone: string }[]>([]);
   const [devices, setDevices] = useState<{ id: string; imei: string | null; serial: string | null }[]>(
     [],
@@ -979,6 +981,9 @@ function ApplicationsPage({
       );
       const eligible = customerRows.filter((customer) => approvedCustomerIds.has(customer.id));
       setRows(apps);
+      setCustomerNames(
+        Object.fromEntries(customerRows.map((customer) => [customer.id, customer.fullName])),
+      );
       setPlans(planRows);
       setCustomers(eligible);
       setDevices(stock);
@@ -1115,8 +1120,8 @@ function ApplicationsPage({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.id}</td>
-                  <td>{row.status}</td>
+                  <td>{customerNames[row.customerId] ?? '—'}</td>
+                  <td>{displayStatus(t, 'application', row.status)}</td>
                   <td>
                     <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                       <Button
@@ -1209,7 +1214,9 @@ function ContractsPage({
   apiError: (message: string) => string;
 }) {
   const { t } = useI18n();
-  const [rows, setRows] = useState<{ id: string; status: string; applicationId: string }[]>([]);
+  const [rows, setRows] = useState<
+    { id: string; contractNumber: string; status: string; applicationId: string; customerId: string }[]
+  >([]);
   const [approvedApps, setApprovedApps] = useState<{ id: string; customerId: string; status: string }[]>(
     [],
   );
@@ -1217,6 +1224,7 @@ function ContractsPage({
   const [applicationId, setApplicationId] = useState('');
   const [selected, setSelected] = useState<{
     id: string;
+    contractNumber: string;
     status: string;
     scheduleItems: ScheduleItem[];
   } | null>(null);
@@ -1237,7 +1245,15 @@ function ContractsPage({
     setLoading(true);
     try {
       const [contracts, applications, customerRows] = await Promise.all([
-        apiRequest<{ id: string; status: string; applicationId: string }[]>('/api/v1/contracts'),
+        apiRequest<
+          {
+            id: string;
+            contractNumber: string;
+            status: string;
+            applicationId: string;
+            customerId: string;
+          }[]
+        >('/api/v1/contracts'),
         apiRequest<{ id: string; status: string; customerId: string }[]>('/api/v1/applications'),
         apiRequest<{ id: string; fullName: string }[]>('/api/v1/customers'),
       ]);
@@ -1375,7 +1391,8 @@ function ContractsPage({
               ) : null}
               {approvedApps.map((application) => (
                 <option key={application.id} value={application.id}>
-                  {customerNames[application.customerId] ?? application.id} · {application.status}
+                  {customerNames[application.customerId] ?? '—'} ·{' '}
+                  {displayStatus(t, 'application', application.status)}
                 </option>
               ))}
             </Select>
@@ -1397,6 +1414,7 @@ function ContractsPage({
             <thead>
               <tr>
                 <th>{t('contracts.colId')}</th>
+                <th>{t('contracts.colCustomer')}</th>
                 <th>{t('contracts.colStatus')}</th>
                 <th></th>
               </tr>
@@ -1404,8 +1422,9 @@ function ContractsPage({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.id}</td>
-                  <td>{row.status}</td>
+                  <td>{row.contractNumber}</td>
+                  <td>{customerNames[row.customerId] ?? '—'}</td>
+                  <td>{displayStatus(t, 'contract', row.status)}</td>
                   <td>
                     <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                       <Button
@@ -1453,8 +1472,8 @@ function ContractsPage({
         )}
       </Section>
       {selected ? (
-        <Section title={t('contracts.detailTitle', { id: selected.id })}>
-          <p>{t('contracts.status', { status: selected.status })}</p>
+        <Section title={t('contracts.detailTitle', { id: selected.contractNumber })}>
+          <p>{t('contracts.status', { status: displayStatus(t, 'contract', selected.status) })}</p>
           <Table>
             <thead>
               <tr>
@@ -1473,7 +1492,7 @@ function ContractsPage({
                     <td>{item.seq}</td>
                     <td>{item.totalDue}</td>
                     <td>{item.amountPaid}</td>
-                    <td>{item.status}</td>
+                    <td>{displayStatus(t, 'schedule', item.status)}</td>
                     <td>
                       <Button
                         type="button"
@@ -1593,7 +1612,9 @@ function ContractsPage({
                     promptPay.status === 'EXPIRED'
                   ? t('contracts.promptPayFailed')
                   : t('contracts.promptPayPending')}{' '}
-              {t('contracts.promptPayStatus', { status: promptPay.status })}
+              {t('contracts.promptPayStatus', {
+                status: displayStatus(t, 'intent', promptPay.status),
+              })}
             </Alert>
           ) : null}
           {promptPayError ? <Alert tone="error">{promptPayError}</Alert> : null}

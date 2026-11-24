@@ -14,6 +14,7 @@ import { ContractsService } from './contracts.service';
 describe('ContractsService', () => {
   const prisma = {
     $transaction: jest.fn(),
+    $executeRaw: jest.fn(),
     application: { findFirst: jest.fn() },
     imeiUnit: { findFirst: jest.fn(), updateMany: jest.fn() },
     stockMovement: { create: jest.fn() },
@@ -100,6 +101,7 @@ describe('ContractsService', () => {
     prisma.contract.findFirst.mockResolvedValue(null);
     prisma.contract.create.mockResolvedValue({
       id: 'contract-1',
+      contractNumber: 'C000001',
       tenantId: 'tenant-a',
       applicationId: 'app-1',
       customerId: 'customer-1',
@@ -149,10 +151,18 @@ describe('ContractsService', () => {
     ).resolves.toEqual(
       expect.objectContaining({
         id: 'contract-1',
+        contractNumber: 'C000001',
         status: ContractStatus.DRAFT,
         financedAmount: '10000.00',
         version: expect.objectContaining({
           version: 1,
+        }),
+      }),
+    );
+    expect(prisma.contract.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          contractNumber: 'C000001',
         }),
       }),
     );

@@ -3,6 +3,7 @@ import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
 import { DeviceCommandPanel } from './device-command-panel';
 import { DeviceRecoveryPanel } from './device-recovery-panel';
+import { displayStatus } from './i18n';
 import { useI18n } from './i18n-context';
 import { Alert, Section } from './ui';
 import { MIP_TOKENS } from './ui/theme';
@@ -82,16 +83,12 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
         {dash ? (
           <Stack component="dl" spacing={2} sx={{ maxWidth: MIP_TOKENS.formMax }}>
             <div>
-              <dt>{t('deviceStatus.id')}</dt>
-              <dd>{dash.id}</dd>
-            </div>
-            <div>
               <dt>{t('deviceStatus.desired')}</dt>
-              <dd>{dash.desiredPresentation}</dd>
+              <dd>{displayStatus(t, 'presentation', dash.desiredPresentation)}</dd>
             </div>
             <div>
               <dt>{t('deviceStatus.platform')}</dt>
-              <dd>{dash.platformState}</dd>
+              <dd>{displayStatus(t, 'enforcement', dash.platformState)}</dd>
             </div>
             <div>
               <dt>{t('deviceStatus.policyVersion')}</dt>
@@ -105,9 +102,11 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
               <dt>{t('deviceStatus.lastKnownLocation')}</dt>
               <dd>
                 {loc
-                  ? `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} · ${loc.source} · ±${
-                      loc.accuracyMeters ?? '?'
-                    }m · ${loc.capturedAt}`
+                  ? `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} · ${displayStatus(
+                      t,
+                      'location',
+                      loc.source,
+                    )} · ±${loc.accuracyMeters ?? '?'}m · ${loc.capturedAt}`
                   : t('deviceStatus.lastKnownLocationNone')}
               </dd>
             </div>
@@ -115,10 +114,12 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
               <dt>{t('deviceStatus.lastCommand')}</dt>
               <dd>
                 {dash.lastCommand
-                  ? `${dash.lastCommand.type} · ${dash.lastCommand.status}${
-                      dash.lastCommand.resultCode
-                        ? ` · ${dash.lastCommand.resultCode}`
-                        : ''
+                  ? `${displayStatus(t, 'command', dash.lastCommand.type)} · ${displayStatus(
+                      t,
+                      'commandStatus',
+                      dash.lastCommand.status,
+                    )}${
+                      dash.lastCommand.resultCode ? ` · ${dash.lastCommand.resultCode}` : ''
                     }`
                   : t('deviceStatus.lastCommandNone')}
               </dd>
@@ -137,7 +138,8 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
           <ul>
             {history.slice(0, 20).map((s) => (
               <li key={s.id}>
-                {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · {s.source} · {s.capturedAt}
+                {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · {displayStatus(t, 'location', s.source)} ·{' '}
+                {s.capturedAt}
               </li>
             ))}
           </ul>

@@ -92,6 +92,7 @@ describe('DeviceRecoveryPanel', () => {
       type: 'UNENROLL',
       reason: 'lab unenroll after payoff',
     });
-    expect(container.textContent).toContain('rec-lab-1');
+    expect(container.textContent).toContain('บันทึกคำขอกู้คืนแล้ว');
+    expect(container.textContent).not.toContain('rec-lab-1');
   });
 });

@@ -13,7 +13,7 @@ describe('LineInstallmentQueryService', () => {
 
   it('formats balance for a single contract from schedule remainders', async () => {
     prisma.contract.findMany.mockResolvedValue([
-      { id: 'c1', status: 'ACTIVE' },
+      { id: 'c1', contractNumber: 'C000001', status: 'ACTIVE' },
     ]);
     prisma.paymentScheduleItem.findMany.mockResolvedValue([
       {
@@ -37,6 +37,10 @@ describe('LineInstallmentQueryService', () => {
     expect(selected?.nextDueDate).toBe('2026-02-01');
     expect(selected?.paidCount).toBe(1);
     expect(selected?.remainingCount).toBe(1);
-    expect(service.formatBalanceReply([selected!])).toContain('1000.00');
+    const reply = service.formatBalanceReply([selected!]);
+    expect(reply).toContain('C000001');
+    expect(reply).toContain('เปิดใช้งาน');
+    expect(reply).toContain('1000.00');
+    expect(reply).not.toContain('c1');
   });
 });

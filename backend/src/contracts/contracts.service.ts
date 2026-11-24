@@ -17,6 +17,7 @@ import {
 import { generateSchedule } from '../common/schedule/schedule';
 import { TenantContext } from '../common/tenant/tenant-context';
 import { PrismaService } from '../prisma/prisma.service';
+import { nextContractNumber } from './contract-number';
 
 type ContractRecord = Prisma.ContractGetPayload<Record<string, never>>;
 type ContractVersionRecord = Prisma.ContractVersionGetPayload<Record<string, never>>;
@@ -44,6 +45,7 @@ export type PaymentScheduleItemResponse = {
 
 export type ContractListResponse = {
   id: string;
+  contractNumber: string;
   tenantId: string;
   applicationId: string;
   customerId: string;
@@ -132,6 +134,14 @@ export class ContractsService {
           throw new ConflictException(ContractsService.OPEN_CONTRACT_CONFLICT_MESSAGE);
         }
 
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${tenantId}))`;
+        const latestNumber = await tx.contract.findFirst({
+          where: { tenantId },
+          orderBy: { contractNumber: 'desc' },
+          select: { contractNumber: true },
+        });
+        const contractNumber = nextContractNumber(latestNumber?.contractNumber);
+
         const startDate = new Date().toISOString().slice(0, 10);
         const schedule = generateSchedule({
           interestMethod: application.interestMethod,
@@ -146,6 +156,7 @@ export class ContractsService {
         const contract = await tx.contract.create({
           data: {
             tenantId,
+            contractNumber,
             applicationId: application.id,
             customerId: application.customerId,
             imeiUnitId: application.imeiUnitId,
@@ -410,6 +421,7 @@ export class ContractsService {
   private toListResponse(contract: ContractRecord): ContractListResponse {
     return {
       id: contract.id,
+      contractNumber: contract.contractNumber,
       tenantId: contract.tenantId,
       applicationId: contract.applicationId,
       customerId: contract.customerId,

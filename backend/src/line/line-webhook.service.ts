@@ -152,9 +152,9 @@ export class LineWebhookService {
         return 'help';
       }
 
-      // BALANCE <uuid> or SELECT <uuid>
+      // BALANCE C000001 / ยอด C000001 / SELECT C000001
       let explicitContract: string | undefined;
-      const balanceWithId = /^BALANCE\s+(\S+)/i.exec(text);
+      const balanceWithId = /^(?:BALANCE|ยอด)\s+(\S+)/i.exec(text);
       if (balanceWithId) explicitContract = balanceWithId[1];
       const selectOnly = /^SELECT\s+(\S+)/i.exec(text);
       if (selectOnly) explicitContract = selectOnly[1];

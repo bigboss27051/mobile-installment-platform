@@ -66,7 +66,7 @@ describe('merchant error notice and logout confirm', () => {
       );
     });
     expect(container.textContent).toContain('ยังไม่มีสัญญา');
-    expect(container.textContent).toContain('สมชาย · APPROVED');
+    expect(container.textContent).toContain('สมชาย · อนุมัติแล้ว');
 
     const form = container.querySelector('form') as HTMLFormElement;
     await act(async () => {

@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { ApiError, apiRequest, withIdempotency } from './api';
+import { displayStatus } from './i18n';
 import { useI18n } from './i18n-context';
 import { buildLineWebhookUrl, resolveApiOrigin } from './line-webhook-url';
 import {
@@ -31,6 +32,7 @@ type TenantMe = {
 
 type ContractRow = {
   id: string;
+  contractNumber?: string;
   status: string;
 };
 
@@ -194,7 +196,7 @@ export function LineSettingsPage({
     <Page title={t('line.title')}>
       <Section title={t('line.statusSection')}>
         <p>
-          {t('line.status')}: <strong>{config.status}</strong>
+          {t('line.status')}: <strong>{displayStatus(t, 'line', config.status)}</strong>
         </p>
         {tenant ? (
           <p>
@@ -352,7 +354,7 @@ export function LineSettingsPage({
               >
                 {contracts.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.id.slice(0, 8)}… ({c.status})
+                    {c.contractNumber ?? '—'} ({displayStatus(t, 'contract', c.status)})
                   </option>
                 ))}
               </Select>

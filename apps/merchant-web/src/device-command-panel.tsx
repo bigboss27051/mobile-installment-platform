@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
+import { displayStatus } from './i18n';
 import { useI18n } from './i18n-context';
 import { Alert, Button, FormField, Input, Section, Select } from './ui';
 import { MIP_TOKENS } from './ui/theme';
@@ -57,7 +58,7 @@ export function DeviceCommandPanel({
       <p>{t('deviceCommand.hint')}</p>
       {error ? <Alert tone="error">{error}</Alert> : null}
       {lastId ? (
-        <Alert tone="success">{t('deviceCommand.queued', { id: lastId })}</Alert>
+        <Alert tone="success">{t('deviceCommand.queued')}</Alert>
       ) : null}
       <Stack component="form" spacing={2} sx={{ maxWidth: MIP_TOKENS.formMax }} onSubmit={onSubmit}>
         <FormField label={t('deviceCommand.type')} htmlFor="device-cmd-type" required>
@@ -68,7 +69,7 @@ export function DeviceCommandPanel({
           >
             {COMMAND_TYPES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {displayStatus(t, 'command', value)}
               </option>
             ))}
           </Select>

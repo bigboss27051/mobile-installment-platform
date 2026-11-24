@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError, apiRequest } from './api';
 import { DeviceStatusPanel } from './device-status-panel';
+import { displayStatus } from './i18n';
 import { useI18n } from './i18n-context';
 import { EmptyState, Page, Section, Spinner, Table } from './ui';
 
@@ -62,9 +63,9 @@ export function DevicesPage({
               {rows.map((row) => (
                 <tr key={row.id}>
                   <td>{row.maskedImei ?? '—'}</td>
-                  <td>{row.platform}</td>
-                  <td>{row.status}</td>
-                  <td>{row.desiredPresentation}</td>
+                  <td>{displayStatus(t, 'platform', row.platform)}</td>
+                  <td>{displayStatus(t, 'device', row.status)}</td>
+                  <td>{displayStatus(t, 'presentation', row.desiredPresentation)}</td>
                   <td>{row.lastHeartbeatAt ?? t('deviceStatus.heartbeatNever')}</td>
                   <td>
                     <button type="button" onClick={() => setSelectedId(row.id)}>
