@@ -122,6 +122,13 @@ export class DeviceCheckInService {
           data: { agentTokenHash: agentToken.hash },
         });
       }
+      await tx.deviceEnrollmentSession.updateMany({
+        where: {
+          deviceId: device.id,
+          NOT: { id: session.id },
+        },
+        data: { deviceId: null },
+      });
       await tx.deviceEnrollmentSession.update({
         where: { id: session.id },
         data: {

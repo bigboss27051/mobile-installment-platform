@@ -138,6 +138,12 @@ describe('EnrollPage QR issue button', () => {
     });
 
     expect(container.textContent).toContain('project-dpc');
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    const qrImage = container.querySelector('[data-testid="enroll-qr"]');
+    expect(qrImage).toBeTruthy();
+    expect(qrImage?.getAttribute('src') ?? '').toMatch(/^data:image\/png;base64,/);
     expect(
       Array.from(container.querySelectorAll('button')).some(
         (button) => button.textContent === 'ออก QR',

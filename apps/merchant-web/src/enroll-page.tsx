@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
+import QRCode from 'qrcode';
 import { ApiError, apiRequest, withIdempotency } from './api';
 import {
   canIssueEnrollmentQr,
@@ -33,6 +34,47 @@ type EnrollmentQr = {
   payloadFingerprint: string;
   expiresAt: string;
 };
+
+function EnrollmentQrImage({ value }: { value: string }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!value) {
+      setSrc(null);
+      return;
+    }
+    let alive = true;
+    void QRCode.toDataURL(value, {
+      errorCorrectionLevel: 'L',
+      margin: 1,
+      width: 320,
+    })
+      .then((url) => {
+        if (alive) {
+          setSrc(url);
+        }
+      })
+      .catch(() => {
+        if (alive) {
+          setSrc(null);
+        }
+      });
+    return () => {
+      alive = false;
+    };
+  }, [value]);
+  if (!src) {
+    return null;
+  }
+  return (
+    <Box
+      component="img"
+      data-testid="enroll-qr"
+      alt="คิวอาร์ลงทะเบียนแอนดรอยด์"
+      src={src}
+      sx={{ width: 320, height: 320, bgcolor: '#fff', p: 1 }}
+    />
+  );
+}
 
 export function EnrollPage({
   onError,
@@ -451,7 +493,10 @@ export function EnrollPage({
           {qrHasWifiSecret ? (
             <Alert tone="error">{t('enroll.wifiForbidden')}</Alert>
           ) : (
-            <pre className="mip-pre">{JSON.stringify(qr.payload, null, 2)}</pre>
+            <>
+              <EnrollmentQrImage value={qr.payload ? JSON.stringify(qr.payload) : ''} />
+              <pre className="mip-pre">{JSON.stringify(qr.payload, null, 2)}</pre>
+            </>
           )}
         </Section>
       ) : null}

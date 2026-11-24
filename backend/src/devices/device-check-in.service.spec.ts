@@ -12,6 +12,7 @@ describe('DeviceCheckInService', () => {
     deviceEnrollmentSession: {
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     device: {
       findFirst: jest.fn(),
@@ -42,6 +43,7 @@ describe('DeviceCheckInService', () => {
     prisma.$transaction.mockImplementation(
       async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
     );
+    prisma.deviceEnrollmentSession.updateMany.mockResolvedValue({ count: 0 });
   });
 
   it('rejects a missing enrollment token', async () => {
@@ -218,6 +220,35 @@ describe('DeviceCheckInService', () => {
         reason: 'dpc-check-in serial=SN-123',
       }),
     });
+  });
+
+  it('clears device_id on other sessions before attaching an existing device', async () => {
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(session);
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-existing',
+      tenantId: 'tenant-a',
+    });
+    prisma.device.update.mockResolvedValue({
+      id: 'dev-existing',
+      tenantId: 'tenant-a',
+    });
+    prisma.deviceEnrollmentSession.update.mockResolvedValue({});
+    prisma.deviceAuditEvent.create.mockResolvedValue({});
+
+    await service.checkIn(rawToken, { deviceOwner: true });
+
+    expect(prisma.deviceEnrollmentSession.updateMany).toHaveBeenCalledWith({
+      where: {
+        deviceId: 'dev-existing',
+        NOT: { id: 'sess-1' },
+      },
+      data: { deviceId: null },
+    });
+    const releaseOrder =
+      prisma.deviceEnrollmentSession.updateMany.mock.invocationCallOrder[0];
+    const attachOrder =
+      prisma.deviceEnrollmentSession.update.mock.invocationCallOrder[0];
+    expect(releaseOrder).toBeLessThan(attachOrder);
   });
 
   it('rotates agentTokenHash when reusing an existing device row', async () => {
