@@ -10,6 +10,7 @@ import {
   canStaffCancel,
   isAndroidFrpChecklistComplete,
   isTerminalEnrollment,
+  readableSessionCode,
   resolveEnrollmentStatus,
   showsAndroidQr,
   statusTone,
@@ -468,7 +469,17 @@ export function EnrollPage({
               }}
             />
           </Box>
-          <p>{t('enroll.sessionId', { id: session.id })}</p>
+          <p
+            data-testid="enroll-session-code"
+            style={{
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              fontSize: '1.25rem',
+              fontWeight: 650,
+              letterSpacing: '0.08em',
+            }}
+          >
+            {t('enroll.sessionId', { id: readableSessionCode(session.id) })}
+          </p>
           <p>{t('enroll.expires', { at: session.expiresAt })}</p>
           {session.lastErrorCode ? (
             <Alert tone="error">{session.lastErrorCode}</Alert>

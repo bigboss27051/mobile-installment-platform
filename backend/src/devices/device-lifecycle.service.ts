@@ -113,7 +113,28 @@ export class DeviceLifecycleService {
         where: { deviceId: session.deviceId, tenantId },
       });
       if (existingActivation) {
-        throw new ConflictException('ALREADY_ACTIVATED');
+        if (existingActivation.contractId !== contract.id) {
+          throw new ConflictException('ALREADY_ACTIVATED');
+        }
+        await this.prisma.deviceEnrollmentSession.update({
+          where: { id: session.id },
+          data: {
+            deviceId: session.deviceId,
+            status: EnrollmentSessionStatus.ACTIVATING,
+          },
+        });
+        const device = await this.prisma.device.findFirst({
+          where: { id: session.deviceId, tenantId },
+        });
+        return this.toActivationPublic(
+          {
+            ...existingActivation,
+            device: device
+              ? { id: device.id, status: device.status }
+              : undefined,
+          },
+          true,
+        );
       }
     }
 
@@ -408,6 +429,10 @@ export class DeviceLifecycleService {
     });
     if (active) {
       if (active.deviceId === device.id && active.contractId === contract.id) {
+        await this.prisma.deviceEnrollmentSession.updateMany({
+          where: { deviceId: device.id, tenantId },
+          data: { status: EnrollmentSessionStatus.COMPLETED },
+        });
         return active;
       }
       throw new ConflictException('IMEI_BOUND');

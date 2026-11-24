@@ -16,6 +16,15 @@ const TERMINAL_STATUSES = new Set([
   'RECOVERY_REQUIRED',
 ]);
 
+/** Staff-facing code: first 8 hex digits of the session id, grouped as 1674-EFEA. */
+export function readableSessionCode(id: string): string {
+  const compact = id.replace(/-/g, '').slice(0, 8).toUpperCase();
+  if (compact.length <= 4) {
+    return compact;
+  }
+  return `${compact.slice(0, 4)}-${compact.slice(4)}`;
+}
+
 export function resolveEnrollmentStatus(
   session: { status: string; expiresAt: string | Date },
   now = Date.now(),

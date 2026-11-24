@@ -25,7 +25,7 @@ describe('merchant i18n', () => {
   });
 
   it('interpolates values', () => {
-    expect(t('enroll.sessionId', 'th', { id: 'abc' })).toBe('เซสชัน abc');
+    expect(t('enroll.sessionId', 'th', { id: '1674-EFEA' })).toBe('รหัสเซสชัน 1674-EFEA');
     expect(t('enroll.state.EXPIRED')).toBe('หมดอายุ');
   });
 

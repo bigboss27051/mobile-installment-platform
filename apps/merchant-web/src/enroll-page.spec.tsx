@@ -344,6 +344,7 @@ describe('EnrollPage QR issue button', () => {
 
     expect(container.textContent).toContain('รีเฟรชสถานะ');
     expect(container.textContent).toContain('เปิดใช้งานและผูกสัญญา');
-    expect(container.textContent).toContain('1674efea-1d9e-4ed5-8074-ad4d371e6ba2');
+    expect(container.textContent).toContain('รหัสเซสชัน 1674-EFEA');
+    expect(container.textContent).not.toContain('1674efea-1d9e-4ed5-8074-ad4d371e6ba2');
   });
 });

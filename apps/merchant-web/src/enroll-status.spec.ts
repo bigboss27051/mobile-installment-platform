@@ -5,6 +5,7 @@ import {
   canStaffCancel,
   isAndroidFrpChecklistComplete,
   isTerminalEnrollment,
+  readableSessionCode,
   resolveEnrollmentStatus,
   showsAndroidQr,
 } from './enroll-status';
@@ -12,6 +13,10 @@ import {
 describe('enrollment wizard status', () => {
   const future = new Date(Date.now() + 60_000).toISOString();
   const past = new Date(Date.now() - 1_000).toISOString();
+
+  it('shows a short grouped session code', () => {
+    expect(readableSessionCode('1674efea-1d9e-4ed5-8074-ad4d371e6ba2')).toBe('1674-EFEA');
+  });
 
   it('keeps waiting when the session has not expired', () => {
     expect(

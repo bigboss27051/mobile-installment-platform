@@ -19,6 +19,7 @@ describe('DeviceLifecycleService', () => {
     deviceEnrollmentSession: {
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     contract: { findFirst: jest.fn() },
     device: {
@@ -85,6 +86,7 @@ describe('DeviceLifecycleService', () => {
     prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) =>
       fn(prisma),
     );
+    prisma.deviceEnrollmentSession.updateMany.mockResolvedValue({ count: 0 });
   });
 
   it('returns dashboard fields and 404 for another tenant', async () => {
@@ -438,6 +440,51 @@ describe('DeviceLifecycleService', () => {
     );
   });
 
+  it('reuses an activation when the same device and contract check in again', async () => {
+    prisma.deviceActivation.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'act-1',
+        deviceId: 'dev-1',
+        enrollmentSessionId: 'old-sess',
+        contractId: 'c1',
+        customerId: 'cust-1',
+        reason: 'first handover',
+        shopCode: null,
+        createdAt: new Date('2026-11-16T04:25:14.000Z'),
+      });
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
+      ...session,
+      status: EnrollmentSessionStatus.ENROLLING,
+      deviceId: 'dev-1',
+    });
+    prisma.contract.findFirst.mockResolvedValue(contract);
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      status: DeviceLifecycleStatus.ACTIVE,
+    });
+    prisma.deviceEnrollmentSession.update.mockResolvedValue({});
+
+    const result = await service.activate(
+      tenantCtx,
+      { enrollmentSessionId: 'sess-1', contractId: 'c1', reason: 're-enroll' },
+      'idem-reenroll',
+    );
+
+    expect(result.alreadyActivated).toBe(true);
+    expect(result.deviceId).toBe('dev-1');
+    expect(prisma.deviceActivation.create).not.toHaveBeenCalled();
+    expect(prisma.deviceEnrollmentSession.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'sess-1' },
+        data: expect.objectContaining({
+          status: EnrollmentSessionStatus.ACTIVATING,
+          deviceId: 'dev-1',
+        }),
+      }),
+    );
+  });
+
   it('bind requires a reason and matching contract IMEI', async () => {
     prisma.device.findFirst.mockResolvedValue({
       id: 'dev-1',
@@ -486,6 +533,40 @@ describe('DeviceLifecycleService', () => {
         'bind-2',
       ),
     ).rejects.toMatchObject({ message: 'IMEI_BOUND' });
+  });
+
+  it('completes the open session when the same contract is already bound', async () => {
+    prisma.device.findFirst.mockResolvedValue({
+      id: 'dev-1',
+      tenantId: 'tenant-a',
+      imeiUnitId: 'imei-1',
+      status: DeviceLifecycleStatus.ACTIVE,
+      activation: { id: 'act-1' },
+    });
+    prisma.contract.findFirst.mockResolvedValue(contract);
+    prisma.deviceContractBinding.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'bind-existing',
+        deviceId: 'dev-1',
+        contractId: 'c1',
+        status: DeviceBindingStatus.ACTIVE,
+        bindIdempotencyKey: 'old-key',
+      });
+
+    const result = await service.bindContract(
+      tenantCtx,
+      'dev-1',
+      { contractId: 'c1', reason: 're-enroll bind' },
+      'bind-same',
+    );
+
+    expect(result.id).toBe('bind-existing');
+    expect(prisma.deviceContractBinding.create).not.toHaveBeenCalled();
+    expect(prisma.deviceEnrollmentSession.updateMany).toHaveBeenCalledWith({
+      where: { deviceId: 'dev-1', tenantId: 'tenant-a' },
+      data: { status: EnrollmentSessionStatus.COMPLETED },
+    });
   });
 
   it('unbind requires an elevated role and a reason', async () => {
