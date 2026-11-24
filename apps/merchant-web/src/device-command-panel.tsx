@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
 import { displayStatus } from './i18n';
@@ -15,6 +15,15 @@ const COMMAND_TYPES = [
 
 type CommandType = (typeof COMMAND_TYPES)[number];
 
+const PENDING_STATUSES = new Set(['QUEUED', 'SENT']);
+
+type TrackedCommand = {
+  id: string;
+  type: string;
+  status: string;
+  resultCode: string | null;
+};
+
 export function DeviceCommandPanel({
   deviceId,
   onEnqueued,
@@ -26,8 +35,44 @@ export function DeviceCommandPanel({
   const [type, setType] = useState<CommandType>('START_PACKAGE_SUSPEND');
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [lastId, setLastId] = useState<string | null>(null);
+  const [tracked, setTracked] = useState<TrackedCommand | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!tracked || !PENDING_STATUSES.has(tracked.status)) {
+      return undefined;
+    }
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const data = await apiRequest<{ lastCommand?: TrackedCommand | null }>(
+          `/api/v1/devices/${deviceId}`,
+        );
+        const last = data.lastCommand;
+        if (!cancelled && last?.id === tracked.id && last.status !== tracked.status) {
+          setTracked({
+            id: last.id,
+            type: last.type,
+            status: last.status,
+            resultCode: last.resultCode,
+          });
+          if (!PENDING_STATUSES.has(last.status)) {
+            onEnqueued?.();
+          }
+        }
+      } catch {
+        // Keep the waiting notice until the device answers or the page closes.
+      }
+    };
+    void poll();
+    const timer = window.setInterval(() => {
+      void poll();
+    }, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [deviceId, onEnqueued, tracked]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -43,7 +88,12 @@ export function DeviceCommandPanel({
         method: 'POST',
         body: JSON.stringify({ type, reason: trimmed }),
       });
-      setLastId(command.id);
+      setTracked({
+        id: command.id,
+        type,
+        status: 'QUEUED',
+        resultCode: null,
+      });
       setReason('');
       onEnqueued?.();
     } catch (err) {
@@ -57,8 +107,22 @@ export function DeviceCommandPanel({
     <Section title={t('deviceCommand.title')}>
       <p>{t('deviceCommand.hint')}</p>
       {error ? <Alert tone="error">{error}</Alert> : null}
-      {lastId ? (
-        <Alert tone="success">{t('deviceCommand.queued')}</Alert>
+      {tracked ? (
+        <Alert
+          tone={
+            tracked.status === 'ACKED_SUCCESS' || PENDING_STATUSES.has(tracked.status)
+              ? 'success'
+              : 'error'
+          }
+        >
+          {PENDING_STATUSES.has(tracked.status)
+            ? t('deviceCommand.queued')
+            : `${displayStatus(t, 'command', tracked.type)} · ${displayStatus(
+                t,
+                'commandStatus',
+                tracked.status,
+              )}${tracked.resultCode ? ` · ${tracked.resultCode}` : ''}`}
+        </Alert>
       ) : null}
       <Stack component="form" spacing={2} sx={{ maxWidth: MIP_TOKENS.formMax }} onSubmit={onSubmit}>
         <FormField label={t('deviceCommand.type')} htmlFor="device-cmd-type" required>

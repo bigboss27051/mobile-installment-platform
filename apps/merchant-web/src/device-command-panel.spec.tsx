@@ -88,4 +88,64 @@ describe('DeviceCommandPanel', () => {
     expect(container.textContent).toContain('ส่งคำสั่งแล้ว รอเครื่องยืนยัน');
     expect(container.textContent).not.toContain('cmd-lab-1');
   });
+
+  it('replaces the waiting notice when the device confirms the command', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockImplementation((path: string) => {
+      if (String(path).endsWith('/commands')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: { id: 'cmd-lab-1' } }), {
+            status: 201,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              lastCommand: {
+                id: 'cmd-lab-1',
+                type: 'START_PACKAGE_SUSPEND',
+                status: 'ACKED_SUCCESS',
+                resultCode: 'PACKAGES_SUSPENDED:3',
+                ackedAt: '2026-11-25T00:00:00.000Z',
+              },
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+    });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <DeviceCommandPanel deviceId="705f8cff-0000-4000-8000-000000000001" />
+        </I18nProvider>,
+      );
+    });
+
+    const reason = container.querySelector('#device-cmd-reason') as HTMLInputElement;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      setter?.call(reason, 'lab overdue restrict');
+      reason.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const form = container.querySelector('form');
+    await act(async () => {
+      form?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('เครื่องยืนยันแล้ว');
+    expect(container.textContent).not.toContain('ส่งคำสั่งแล้ว รอเครื่องยืนยัน');
+    expect(container.textContent).not.toContain('cmd-lab-1');
+  });
 });
