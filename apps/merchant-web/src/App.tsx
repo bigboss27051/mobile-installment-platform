@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import Paper from '@mui/material/Paper';
@@ -12,6 +12,15 @@ import {
   setAccessToken,
   subscribeAuthExpired,
 } from './api';
+import {
+  canConfirmCollection,
+  collectionAmountIssue,
+  collectionIdempotencyKey,
+  contractOutstanding,
+  markCollectionSettled,
+  remainingDue,
+  type CollectionMethod,
+} from './collect-payment';
 import { DevicesPage } from './devices-page';
 import { EnrollPage } from './enroll-page';
 import { KycPanel } from './kyc-panel';
@@ -22,6 +31,7 @@ import { LanguageSwitch, useI18n } from './i18n-context';
 import {
   Alert,
   Button,
+  CollectPaymentDialog,
   ConfirmDialog,
   EmptyState,
   FormField,
@@ -1163,6 +1173,34 @@ function ApplicationsPage({
   );
 }
 
+type ScheduleItem = {
+  id: string;
+  seq: number;
+  totalDue: string;
+  amountPaid: string;
+  status: string;
+};
+
+type PromptPayView = {
+  intentId: string;
+  status: string;
+  qr: unknown;
+};
+
+function paymentTransportMessage(
+  err: unknown,
+  timeout: string,
+  network: string,
+): string | null {
+  if (err instanceof DOMException && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+    return timeout;
+  }
+  if (err instanceof TypeError) {
+    return network;
+  }
+  return null;
+}
+
 function ContractsPage({
   onError,
   apiError,
@@ -1180,11 +1218,20 @@ function ContractsPage({
   const [selected, setSelected] = useState<{
     id: string;
     status: string;
-    scheduleItems: { seq: number; totalDue: string; amountPaid: string; status: string }[];
+    scheduleItems: ScheduleItem[];
   } | null>(null);
-  const [qr, setQr] = useState<unknown>(null);
   const [amount, setAmount] = useState('100.00');
   const [loading, setLoading] = useState(true);
+  const [collectItem, setCollectItem] = useState<ScheduleItem | null>(null);
+  const [collectAmount, setCollectAmount] = useState('');
+  const [collectMethod, setCollectMethod] = useState<CollectionMethod | null>(null);
+  const [collectError, setCollectError] = useState<string | null>(null);
+  const [collectNotice, setCollectNotice] = useState<string | null>(null);
+  const [collecting, setCollecting] = useState(false);
+  const [promptPay, setPromptPay] = useState<PromptPayView | null>(null);
+  const [promptPayError, setPromptPayError] = useState<string | null>(null);
+  const [promptPaySubmitting, setPromptPaySubmitting] = useState(false);
+  const promptPayKey = useRef(crypto.randomUUID());
 
   async function refresh() {
     setLoading(true);
@@ -1223,6 +1270,73 @@ function ContractsPage({
   useEffect(() => {
     void refresh();
   }, []);
+
+  useEffect(() => {
+    if (!promptPay || !selected) {
+      return;
+    }
+    if (promptPay.status !== 'CREATED' && promptPay.status !== 'AWAITING_PROVIDER') {
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const latest = await apiRequest<{ id: string; status: string; qrPayload: unknown }>(
+            `/api/v1/payment-intents/${promptPay.intentId}`,
+          );
+          if (cancelled) {
+            return;
+          }
+          setPromptPay({
+            intentId: latest.id,
+            status: latest.status,
+            qr: latest.qrPayload,
+          });
+          setPromptPayError(null);
+          if (latest.status === 'SUCCEEDED') {
+            setSelected(await apiRequest(`/api/v1/contracts/${selected.id}`));
+            setCollectNotice(t('contracts.promptPaySucceeded'));
+          }
+        } catch (err) {
+          if (cancelled) {
+            return;
+          }
+          setPromptPayError(
+            paymentTransportMessage(err, t('contracts.timeout'), t('contracts.network')) ??
+              (err instanceof ApiError ? apiError(err.message) : t('common.actionFailed')),
+          );
+        }
+      })();
+    }, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [promptPay?.intentId, promptPay?.status, selected?.id]);
+
+  const outstanding = selected ? contractOutstanding(selected.scheduleItems) : '0.00';
+  const collectIssue = collectItem ? collectionAmountIssue(collectAmount, outstanding) : null;
+  const collectAmountError =
+    collectIssue === 'empty'
+      ? t('contracts.amountEmpty')
+      : collectIssue === 'invalid'
+        ? t('contracts.amountInvalid')
+        : collectIssue === 'zero'
+          ? t('contracts.amountZero')
+          : collectIssue === 'exceeds'
+            ? t('contracts.amountExceeds', { outstanding })
+            : null;
+  const collectReady = canConfirmCollection({
+    amount: collectAmount,
+    outstanding,
+    method: collectMethod,
+    submitting: collecting,
+  });
+
+  async function reloadSelected(contractId: string) {
+    setSelected(await apiRequest(`/api/v1/contracts/${contractId}`));
+  }
 
   return (
     <Page title={t('contracts.title')}>
@@ -1348,85 +1462,235 @@ function ContractsPage({
                 <th>{t('contracts.colDue')}</th>
                 <th>{t('contracts.colPaid')}</th>
                 <th>{t('contracts.colStatus')}</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {selected.scheduleItems.map((item) => (
-                <tr key={item.seq}>
-                  <td>{item.seq}</td>
-                  <td>{item.totalDue}</td>
-                  <td>{item.amountPaid}</td>
-                  <td>{item.status}</td>
-                </tr>
-              ))}
+              {selected.scheduleItems.map((item) => {
+                const received = item.status === 'PAID';
+                return (
+                  <tr key={item.id}>
+                    <td>{item.seq}</td>
+                    <td>{item.totalDue}</td>
+                    <td>{item.amountPaid}</td>
+                    <td>{item.status}</td>
+                    <td>
+                      <Button
+                        type="button"
+                        variant={received ? 'secondary' : 'primary'}
+                        disabled={received || selected.status !== 'ACTIVE' || collecting}
+                        onClick={() => {
+                          setCollectItem(item);
+                          setCollectAmount(remainingDue(item.totalDue, item.amountPaid));
+                          setCollectMethod(null);
+                          setCollectError(null);
+                          setCollectNotice(null);
+                        }}
+                      >
+                        {received ? t('contracts.received') : t('contracts.collect')}
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </Table>
+          {collectNotice ? <Alert tone="success">{collectNotice}</Alert> : null}
           <Stack
             component="form"
             spacing={2}
             sx={{ maxWidth: MIP_TOKENS.formMax }}
             onSubmit={async (event) => {
               event.preventDefault();
-              await runAction(
-                async () => {
-                  const intent = await apiRequest<{ qrPayload: unknown }>(
-                    `/api/v1/contracts/${selected.id}/payment-intents`,
-                    {
-                      method: 'POST',
-                      headers: { 'Idempotency-Key': crypto.randomUUID() },
-                      body: JSON.stringify({ amount }),
-                    },
-                  );
-                  setQr(intent.qrPayload);
-                  onError(null);
-                },
-                onError,
-                apiError,
-                t('common.actionFailed'),
-              );
+              if (promptPaySubmitting) {
+                return;
+              }
+              setPromptPaySubmitting(true);
+              setPromptPayError(null);
+              try {
+                const intent = await apiRequest<{
+                  id: string;
+                  status: string;
+                  qrPayload: unknown;
+                }>(`/api/v1/contracts/${selected.id}/payment-intents`, {
+                  method: 'POST',
+                  headers: { 'Idempotency-Key': promptPayKey.current },
+                  body: JSON.stringify({ amount }),
+                  signal: AbortSignal.timeout(20000),
+                });
+                setPromptPay({
+                  intentId: intent.id,
+                  status: intent.status,
+                  qr: intent.qrPayload,
+                });
+                if (
+                  intent.status === 'SUCCEEDED' ||
+                  intent.status === 'FAILED' ||
+                  intent.status === 'CANCELLED' ||
+                  intent.status === 'EXPIRED'
+                ) {
+                  promptPayKey.current = crypto.randomUUID();
+                }
+                if (intent.status === 'SUCCEEDED') {
+                  await reloadSelected(selected.id);
+                  setCollectNotice(t('contracts.promptPaySucceeded'));
+                }
+                onError(null);
+              } catch (err) {
+                setPromptPayError(
+                  paymentTransportMessage(err, t('contracts.timeout'), t('contracts.network')) ??
+                    (err instanceof ApiError ? apiError(err.message) : t('common.actionFailed')),
+                );
+              } finally {
+                setPromptPaySubmitting(false);
+              }
             }}
           >
             <FormField label={t('contracts.amount')} htmlFor="pay-amount" required>
               <Input
                 id="pay-amount"
+                inputMode="decimal"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                disabled={promptPaySubmitting}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setAmount((current) => {
+                    if (current !== next) {
+                      promptPayKey.current = crypto.randomUUID();
+                    }
+                    return next;
+                  });
+                }}
               />
             </FormField>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
-              <Button type="submit" variant="primary">
+              <Button
+                type="submit"
+                variant="primary"
+                loading={promptPaySubmitting}
+                disabled={selected.status !== 'ACTIVE' || promptPaySubmitting}
+              >
                 {t('contracts.createIntent')}
               </Button>
             </Stack>
           </Stack>
-          {qr &&
-          typeof qr === 'object' &&
-          qr !== null &&
-          'imageUrlPng' in qr &&
-          typeof (qr as { imageUrlPng?: unknown }).imageUrlPng === 'string' &&
-          (qr as { imageUrlPng: string }).imageUrlPng ? (
+          {promptPay ? (
+            <Alert
+              tone={
+                promptPay.status === 'SUCCEEDED'
+                  ? 'success'
+                  : promptPay.status === 'FAILED' ||
+                      promptPay.status === 'CANCELLED' ||
+                      promptPay.status === 'EXPIRED'
+                    ? 'error'
+                    : 'info'
+              }
+            >
+              {promptPay.status === 'SUCCEEDED'
+                ? t('contracts.promptPaySucceeded')
+                : promptPay.status === 'FAILED' ||
+                    promptPay.status === 'CANCELLED' ||
+                    promptPay.status === 'EXPIRED'
+                  ? t('contracts.promptPayFailed')
+                  : t('contracts.promptPayPending')}{' '}
+              {t('contracts.promptPayStatus', { status: promptPay.status })}
+            </Alert>
+          ) : null}
+          {promptPayError ? <Alert tone="error">{promptPayError}</Alert> : null}
+          {promptPay &&
+          typeof promptPay.qr === 'object' &&
+          promptPay.qr !== null &&
+          'imageUrlPng' in promptPay.qr &&
+          typeof (promptPay.qr as { imageUrlPng?: unknown }).imageUrlPng === 'string' &&
+          (promptPay.qr as { imageUrlPng: string }).imageUrlPng ? (
             <Stack spacing={1}>
               <img
-                src={(qr as { imageUrlPng: string }).imageUrlPng}
+                src={(promptPay.qr as { imageUrlPng: string }).imageUrlPng}
                 alt="PromptPay QR"
                 width={240}
                 height={240}
               />
-              {'hostedInstructionsUrl' in qr &&
-              typeof (qr as { hostedInstructionsUrl?: unknown }).hostedInstructionsUrl ===
+              {'hostedInstructionsUrl' in promptPay.qr &&
+              typeof (promptPay.qr as { hostedInstructionsUrl?: unknown }).hostedInstructionsUrl ===
                 'string' &&
-              (qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl ? (
+              (promptPay.qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl ? (
                 <a
-                  href={(qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl}
+                  href={(promptPay.qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {(qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl}
+                  {(promptPay.qr as { hostedInstructionsUrl: string }).hostedInstructionsUrl}
                 </a>
               ) : null}
             </Stack>
-          ) : qr ? (
-            <pre className="mip-pre">{JSON.stringify(qr, null, 2)}</pre>
+          ) : promptPay?.qr ? (
+            <pre className="mip-pre">{JSON.stringify(promptPay.qr, null, 2)}</pre>
+          ) : null}
+          {collectItem ? (
+            <CollectPaymentDialog
+              title={t('contracts.collectTitle')}
+              installmentLabel={t('contracts.collectInstallment', {
+                seq: String(collectItem.seq),
+                remaining: remainingDue(collectItem.totalDue, collectItem.amountPaid),
+              })}
+              amountLabel={t('contracts.amount')}
+              amount={collectAmount}
+              amountError={collectAmountError}
+              cashLabel={t('contracts.methodCash')}
+              transferLabel={t('contracts.methodTransfer')}
+              method={collectMethod}
+              confirmLabel={t('contracts.confirmCollection')}
+              cancelLabel={t('contracts.cancel')}
+              submitting={collecting}
+              canConfirm={collectReady}
+              error={collectError}
+              onAmountChange={setCollectAmount}
+              onMethodChange={setCollectMethod}
+              onCancel={() => {
+                if (!collecting) {
+                  setCollectItem(null);
+                }
+              }}
+              onConfirm={() => {
+                if (!collectReady || !collectMethod || !selected) {
+                  return;
+                }
+                const method = collectMethod;
+                const contractId = selected.id;
+                const scheduleItemId = collectItem.id;
+                const amountToCollect = collectAmount.trim();
+                void (async () => {
+                  setCollecting(true);
+                  setCollectError(null);
+                  const idempotencyKey = collectionIdempotencyKey({
+                    contractId,
+                    scheduleItemId,
+                    amount: amountToCollect,
+                    method,
+                  });
+                  try {
+                    await apiRequest(`/api/v1/contracts/${contractId}/collections`, {
+                      method: 'POST',
+                      headers: { 'Idempotency-Key': idempotencyKey },
+                      body: JSON.stringify({ amount: amountToCollect, method }),
+                      signal: AbortSignal.timeout(20000),
+                    });
+                    markCollectionSettled(idempotencyKey);
+                    await reloadSelected(contractId);
+                    setCollectItem(null);
+                    setCollectNotice(t('contracts.collected'));
+                    onError(null);
+                  } catch (err) {
+                    setCollectError(
+                      paymentTransportMessage(err, t('contracts.timeout'), t('contracts.network')) ??
+                        (err instanceof ApiError ? apiError(err.message) : t('common.actionFailed')),
+                    );
+                  } finally {
+                    setCollecting(false);
+                  }
+                })();
+              }}
+            />
           ) : null}
         </Section>
       ) : null}

@@ -308,6 +308,15 @@ describe('Payments endpoints (e2e)', () => {
       await prisma.consent.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
+      await prisma.lineNotificationDelivery.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
+      await prisma.lineLinkingToken.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
+      await prisma.lineCustomerLink.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
       await prisma.customer.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
@@ -503,5 +512,72 @@ describe('Payments endpoints (e2e)', () => {
       countsAfterWebhook.ledgerEntries,
       countsAfterWebhook.transactions,
     ]);
+  });
+
+  it('records a staff cash collection once and rejects invalid amounts', async () => {
+    const now = Date.now();
+    const regA = await registerOwner(`collect-a-${now}`);
+    const regB = await registerOwner(`collect-b-${now}`);
+    const tokenA = regA.data.accessToken;
+    const tokenB = regB.data.accessToken;
+    const { contractId, scheduleItems } = await createActiveContract({
+      token: tokenA,
+      tenantId: regA.data.user.tenantId,
+      now,
+    });
+    const first = scheduleItems[0];
+    const collectionKey = `collection-e2e-${now}`;
+
+    const collected = await request(app.getHttpServer())
+      .post(`/api/v1/contracts/${contractId}/collections`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .set('Idempotency-Key', collectionKey)
+      .send({ amount: first.totalDue, method: 'CASH' })
+      .expect(201);
+    expect(collected.body.data).toEqual(
+      expect.objectContaining({
+        status: 'SUCCEEDED',
+        method: 'CASH',
+        amount: first.totalDue,
+        replay: false,
+      }),
+    );
+
+    const replayed = await request(app.getHttpServer())
+      .post(`/api/v1/contracts/${contractId}/collections`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .set('Idempotency-Key', collectionKey)
+      .send({ amount: first.totalDue, method: 'CASH' })
+      .expect(201);
+    expect(replayed.body.data.replay).toBe(true);
+    expect(replayed.body.data.transactionId).toBe(collected.body.data.transactionId);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/contracts/${contractId}/collections`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .set('Idempotency-Key', `${collectionKey}-other`)
+      .send({ amount: '1.00', method: 'TRANSFER' })
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/contracts/${contractId}/collections`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .set('Idempotency-Key', `${collectionKey}-zero`)
+      .send({ amount: '0', method: 'CASH' })
+      .expect(422);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/contracts/${contractId}/collections`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ amount: '1.00', method: 'TRANSFER' })
+      .expect(400);
+
+    const paidItem = await prisma.paymentScheduleItem.findFirst({
+      where: { id: first.id },
+    });
+    expect(paidItem?.status).toBe('PAID');
+    expect(await prisma.paymentTransaction.count({
+      where: { tenantId: regA.data.user.tenantId, providerEventId: { startsWith: 'staff:' } },
+    })).toBe(1);
   });
 });

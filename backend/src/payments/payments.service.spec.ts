@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -893,5 +894,183 @@ describe('PaymentsService', () => {
     expect(prisma.paymentTransaction.create).not.toHaveBeenCalled();
     expect(prisma.allocation.createMany).not.toHaveBeenCalled();
     expect(prisma.ledgerEntry.createMany).not.toHaveBeenCalled();
+  });
+
+  it('records a cash collection against the schedule and does not call the gateway', async () => {
+    const result = await service.recordCollection(
+      tenantCtx,
+      'contract-1',
+      '100.00',
+      'CASH',
+      'collect-1',
+    );
+
+    expect(result).toEqual({
+      intentId: expect.any(String),
+      transactionId: 'txn-1',
+      amount: '100.00',
+      method: 'CASH',
+      status: 'SUCCEEDED',
+      replay: false,
+      allocations: [{ scheduleItemId: 'item-1', amount: '100.00' }],
+    });
+    expect(gateway.createPromptPayIntent).not.toHaveBeenCalled();
+    expect(prisma.paymentIntent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        status: PaymentIntentStatus.SUCCEEDED,
+        provider: 'staff',
+        providerRef: 'CASH',
+        amount: new Prisma.Decimal('100.00'),
+        idempotencyKey: 'collect-1',
+      }),
+    });
+    expect(prisma.ledgerEntry.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({ accountCode: 'CASH_ON_HAND' }),
+        expect.objectContaining({ accountCode: 'INSTALLMENT_RECEIVABLE' }),
+      ]),
+    });
+    expect(paymentUnlock.onVerifiedPayment).toHaveBeenCalledWith({
+      tenantId: 'tenant-a',
+      contractId: 'contract-1',
+      paymentTransactionId: 'txn-1',
+    });
+    expect(lineNotify.onVerifiedPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: '100.00' }),
+    );
+  });
+
+  it('records a transfer collection on the bank ledger account', async () => {
+    await service.recordCollection(
+      tenantCtx,
+      'contract-1',
+      '50.00',
+      'TRANSFER',
+      'collect-transfer',
+    );
+    expect(prisma.ledgerEntry.createMany).toHaveBeenCalledWith({
+      data: expect.arrayContaining([
+        expect.objectContaining({ accountCode: 'BANK_TRANSFER' }),
+      ]),
+    });
+    expect(gateway.createPromptPayIntent).not.toHaveBeenCalled();
+  });
+
+  it('replays a settled staff collection without a second allocation', async () => {
+    const staffIntent = {
+      ...intentRecord,
+      amount: new Prisma.Decimal('100.00'),
+      status: PaymentIntentStatus.SUCCEEDED,
+      provider: 'staff',
+      providerRef: 'CASH',
+      idempotencyKey: 'collect-1',
+    };
+    prisma.paymentIntent.findFirst.mockResolvedValue(staffIntent);
+    prisma.paymentTransaction.findFirst.mockResolvedValue({
+      id: 'txn-1',
+      amount: new Prisma.Decimal('100.00'),
+      status: PaymentTransactionStatus.SUCCEEDED,
+      allocations: [{ scheduleItemId: 'item-1', amount: new Prisma.Decimal('100.00') }],
+    });
+
+    await expect(
+      service.recordCollection(tenantCtx, 'contract-1', '100.00', 'CASH', 'collect-1'),
+    ).resolves.toEqual(
+      expect.objectContaining({ replay: true, transactionId: 'txn-1', amount: '100.00' }),
+    );
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+    expect(prisma.allocation.createMany).not.toHaveBeenCalled();
+    expect(paymentUnlock.onVerifiedPayment).not.toHaveBeenCalled();
+  });
+
+  it('rejects collection idempotency reuse when the method differs', async () => {
+    prisma.paymentIntent.findFirst.mockResolvedValue({
+      ...intentRecord,
+      amount: new Prisma.Decimal('100.00'),
+      status: PaymentIntentStatus.SUCCEEDED,
+      provider: 'staff',
+      providerRef: 'CASH',
+    });
+
+    await expect(
+      service.recordCollection(
+        tenantCtx,
+        'contract-1',
+        '100.00',
+        'TRANSFER',
+        'collect-1',
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.paymentTransaction.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects counter collection from a customer audience', async () => {
+    await expect(
+      service.recordCollection(
+        { ...tenantCtx, audience: 'customer', customerId: 'cust-1' },
+        'contract-1',
+        '100.00',
+        'CASH',
+        'collect-1',
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects zero, over-outstanding, inactive, and blank collection requests', async () => {
+    await expect(
+      service.recordCollection(tenantCtx, 'contract-1', '0', 'CASH', 'collect-zero'),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    prisma.contract.findFirst.mockResolvedValueOnce({
+      ...activeContract,
+      status: ContractStatus.DRAFT,
+    });
+    await expect(
+      service.recordCollection(tenantCtx, 'contract-1', '10.00', 'CASH', 'collect-draft'),
+    ).rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.recordCollection(tenantCtx, 'contract-1', '1500.01', 'CASH', 'collect-over'),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    await expect(
+      service.recordCollection(tenantCtx, 'contract-1', '10.00', 'CASH', '  '),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(gateway.createPromptPayIntent).not.toHaveBeenCalled();
+    expect(prisma.paymentIntent.create).not.toHaveBeenCalled();
+  });
+
+  it('returns the winning staff collection when the idempotency insert races', async () => {
+    const staffIntent = {
+      ...intentRecord,
+      amount: new Prisma.Decimal('100.00'),
+      status: PaymentIntentStatus.SUCCEEDED,
+      provider: 'staff',
+      providerRef: 'TRANSFER',
+    };
+    prisma.paymentIntent.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(staffIntent);
+    prisma.paymentIntent.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('duplicate', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    );
+    prisma.paymentTransaction.findFirst.mockResolvedValue({
+      id: 'txn-race',
+      amount: new Prisma.Decimal('100.00'),
+      status: PaymentTransactionStatus.SUCCEEDED,
+      allocations: [],
+    });
+
+    await expect(
+      service.recordCollection(
+        tenantCtx,
+        'contract-1',
+        '100.00',
+        'TRANSFER',
+        'collect-race',
+      ),
+    ).resolves.toEqual(expect.objectContaining({ replay: true, transactionId: 'txn-race' }));
+    expect(paymentUnlock.onVerifiedPayment).not.toHaveBeenCalled();
   });
 });
