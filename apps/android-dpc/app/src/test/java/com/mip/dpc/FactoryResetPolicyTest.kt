@@ -44,4 +44,26 @@ class FactoryResetPolicyTest {
             ),
         )
     }
+
+    @Test
+    fun blocksUsbDataForCustomersAndLeavesTheLabCableOpen() {
+        assertTrue(
+            FactoryResetPolicy.shouldBlockUsbData(
+                isDeviceOwner = true,
+                allowDeveloperMode = false,
+            ),
+        )
+        assertFalse(
+            FactoryResetPolicy.shouldBlockUsbData(
+                isDeviceOwner = true,
+                allowDeveloperMode = true,
+            ),
+        )
+        assertFalse(
+            FactoryResetPolicy.shouldBlockUsbData(
+                isDeviceOwner = false,
+                allowDeveloperMode = false,
+            ),
+        )
+    }
 }

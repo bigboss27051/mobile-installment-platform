@@ -20,4 +20,11 @@ object FactoryResetPolicy {
      */
     fun shouldBlockDeveloperMode(isDeviceOwner: Boolean, allowDeveloperMode: Boolean): Boolean =
         isDeviceOwner && !allowDeveloperMode
+
+    /**
+     * Customer builds turn USB data off, so a computer or a car cannot read the
+     * device over the cable. Charging stays. The lab build keeps the cable open.
+     */
+    fun shouldBlockUsbData(isDeviceOwner: Boolean, allowDeveloperMode: Boolean): Boolean =
+        isDeviceOwner && !allowDeveloperMode
 }

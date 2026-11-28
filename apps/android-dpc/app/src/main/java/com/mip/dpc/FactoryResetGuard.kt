@@ -27,5 +27,28 @@ object FactoryResetGuard {
         if (FactoryResetPolicy.shouldBlockDeveloperMode(true, BuildConfig.ALLOW_DEVELOPER_MODE)) {
             dpm.addUserRestriction(admin, UserManager.DISALLOW_DEBUGGING_FEATURES)
         }
+        applyUsbData(dpm, admin, BuildConfig.ALLOW_DEVELOPER_MODE)
     }
+
+    private fun applyUsbData(
+        dpm: DevicePolicyManager,
+        admin: ComponentName,
+        allowDeveloperMode: Boolean,
+    ) {
+        if (FactoryResetPolicy.shouldBlockUsbData(isDeviceOwner = true, allowDeveloperMode)) {
+            dpm.addUserRestriction(admin, UserManager.DISALLOW_USB_FILE_TRANSFER)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                dpm.setUsbDataSignalingEnabled(false)
+            }
+            dpm.setApplicationHidden(admin, ANDROID_AUTO_PACKAGE, true)
+            return
+        }
+        dpm.clearUserRestriction(admin, UserManager.DISALLOW_USB_FILE_TRANSFER)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            dpm.setUsbDataSignalingEnabled(true)
+        }
+        dpm.setApplicationHidden(admin, ANDROID_AUTO_PACKAGE, false)
+    }
+
+    private const val ANDROID_AUTO_PACKAGE = "com.google.android.projection.gearhead"
 }
