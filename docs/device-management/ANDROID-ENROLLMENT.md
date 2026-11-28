@@ -69,7 +69,8 @@ Distinguish these events; they are not the same:
 | **Device restart** | DO **survives** | Recovery Handler re-applies last authorized policy; heartbeat resumes |
 | **Customer uninstall of companion UI** | DO **survives** if DPC is owner; UI may be reinstalled by policy | Treat as policy compliance event, not unenroll |
 | **DPC removal** | Not possible for a normal user while DO is intact | If owner lost, session `RECOVERY_REQUIRED` |
-| **Factory reset** | DO **does not survive** ordinary wipe | Device is unmanaged. Staff must run a **new enrollment** (new QR) unless a below path applies |
+| **Factory reset from Settings** | Blocked while `com.mip.dpc` is Device Owner (`DISALLOW_FACTORY_RESET`) | Customer cannot wipe from Settings. Emergency calling stays available. Not yet proven on every OEM. |
+| **Factory reset from recovery** | DO **does not survive** a recovery wipe | Device is unmanaged. Staff must run a **new enrollment** (new QR) unless Zero-touch applies. |
 | **Factory Reset Protection** | Google account FRP may block reuse | Document per SKU; not a substitute for enrollment |
 | **Enterprise re-enrollment** | Zero-touch / OEM / FRP+enterprise | Optional; **unverified** for this pilot |
 

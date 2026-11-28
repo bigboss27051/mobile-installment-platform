@@ -25,6 +25,7 @@ object CommandExecutor {
                 noSession = true,
             )
         }
+        FactoryResetGuard.apply(app)
         val cache = PolicyCacheStore(app)
         val remote = PolicyClient.fetch(session)
         if (remote != null) {

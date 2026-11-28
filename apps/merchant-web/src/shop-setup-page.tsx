@@ -2,7 +2,9 @@ import { FormEvent, useEffect, useState } from 'react';
 import { ApiError, apiRequest } from './api';
 import { formatBangkokDateTime } from './format-bangkok-datetime';
 import { useI18n } from './i18n-context';
+import Stack from '@mui/material/Stack';
 import { Alert, Button, Page, Section, Spinner } from './ui';
+import { MIP_STACK } from './ui/theme';
 
 type ShopSetup = {
   dpcAttested: boolean;
@@ -113,17 +115,19 @@ export function ShopSetupPage({
         <Section>
           <Alert tone="info">{t('shopSetup.ready')}</Alert>
           {savedAt ? <p>{t('shopSetup.completedAt', { at: savedAt })}</p> : null}
-          <Button type="button" variant="primary" onClick={onOpenEnroll}>
-            {t('shopSetup.goEnroll')}
-          </Button>
-          <Button type="button" variant="secondary" onClick={() => setEditing(true)}>
-            {t('shopSetup.edit')}
-          </Button>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={MIP_STACK.actions} flexWrap="wrap">
+            <Button type="button" variant="primary" onClick={onOpenEnroll}>
+              {t('shopSetup.goEnroll')}
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setEditing(true)}>
+              {t('shopSetup.edit')}
+            </Button>
+          </Stack>
         </Section>
       ) : (
         <Section>
           <Alert tone="info">{t('shopSetup.blocked')}</Alert>
-          <form onSubmit={onSave}>
+          <Stack component="form" spacing={MIP_STACK.form} onSubmit={onSave}>
             <label className="check-row">
               <input
                 type="checkbox"
@@ -171,7 +175,7 @@ export function ShopSetupPage({
             <Button type="submit" variant="primary" disabled={saveDisabled}>
               {t('shopSetup.save')}
             </Button>
-          </form>
+          </Stack>
         </Section>
       )}
     </Page>

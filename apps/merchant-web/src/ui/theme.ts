@@ -1,5 +1,12 @@
 import { createTheme } from '@mui/material/styles';
 
+/** MUI `spacing` units: 1 = 8px. Use on Stack inside Section, forms, and action rows. */
+export const MIP_STACK = {
+  section: 2,
+  form: 2,
+  actions: 1,
+} as const;
+
 export const MIP_TOKENS = {
   primary: '#1d4ed8',
   text: '#1e293b',

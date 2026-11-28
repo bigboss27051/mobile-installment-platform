@@ -344,7 +344,7 @@ export function LineSettingsPage({
         {contracts.length === 0 ? (
           <Alert tone="info">{t('line.reminderNoContracts')}</Alert>
         ) : (
-          <>
+          <Stack spacing={2}>
             <FormField label={t('line.reminderContract')} htmlFor="line-reminder-contract">
               <Select
                 id="line-reminder-contract"
@@ -358,7 +358,7 @@ export function LineSettingsPage({
                 ))}
               </Select>
             </FormField>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 2 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
               <Button
                 type="button"
                 disabled={reminderBusy || !reminderContractId || config.status !== 'CONNECTED'}
@@ -375,7 +375,7 @@ export function LineSettingsPage({
                 {t('line.reminderSent')}: {reminderResult}
               </Alert>
             ) : null}
-          </>
+          </Stack>
         )}
       </Section>
     </Page>

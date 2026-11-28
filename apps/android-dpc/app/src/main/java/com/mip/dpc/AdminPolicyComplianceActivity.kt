@@ -31,6 +31,9 @@ class AdminPolicyComplianceActivity : Activity() {
             store.save(fromIntent)
         }
         val extras = EnrollmentExtrasResolver.resolve(fromIntent, store.load())
+        if (FactoryResetPolicy.shouldBlock(status.isDeviceOwner)) {
+            FactoryResetGuard.apply(this)
+        }
         val call = CheckInCall.plan(extras, status)
 
         val shell = LabShell.inflate(this, "Policy compliance")

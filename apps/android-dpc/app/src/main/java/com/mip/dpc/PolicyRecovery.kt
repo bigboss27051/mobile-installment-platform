@@ -18,6 +18,7 @@ object PolicyRecovery {
         if (!dpm.isDeviceOwnerApp(context.packageName)) {
             return "NOT_DEVICE_OWNER"
         }
+        FactoryResetGuard.apply(context)
         val app = context.applicationContext
         return when (desiredPresentation) {
             "LOCK" -> {

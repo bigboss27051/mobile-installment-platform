@@ -1,7 +1,8 @@
-import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
+import { MIP_STACK } from './theme';
 
 export function Section({
   title,
@@ -17,7 +18,7 @@ export function Section({
           {title}
         </Typography>
       ) : null}
-      <Box>{children}</Box>
+      <Stack spacing={MIP_STACK.section}>{children}</Stack>
     </Paper>
   );
 }

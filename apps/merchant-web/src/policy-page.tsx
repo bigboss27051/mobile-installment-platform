@@ -1,3 +1,4 @@
+import Stack from '@mui/material/Stack';
 import { FormEvent, useEffect, useState } from 'react';
 import { ApiError, apiRequest, withIdempotency } from './api';
 import { useI18n } from './i18n-context';
@@ -11,6 +12,7 @@ import {
   Spinner,
   Table,
 } from './ui';
+import { MIP_STACK } from './ui/theme';
 
 type PolicySettings = {
   tenantId: string;
@@ -172,7 +174,7 @@ export function PolicyPage({
     <Page title={t('policy.title')}>
       {canEdit ? (
         <Section title={t('policy.settingsSection')}>
-          <form onSubmit={onSave}>
+          <Stack component="form" spacing={MIP_STACK.form} onSubmit={onSave}>
             <FormField label={t('policy.reminderDays')} htmlFor="policy-reminder-days">
               <Input
                 id="policy-reminder-days"
@@ -206,26 +208,26 @@ export function PolicyPage({
                 required
               />
             </FormField>
-            <label style={{ display: 'block', marginBottom: 8 }}>
+            <label className="check-row">
               <input
                 type="checkbox"
                 checked={autoEvaluateCronEnabled}
                 onChange={(e) => setAutoEvaluateCronEnabled(e.target.checked)}
-              />{' '}
+              />
               {t('policy.cronEnabled')}
             </label>
-            <label style={{ display: 'block', marginBottom: 12 }}>
+            <label className="check-row">
               <input
                 type="checkbox"
                 checked={requireLockApproval}
                 onChange={(e) => setRequireLockApproval(e.target.checked)}
-              />{' '}
+              />
               {t('policy.requireLockApproval')}
             </label>
             <Button type="submit" disabled={saving}>
               {saving ? t('policy.saving') : t('policy.save')}
             </Button>
-          </form>
+          </Stack>
         </Section>
       ) : (
         <Alert tone="info">{t('policy.settingsForbidden')}</Alert>
