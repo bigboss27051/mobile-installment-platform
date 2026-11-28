@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EnrollPage } from './enroll-page';
+import { formatBangkokDateTime } from './format-bangkok-datetime';
 import { I18nProvider } from './i18n-context';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -346,6 +347,12 @@ describe('EnrollPage QR issue button', () => {
     expect(container.textContent).toContain('เปิดใช้งานและผูกสัญญา');
     expect(container.textContent).toContain('รหัสเซสชัน 1674-EFEA');
     expect(container.textContent).not.toContain('1674efea-1d9e-4ed5-8074-ad4d371e6ba2');
+    expect(container.textContent).toContain(
+      `หมดอายุ ${formatBangkokDateTime(future)}`,
+    );
+    expect(container.textContent).not.toMatch(
+      /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+    );
   });
 
   it('shows the shop-setup prompt and does not render a QR when create returns SHOP_SETUP_REQUIRED', async () => {

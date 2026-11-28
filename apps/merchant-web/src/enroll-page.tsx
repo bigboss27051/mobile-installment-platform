@@ -16,6 +16,7 @@ import {
   statusTone,
 } from './enroll-status';
 import { DeviceStatusPanel } from './device-status-panel';
+import { formatBangkokDateTime } from './format-bangkok-datetime';
 import { useI18n } from './i18n-context';
 import { Alert, Button, FormField, Input, Page, Section, Select } from './ui';
 import { MIP_TOKENS } from './ui/theme';
@@ -510,7 +511,11 @@ export function EnrollPage({
           >
             {t('enroll.sessionId', { id: readableSessionCode(session.id) })}
           </p>
-          <p>{t('enroll.expires', { at: session.expiresAt })}</p>
+          <p data-testid="enroll-session-expires">
+            {t('enroll.expires', {
+              at: formatBangkokDateTime(session.expiresAt) ?? session.expiresAt,
+            })}
+          </p>
           {session.lastErrorCode ? (
             <Alert tone="error">{session.lastErrorCode}</Alert>
           ) : null}
