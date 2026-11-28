@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -10,7 +12,7 @@ val labApiBaseUrl = mipApiProp ?: "http://10.0.2.2:3000/api/v1"
 val shopApiBaseUrl = mipApiProp ?: ""
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
-val keystoreProperties = java.util.Properties()
+val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
@@ -30,8 +32,8 @@ android {
     productFlavors {
         create("lab") {
             dimension = "channel"
-            versionCode = 19
-            versionName = "0.1.19-lab"
+            versionCode = 20
+            versionName = "0.1.20-lab"
             buildConfigField("String", "API_BASE_URL", "\"$labApiBaseUrl\"")
         }
         create("shop") {
