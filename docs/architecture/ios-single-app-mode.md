@@ -5,7 +5,7 @@
 
 ## What Single App Mode is
 
-On a **supervised** iOS device, MDM can install the **AppLock** payload (`com.apple.app.lock`) so SpringBoard only runs one app (our customer “Mango Lock” UI). The customer cannot leave that app with the Home / App Switcher while the payload is installed. Emergency calling behavior must be **lab-validated** on the target iOS version; do not ship if emergency access is blocked.
+On a **supervised** iOS device, MDM can install the **AppLock** payload (`com.apple.app.lock`) so SpringBoard only runs one app (our customer “mp_pay lock” UI). The customer cannot leave that app with the Home / App Switcher while the payload is installed. Emergency calling behavior must be **lab-validated** on the target iOS version; do not ship if emergency access is blocked.
 
 This is **not**:
 

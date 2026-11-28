@@ -14,7 +14,7 @@ Android Device Policy Controller (`com.mip.dpc`). **Lab evidence ≠ production 
 ## What it does
 
 - Reads enrollment extras from Enterprise QR / provisioning and POSTs check-in
-- Command delivery via WorkManager + FCM; Lock Task (`MangoLockActivity`) + package suspend
+- Command delivery via WorkManager + FCM; Lock Task (`MpPayLockActivity`) + package suspend
 - REMINDER notification; LOCK preserves emergency dial (`tel:112`)
 - Lab-only wipe activity requires human confirm — does not clear Google FRP
 

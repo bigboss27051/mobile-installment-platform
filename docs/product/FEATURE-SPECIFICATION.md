@@ -107,7 +107,7 @@ Features are tagged with release slice: `R0` `R1` `R2` `R3`.
 | 1 | Normal | Baseline policies only |
 | 2 | Warning | Notify; no hard restriction |
 | 3 | App limit | Restrict entertainment/social packages; allow phone/chat/banking allowlist |
-| 4 | Screen lock (LOCK) | Lock Task Mode + Mango Lock UI — not `lockNow()` |
+| 4 | Screen lock (LOCK) | Lock Task Mode + mp_pay lock UI — not `lockNow()` |
 | 5 | Suspend | Maximum restriction short of blocking emergency dial |
 
 ## 7. iOS MDM Integration

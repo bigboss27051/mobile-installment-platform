@@ -44,7 +44,7 @@ Statuses: `BACKLOG` | `READY` | `IN_PROGRESS` | `BLOCKED` | `IN_REVIEW` | `TESTI
 | R2-P2-001 | Custom DPC QR extras (replace Cloud DPC stub) + Device Owner check-in on authorized lab phone | P0 | Android/Backend | DONE (Pad 6 DO + check-in; ask before wipe) |
 | R2-P3-001 | Phase 3a Lock Task command loop: enqueue/poll/ack + DPC Lock Task Mode (lab) | P0 | Android/Backend | DONE (lab; not production) |
 | R2-P3-002 | Phase 3b package suspend (RESTRICT): START/STOP_PACKAGE_SUSPEND + DPC setPackagesSuspended | P0 | Android/Backend | DONE (lab; empty target SKU noted) |
-| R2-P3-003 | Phase 3c reboot recovery: agent policy GET + LockHomeAlias persistent HOME after reboot | P0 | Android/Backend | DONE (Pad 6 cold reboot → MangoLock HOME + LOCKED; MIUI note) |
+| R2-P3-003 | Phase 3c reboot recovery: agent policy GET + LockHomeAlias persistent HOME after reboot | P0 | Android/Backend | DONE (Pad 6 cold reboot → MpPay HOME + LOCKED; MIUI note) |
 | R2-P3-004 | Phase 3d agent heartbeat + live staff dashboard policy fields | P0 | Android/Backend/Web | DONE (unit + Merchant Web panel; lab Pad heartbeat optional) |
 | R2-P3-005 | Non-empty RESTRICT: QUERY_ALL_PACKAGES + lab proof on Pad 6 | P0 | Android | DONE (WPS/mediaeditor suspended=true; lab-target optional) |
 | R2-P3-006 | Merchant Web device command enqueue (reason + devices.command) | P1 | Frontend | DONE (panel after bind; unit tests) |

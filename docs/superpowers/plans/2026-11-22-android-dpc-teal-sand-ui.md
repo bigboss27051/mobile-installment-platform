@@ -4,7 +4,7 @@
 
 **Goal:** Ship Teal/Sand XML theme + split Lock UI (TH+EN, status dock with optional amount/contract) and restyle Reminder + lab activities without changing Lock Task / emergency / command semantics.
 
-**Architecture:** Shared `colors` / `themes` / `strings` resources. Pure `LockUiModel` binder (unit-tested) decides which dock rows show. `MangoLockActivity` inflates `activity_mango_lock.xml`. Lab activities inflate `activity_lab_shell.xml`. Reminder copy moves to string resources.
+**Architecture:** Shared `colors` / `themes` / `strings` resources. Pure `LockUiModel` binder (unit-tested) decides which dock rows show. `MpPayLockActivity` inflates `activity_mp_pay_lock.xml`. Lab activities inflate `activity_lab_shell.xml`. Reminder copy moves to string resources.
 
 **Tech Stack:** Android Views XML, AppCompat themes, JUnit4 unit tests (no Robolectric required for binder), Kotlin, existing `EmergencyDial` / `CommandExecutor`.
 
@@ -21,11 +21,11 @@
 | `apps/android-dpc/app/src/main/res/values/colors.xml` | `mip_teal`, `mip_teal_deep`, `mip_sand` |
 | `apps/android-dpc/app/src/main/res/values/themes.xml` | `Theme.Mip.Dpc`, `Theme.Mip.Dpc.Lab` |
 | `apps/android-dpc/app/src/main/res/values/strings.xml` | Lock / Reminder / lab copy (TH primary + EN secondary) |
-| `apps/android-dpc/app/src/main/res/layout/activity_mango_lock.xml` | Split Lock layout |
+| `apps/android-dpc/app/src/main/res/layout/activity_mp_pay_lock.xml` | Split Lock layout |
 | `apps/android-dpc/app/src/main/res/layout/activity_lab_shell.xml` | Shared lab shell |
 | `apps/android-dpc/app/src/main/java/com/mip/dpc/LockUiModel.kt` | Pure binder for dock visibility + display strings |
 | `apps/android-dpc/app/src/test/java/com/mip/dpc/LockUiModelTest.kt` | Unit tests for binder |
-| `apps/android-dpc/app/src/main/java/com/mip/dpc/MangoLockActivity.kt` | Inflate layout, bind model, emergency click |
+| `apps/android-dpc/app/src/main/java/com/mip/dpc/MpPayLockActivity.kt` | Inflate layout, bind model, emergency click |
 | `apps/android-dpc/app/src/main/java/com/mip/dpc/ReminderNotifier.kt` | String resources for title/body/channel |
 | `apps/android-dpc/app/src/main/java/com/mip/dpc/LabShell.kt` | Helper: inflate lab shell, return title/body views |
 | Lab activities (5) | Use `LabShell` instead of programmatic LinearLayout |
@@ -360,14 +360,14 @@ git commit -m "feat(android-dpc): add Teal/Sand theme and Lock/Reminder strings"
 
 ---
 
-### Task 3: Lock layout + MangoLockActivity
+### Task 3: Lock layout + MpPayLockActivity
 
 **Files:**
-- Create: `apps/android-dpc/app/src/main/res/layout/activity_mango_lock.xml`
-- Modify: `apps/android-dpc/app/src/main/java/com/mip/dpc/MangoLockActivity.kt`
-- Modify: `apps/android-dpc/app/src/main/AndroidManifest.xml` (theme on `MangoLockActivity`)
+- Create: `apps/android-dpc/app/src/main/res/layout/activity_mp_pay_lock.xml`
+- Modify: `apps/android-dpc/app/src/main/java/com/mip/dpc/MpPayLockActivity.kt`
+- Modify: `apps/android-dpc/app/src/main/AndroidManifest.xml` (theme on `MpPayLockActivity`)
 
-- [ ] **Step 1: Create `activity_mango_lock.xml`**
+- [ ] **Step 1: Create `activity_mp_pay_lock.xml`**
 
 Use a vertical `LinearLayout` root (`match_parent`, teal background) with:
 
@@ -380,7 +380,7 @@ Use a vertical `LinearLayout` root (`match_parent`, teal background) with:
 
 IDs required: `lock_reason_detail`, `lock_status_th`, `lock_status_en`, `lock_amount_row`, `lock_amount_value`, `lock_due_value`, `lock_contract_row`, `lock_contract_value`, `lock_emergency`.
 
-- [ ] **Step 2: Rewrite `MangoLockActivity` to inflate + bind**
+- [ ] **Step 2: Rewrite `MpPayLockActivity` to inflate + bind**
 
 Keep `EXTRA_CLEAR_LOCK` / `EXTRA_REASON` behavior. Add companion extras:
 
@@ -395,7 +395,7 @@ const val EXTRA_CONTRACT_REF = "contractRef"
 On create (non-clear path):
 
 ```kotlin
-setContentView(R.layout.activity_mango_lock)
+setContentView(R.layout.activity_mp_pay_lock)
 val model = LockUiModel.from(
     reason = intent.getStringExtra(EXTRA_REASON),
     statusLabel = intent.getStringExtra(EXTRA_STATUS_LABEL),
@@ -415,7 +415,7 @@ findViewById<Button>(R.id.lock_emergency).setOnClickListener {
 
 - [ ] **Step 3: Manifest theme for Lock**
 
-On `MangoLockActivity` (and alias inherits target):
+On `MpPayLockActivity` (and alias inherits target):
 
 ```xml
 android:theme="@style/Theme.Mip.Dpc"
@@ -441,8 +441,8 @@ Expected: PASS.
 - [ ] **Step 6: Commit (only if user asked)**
 
 ```bash
-git add apps/android-dpc/app/src/main/res/layout/activity_mango_lock.xml \
-  apps/android-dpc/app/src/main/java/com/mip/dpc/MangoLockActivity.kt \
+git add apps/android-dpc/app/src/main/res/layout/activity_mp_pay_lock.xml \
+  apps/android-dpc/app/src/main/java/com/mip/dpc/MpPayLockActivity.kt \
   apps/android-dpc/app/src/main/AndroidManifest.xml
 git commit -m "feat(android-dpc): Teal/Sand split Lock layout with optional dock rows"
 ```
@@ -558,7 +558,7 @@ Preserve all business logic (check-in threads, wipe confirm, poll handler, recov
 - [ ] **Step 4: Manifest themes**
 
 - `android:theme="@style/Theme.Mip.Dpc.Lab"` on application (or each lab activity).  
-- Keep `MangoLockActivity` on `@style/Theme.Mip.Dpc`.  
+- Keep `MpPayLockActivity` on `@style/Theme.Mip.Dpc`.  
 - `GetProvisioningModeActivity` can stay lab theme (no custom UI required).
 
 - [ ] **Step 5: Compile + full unit tests**
@@ -643,4 +643,4 @@ git commit -m "chore(android-dpc): bump to 0.1.19-lab for Teal/Sand UI"
 | Version / acceptance | Task 6 |
 | Non-goals (Compose, backend payload, authz) | Explicitly omitted |
 
-**Type consistency:** Extra names `statusLabel`, `statusLabelEn`, `amountDue`, `dueDate`, `contractRef` match `LockUiModel.from` and `MangoLockActivity` companion constants.
+**Type consistency:** Extra names `statusLabel`, `statusLabelEn`, `amountDue`, `dueDate`, `contractRef` match `LockUiModel.from` and `MpPayLockActivity` companion constants.

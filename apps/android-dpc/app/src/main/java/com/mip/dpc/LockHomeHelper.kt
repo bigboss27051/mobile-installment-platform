@@ -8,7 +8,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 
 /**
- * Makes [LockHomeAlias] → [MangoLockActivity] the HOME target while desired is LOCK.
+ * Makes [LockHomeAlias] → [MpPayLockActivity] the HOME target while desired is LOCK.
  * Reliable reboot path on OEMs that suppress BOOT_COMPLETED (e.g. MIUI).
  */
 object LockHomeHelper {

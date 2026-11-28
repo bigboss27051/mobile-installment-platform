@@ -3,7 +3,7 @@
 **Date:** 2026-11-22  
 **Status:** Implemented + Pad visual accepted (DPC `0.1.19-lab`; Xiaomi Pad 6 2026-11-22)  
 **Parent:** R2 Android DPC lab — usable shop-facing Lock / Reminder presentation  
-**Depends on:** Existing Lock Task Mode (`MangoLockActivity`), `ReminderNotifier`, Device Owner lab activities  
+**Depends on:** Existing Lock Task Mode (`MpPayLockActivity`), `ReminderNotifier`, Device Owner lab activities  
 **Scope choice:** User approved **Approach 1** — XML layouts + shared theme resources (not programmatic-only, not Compose)
 
 ## Goal
@@ -95,13 +95,13 @@ Lab copy may stay denser/technical; brand strip `MIP LAB` + teal status panel on
 START_LOCK_TASK (existing reason)
         │
         ▼
-CommandExecutor → MangoLockActivity intent
+CommandExecutor → MpPayLockActivity intent
         │
         ├─ EXTRA_REASON (required today)
         └─ optional amountDue / dueDate / contractRef / statusLabel*
                 │
                 ▼
-        activity_mango_lock.xml bind → hide empty rows
+        activity_mp_pay_lock.xml bind → hide empty rows
 
 * Backend optional payload fields are a follow-up if not shipped in the same PR;
   UI must work with reason-only.

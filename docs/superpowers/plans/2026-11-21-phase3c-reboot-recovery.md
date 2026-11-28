@@ -21,11 +21,11 @@
 
 - [x] `PolicyCacheStore` update on successful command ack
 - [x] `BootCompletedReceiver` + `PolicyRecoveryActivity`
-- [x] Re-apply: LOCK → MangoLock; RESTRICT → PackageSuspendHelper; NONE → unsuspend best-effort
-- [x] Start command poll after re-apply (skipped when desired=LOCK so Mango Lock stays on top)
+- [x] Re-apply: LOCK → mp_pay lock (`MpPayLockActivity`); RESTRICT → PackageSuspendHelper; NONE → unsuspend best-effort
+- [x] Start command poll after re-apply (skipped when desired=LOCK so mp_pay lock stays on top)
 - [x] DPC `0.1.5-lab`
 
 ### Task 3: Docs
 
 - [x] CURRENT-PHASE, backlog `R2-P3-003`, lab note
-- [x] Pad 6 **cold reboot** → `MangoLockActivity` as HOME + `mLockTaskModeState=LOCKED` via persistent preferred HOME / `LockHomeAlias` (MIUI autostart alone insufficient)
+- [x] Pad 6 **cold reboot** → `MpPayLockActivity` as HOME + `mLockTaskModeState=LOCKED` via persistent preferred HOME / `LockHomeAlias` (MIUI autostart alone insufficient)

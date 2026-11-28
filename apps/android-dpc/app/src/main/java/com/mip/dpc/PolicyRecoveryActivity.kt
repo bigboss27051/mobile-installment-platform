@@ -26,7 +26,7 @@ class PolicyRecoveryActivity : Activity() {
             runOnUiThread {
                 shell.body.text = "Recovery: desired=$desired result=$result"
             }
-            // Resume poller only when not entering Lock Task — otherwise it covers Mango Lock.
+            // Resume poller only when not entering Lock Task — otherwise it covers mp_pay lock.
             if (desired != "LOCK") {
                 startActivity(
                     Intent(this, CommandPollActivity::class.java)

@@ -246,9 +246,9 @@ Move policy/heartbeat/poll/handle from `CommandPollActivity` into `CommandExecut
 
 ```kotlin
 context.startActivity(
-  Intent(context, MangoLockActivity::class.java)
+  Intent(context, MpPayLockActivity::class.java)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    .putExtra(MangoLockActivity.EXTRA_REASON, command.reason),
+    .putExtra(MpPayLockActivity.EXTRA_REASON, command.reason),
 )
 ```
 

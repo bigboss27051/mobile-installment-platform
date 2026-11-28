@@ -2,7 +2,7 @@
 
 **Sources:** `docs/reference/mango_android.mp4`, `docs/reference/mango_ios.mp4`  
 **Reviewed:** 2026-11-14 by sampling frames across each file (ffmpeg not installed; frames extracted via AVFoundation).  
-**Brand shown:** third-party **mangolock / Mango Pay / Mango Lock** tutorials. These are **not** this platform’s product.
+**Brand shown:** third-party **mangolock / Mango Pay / Mango Lock** tutorials. These are **not** this platform’s product (ours: **mp_pay**).
 
 ## What the videos establish
 
@@ -45,7 +45,7 @@ On-screen title: **เชื่อมต่อ iPhone**. Overlay steps are **5/5
 | Start | New iPhone language list; Thai selected. |
 | 1/5 Add device | Quick Start screen; caption: choose **Set Up Without Another Device**. Then **Apple Configurator on the shop iPhone** (camera overlay “กำลังเตรียม iPhone…”). Target iPhone reboots (Apple logo). |
 | 2/5 New device setup | Join Wi-Fi `Home_5G` and type password (tutorial shows a home SSID; **do not put Wi-Fi passwords in our enrollment QR/payloads**). **Remote Management**: “เจ้าของ iPhone เครื่องนี้คือ: **Anaheim Digital Tech Co, Ltd.**” with register-this-iPhone. Caption: org name is “our shop”. |
-| 3/5 Register Mango Lock | On-device form: **shop code** (`988887` from Mango Lock web “add iPhone”), **customer name**, **phone**, **contract number** (`CT-202…`) matching Mango Pay. |
+| 3/5 Register Mango Lock | On-device form: **shop code** (`988887` from competitor Mango Lock web “add iPhone”), **customer name**, **phone**, **contract number** (`CT-202…`) matching Mango Pay. |
 | 4/5 Skip remaining setup | Apple ID screen; caption: **sign in later during setup**. eSIM / remaining screens: continue or set up later. This is **competitor coaching**, not an Apple requirement we will copy as policy. |
 | 5/5 Verify | Settings: “iPhone เครื่องนี้ถูกกำกับดูแลและจัดการโดย Anaheim Digital Tech Co, Ltd.” Caption: supervised + managed by shop name = connected. |
 

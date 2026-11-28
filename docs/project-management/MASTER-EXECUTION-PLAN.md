@@ -113,10 +113,10 @@ Estimates assume one focused team, existing DM1/DM2 stubs, and **no** parallel p
 |-------|--------|----------|------------|
 | **1 — Shared Enrollment Foundation** | Registry, sessions, tokens, identity, activation, contract bind, merchant wizard states including `QR_GENERATED`, dashboard fields | **1.5–2 weeks** | Done stubs; expand tests + statuses |
 | **2 — Android QR Provisioning** | Kotlin DPC, Device Owner, QR extras, DPC install, registration, activation on **authorized** lab devices | **2–3 weeks** | Phase 1; lab phone (ask before wipe) |
-| **3 — Android Locking Prototype** | Package restrict, Lock Task Mode, Mango Lock UI, lock/unlock commands, reboot recovery; **3g soft location when RESTRICT/LOCK (D-061)** | **2–3 weeks** (+ 3g slice) | Phase 2 Device Owner evidence; 3g after 3f HTTPS |  
+| **3 — Android Locking Prototype** | Package restrict, Lock Task Mode, mp_pay lock UI, lock/unlock commands, reboot recovery; **3g soft location when RESTRICT/LOCK (D-061)** | **2–3 weeks** (+ 3g slice) | Phase 2 Device Owner evidence; 3g after 3f HTTPS |  
 | **4 — Payment Integration** | Verified payment → policy; Payment-to-Unlock; offline retry | **1.5–2 weeks** | Phase 3 + R1 payments |
 | **5 — iOS Enrollment** | Configurator, Apple Business, supervised enroll, MDM adapter, bind | **2–3 weeks** | Phase 1; ABM + vendor (**often BLOCKED** on Apple ops) |
-| **6 — iOS Locking** | Single App Mode, MDM restrictions, Mango Lock UI, payment unlock | **1.5–2 weeks** | Phase 5 + 4 orchestrator |
+| **6 — iOS Locking** | Single App Mode, MDM restrictions, mp_pay lock UI, payment unlock | **1.5–2 weeks** | Phase 5 + 4 orchestrator |
 | **7 — Production Validation** | Compatibility, policy review, distribution, security, recovery, commercial readiness | **2–4 weeks** + external reviews | Phases 2–6 evidence |
 
 **Do not** start Phase 3 until Phase 2 has at least one real Device Owner check-in. **Do not** start Phase 6 until Phase 5 has supervised check-in. R3 may proceed independently.

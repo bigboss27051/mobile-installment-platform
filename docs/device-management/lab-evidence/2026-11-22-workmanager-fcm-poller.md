@@ -39,7 +39,7 @@ On-device: `versionName=0.1.18-lab`, `versionCode=18`.
 | Backend | `[FcmPushAdapter] FCM POLL_NOW → cjkq_lGF…` (masked server log) |
 | Device | `WM-WorkerWrapper: Worker result SUCCESS … CommandPollWorker` |
 | Command | `START_LOCK_TASK` → `ACKED_SUCCESS` |
-| UX | `MangoLockActivity` foreground; `mLockTaskModeState=LOCKED` |
+| UX | `MpPayLockActivity` foreground; `mLockTaskModeState=LOCKED` |
 | Heartbeat | `last_heartbeat_at` advanced to `2026-11-22T15:15:14.118Z` (worker path, not Activity UI) |
 
 `CommandPollActivity` was **not** launched during the proof window (only launcher metadata lines from APK update).

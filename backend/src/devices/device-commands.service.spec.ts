@@ -129,12 +129,12 @@ describe('DeviceCommandsService', () => {
     expect(fcm.sendPollNow).toHaveBeenCalledWith('fcm-lock-token');
   });
 
-  it('does not call FCM on STOP_LOCK_TASK enqueue', async () => {
+  it('calls FCM POLL_NOW on STOP_LOCK_TASK enqueue so unlock is not WM-delayed', async () => {
     prisma.device.findFirst.mockResolvedValue({
       id: 'dev-1',
       tenantId: 'tenant-a',
       platform: 'ANDROID',
-      fcmToken: 'fcm-should-not-fire',
+      fcmToken: 'fcm-unlock-token',
     });
     prisma.deviceCommand.create.mockResolvedValue({ id: 'cmd-stop' });
     prisma.devicePolicyState.upsert.mockResolvedValue({});
@@ -146,7 +146,7 @@ describe('DeviceCommandsService', () => {
       reason: 'paid',
     });
 
-    expect(fcm.sendPollNow).not.toHaveBeenCalled();
+    expect(fcm.sendPollNow).toHaveBeenCalledWith('fcm-unlock-token');
   });
 
   it('still returns command when FCM sendPollNow rejects', async () => {

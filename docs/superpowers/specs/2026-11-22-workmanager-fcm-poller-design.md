@@ -25,7 +25,7 @@ Replace reliance on a foreground `CommandPollActivity` loop for shop-relevant co
 | ID | Decision |
 |----|----------|
 | W-1 | Periodic WorkManager is the baseline poll path (~15 minutes minimum interval per WM) |
-| W-2 | FCM data message `type=POLL_NOW` only after successful enqueue of `START_LOCK_TASK` or `START_PACKAGE_SUSPEND` |
+| W-2 | FCM data message `type=POLL_NOW` after successful enqueue of **any** Android device command (START and STOP). Amended by D-075 — STOP previously waited for periodic WM only |
 | W-3 | FCM send is best-effort: enqueue/command path must not fail if push fails or token missing |
 | W-4 | `CommandPollActivity` remains lab debug UI; not required for lock/restrict delivery after this slice |
 | W-5 | Firebase project lab: `mip-dev-9f7aa`; Android app `com.mip.dpc` via `google-services.json` |
@@ -56,7 +56,7 @@ PeriodicWork (~15m) ───────────────►│
 
 | Component | Responsibility |
 |-----------|----------------|
-| `CommandPollWorker` | Shared poll cycle: load `AgentTokenStore`, policy fetch/cache, heartbeat, poll commands, execute + ack. Start `MangoLockActivity` with `FLAG_ACTIVITY_NEW_TASK` when applying `START_LOCK_TASK`. |
+| `CommandPollWorker` | Shared poll cycle: load `AgentTokenStore`, policy fetch/cache, heartbeat, poll commands, execute + ack. Start `MpPayLockActivity` with `FLAG_ACTIVITY_NEW_TASK` when applying `START_LOCK_TASK`. |
 | `CommandPollScheduler` | After successful check-in (and app start if session present): `enqueueUniquePeriodicWork` with network constraint. |
 | `MipFirebaseMessagingService` | On data message `POLL_NOW`, enqueue unique/expedited OneTimeWork for `CommandPollWorker`. No notification. |
 | Token sync | After check-in + `onNewToken`: `POST /devices/agent/push-token` with agent header. |
@@ -72,7 +72,7 @@ Extract command handling from `CommandPollActivity` into a Context-based helper 
 | Migration | `devices.fcm_token` (nullable text), `devices.fcm_token_updated_at` (nullable timestamptz) |
 | `POST /api/v1/devices/agent/push-token` | Body `{ "token": string }` (non-empty). Auth: `X-Device-Agent-Token`. Updates only the device bound to that agent token. Tenant isolation via device row. |
 | `FcmPushAdapter` | Init from `FCM_SERVICE_ACCOUNT_PATH`. If unset: no-op logger. `sendPollNow(token)` sends data-only payload. |
-| Hook | In command enqueue service after successful create: if type is `START_LOCK_TASK` or `START_PACKAGE_SUSPEND` and `fcm_token` present → `sendPollNow` (catch/log errors). |
+| Hook | In command enqueue service after successful create: if `fcm_token` present → `sendPollNow` (catch/log errors). Applies to START and STOP (D-075). |
 | Env | `.env.example`: `FCM_SERVICE_ACCOUNT_PATH=` comment. Root Admin JSON gitignored (e.g. `*-firebase-adminsdk-*.json`). |
 
 ## Security / PDPA / lab hygiene
@@ -88,7 +88,7 @@ Extract command handling from `CommandPollActivity` into a Context-based helper 
 |------|------|
 | Periodic | With agent session and Activity **not** in foreground, `last_heartbeat_at` advances within one WM period (or forced OneTimeWork for lab) |
 | FCM wake | Enqueue `START_LOCK_TASK` → device receives data message → worker runs → command acked / Lock Task without opening `CommandPollActivity` first |
-| Non-wake | Enqueue `STOP_LOCK_TASK` alone does not require FCM (periodic or debug Activity may still clear) |
+| Unlock wake | Enqueue `STOP_LOCK_TASK` / `STOP_PACKAGE_SUSPEND` also sends FCM when token present (D-075); periodic WM remains fallback |
 | Secrets | Admin JSON untracked; app builds with `google-services.json` |
 
 ## Docs to update when done

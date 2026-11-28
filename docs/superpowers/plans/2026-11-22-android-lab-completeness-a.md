@@ -33,7 +33,7 @@ Prefer: extend `PolicyRecovery.reapply` with `"REMINDER" -> { clear lock home; u
 
 - [x] **Step 1: Tests for reminder desired flags**
 - [x] **Step 2: ReminderNotifier + PolicyRecovery branch**
-- [x] **Step 3: Wire MangoLockActivity emergency button using EmergencyDial**
+- [x] **Step 3: Wire MpPayLockActivity emergency button using EmergencyDial**
 - [x] **Step 4: versionName `0.1.17-lab`; update README**
 
 ### Task 3: Portal outstandingBalance

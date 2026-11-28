@@ -118,11 +118,8 @@ export class DeviceCommandsService {
       return command;
     });
 
-    if (
-      (input.type === DeviceCommandType.START_LOCK_TASK ||
-        input.type === DeviceCommandType.START_PACKAGE_SUSPEND) &&
-      device.fcmToken?.trim()
-    ) {
+    // Wake DPC for lock/unlock/restrict (D-075). STOP used to wait up to ~15m WM poll.
+    if (device.fcmToken?.trim()) {
       void this.fcm.sendPollNow(device.fcmToken).catch((err) => {
         this.logger.warn(
           `FCM sendPollNow failed for device ${device.id}: ${

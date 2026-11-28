@@ -61,17 +61,17 @@
         </activity>
 
         <activity
-            android:name=".MangoLockActivity"
+            android:name=".MpPayLockActivity"
             android:exported="true"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
             android:documentLaunchMode="never"
             android:theme="@style/Theme.Mip.Dpc" />
 
-        <!-- Enabled only while desired LOCK so reboot lands on Mango Lock without MIUI autostart. -->
+        <!-- Enabled only while desired LOCK so reboot lands on mp_pay lock without MIUI autostart. -->
         <activity-alias
             android:name=".LockHomeAlias"
-            android:targetActivity=".MangoLockActivity"
+            android:targetActivity=".MpPayLockActivity"
             android:enabled="false"
             android:exported="true">
             <intent-filter>

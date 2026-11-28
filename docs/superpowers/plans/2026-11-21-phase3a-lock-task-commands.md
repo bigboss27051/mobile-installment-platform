@@ -20,7 +20,7 @@
 | `backend/src/devices/device-commands.service.ts` | enqueue / poll / ack |
 | `backend/src/devices/devices.controller.ts` (or new) | staff `POST .../commands` |
 | `backend/src/devices/device-agent.controller.ts` | `GET/POST` agent command routes |
-| `apps/android-dpc/.../MangoLockActivity.kt` | Lock Task UI shell |
+| `apps/android-dpc/.../MpPayLockActivity.kt` | Lock Task UI shell |
 | `apps/android-dpc/.../CommandPollWorker.kt` or activity loop | poll + ack |
 
 ## Tasks
@@ -45,7 +45,7 @@
 
 ### Task 4: DPC Lock Task
 
-- [x] `MangoLockActivity` + allowlist lock-task packages
+- [x] `MpPayLockActivity` + allowlist lock-task packages
 - [x] On `START_LOCK_TASK`: start activity + `startLockTask`; ack `LOCK_TASK`
 - [x] On `STOP_LOCK_TASK`: `stopLockTask`; ack `NONE`
 - [x] Lab: poll every N seconds when DO; no secrets in logs

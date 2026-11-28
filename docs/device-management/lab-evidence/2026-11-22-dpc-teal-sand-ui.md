@@ -17,6 +17,6 @@
 ## Notes
 
 - Install via `adb push` + `pm install -r` (MIUI USB install dialog may cancel `adb install -r`).
-- Unlock lab Lock Task: `am start -n com.mip.dpc/.MangoLockActivity -f 0x10008000 --ez clearLock true` then Home.
+- Unlock lab Lock Task: `am start -n com.mip.dpc/.MpPayLockActivity -f 0x10008000 --ez clearLock true` then Home.
 - Reminder may not appear if package notification importance is `NONE`; grant `POST_NOTIFICATION` / allow app notifications.
 - Desired policy left at `NONE` after the run.

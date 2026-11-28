@@ -3,6 +3,7 @@ package com.mip.dpc
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -11,21 +12,18 @@ import android.widget.TextView
 
 /**
  * Lab LOCK presentation. Uses Lock Task Mode — not [DevicePolicyManager.lockNow].
+ *
+ * `launchMode=singleTask`: unlock from WorkManager reuses this instance via [onNewIntent].
+ * Clear must run there too — not only in [onCreate].
  */
-class MangoLockActivity : Activity() {
+class MpPayLockActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (intent.getBooleanExtra(EXTRA_CLEAR_LOCK, false)) {
-            try {
-                stopLockTask()
-            } catch (_: Exception) {
-                // already stopped
-            }
-            finish()
+        if (applyClearLockIfRequested(intent)) {
             return
         }
 
-        setContentView(R.layout.activity_mango_lock)
+        setContentView(R.layout.activity_mp_pay_lock)
         val model =
             LockUiModel.from(
                 reason = intent.getStringExtra(EXTRA_REASON),
@@ -46,6 +44,28 @@ class MangoLockActivity : Activity() {
             dpm.setLockTaskPackages(admin, EmergencyDial.lockTaskPackages(packageName))
             startLockTask()
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyClearLockIfRequested(intent)
+    }
+
+    /** @return true when this activity is finishing after a clear request */
+    private fun applyClearLockIfRequested(intent: Intent?): Boolean {
+        val clear =
+            intent?.getBooleanExtra(LockClearRequest.EXTRA_CLEAR_LOCK, false)
+        if (LockClearRequest.action(clear) != LockIntentAction.CLEAR) {
+            return false
+        }
+        try {
+            stopLockTask()
+        } catch (_: Exception) {
+            // already stopped
+        }
+        finish()
+        return true
     }
 
     private fun bindLockUi(model: LockUiModel) {
@@ -93,6 +113,6 @@ class MangoLockActivity : Activity() {
         const val EXTRA_CONTRACT_REF = "contractRef"
 
         /** When true, exit Lock Task and finish (used from WorkManager / non-Activity context). */
-        const val EXTRA_CLEAR_LOCK = "clearLock"
+        const val EXTRA_CLEAR_LOCK = LockClearRequest.EXTRA_CLEAR_LOCK
     }
 }

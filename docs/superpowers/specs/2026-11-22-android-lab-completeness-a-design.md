@@ -30,7 +30,7 @@ Close the remaining **lab-completeness** gaps so Android presentation matches th
 | ID | Decision |
 |----|----------|
 | A-1 | REMINDER on device = notification only; no package suspend, no Lock Task, no soft location (still gated by D-061) |
-| A-2 | Emergency under LOCK = explicit dialer intent from `MangoLockActivity` (lab: `tel:112`); keep dialer/messages unsuspended under RESTRICT |
+| A-2 | Emergency under LOCK = explicit dialer intent from `MpPayLockActivity` (lab: `tel:112`); keep dialer/messages unsuspended under RESTRICT |
 | A-3 | Customer pay amount defaults to portal **outstanding** for that contract; user may still need server validation (existing overpay reject) |
 | A-4 | Flutter lock UI remains **presentation**; OS lock remains DPC Lock Task — copy must not claim OS lock from the customer app alone |
 | A-5 | Bump DPC `versionName` to `0.1.17-lab` |
@@ -51,7 +51,7 @@ When desired returns to `NONE`: cancel the reminder notification.
 
 ### LOCK emergency
 
-On `MangoLockActivity`:
+On `MpPayLockActivity`:
 
 - Keep Lock Task Mode behavior.
 - Add a clear **Emergency call** control that starts `ACTION_DIAL` or `ACTION_CALL` with `tel:112` (prefer `ACTION_DIAL` so user confirms; document that true `CALL_PHONE` may need permission — lab default **DIAL**).

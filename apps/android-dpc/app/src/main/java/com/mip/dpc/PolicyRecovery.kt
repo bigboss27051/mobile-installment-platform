@@ -27,9 +27,9 @@ object PolicyRecovery {
                 LockHomeHelper.enableLockHome(app, dpm, admin)
                 Handler(Looper.getMainLooper()).post {
                     app.startActivity(
-                        Intent(app, MangoLockActivity::class.java)
+                        Intent(app, MpPayLockActivity::class.java)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            .putExtra(MangoLockActivity.EXTRA_REASON, "reboot-recovery"),
+                            .putExtra(MpPayLockActivity.EXTRA_REASON, "reboot-recovery"),
                     )
                 }
                 ReminderPolicy.resultCode("LOCK")

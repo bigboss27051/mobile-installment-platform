@@ -71,10 +71,11 @@ object CommandExecutor {
                     )
                     return
                 }
+                applyCleanup(context, dpm, admin, command.type)
                 context.startActivity(
-                    Intent(context, MangoLockActivity::class.java)
+                    Intent(context, MpPayLockActivity::class.java)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        .putExtra(MangoLockActivity.EXTRA_REASON, command.reason),
+                        .putExtra(MpPayLockActivity.EXTRA_REASON, command.reason),
                 )
                 LockHomeHelper.enableLockHome(context, dpm, admin)
                 CommandClient.ack(
@@ -87,20 +88,7 @@ object CommandExecutor {
                 PolicyCacheStore(context).save("LOCK", "LOCK_TASK", bumpVersion(context))
             }
             "STOP_LOCK_TASK" -> {
-                LockHomeHelper.clearLockHome(context, dpm, admin)
-                if (context is Activity) {
-                    try {
-                        context.stopLockTask()
-                    } catch (_: Exception) {
-                        // already stopped
-                    }
-                } else {
-                    context.startActivity(
-                        Intent(context, MangoLockActivity::class.java)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            .putExtra(MangoLockActivity.EXTRA_CLEAR_LOCK, true),
-                    )
-                }
+                applyCleanup(context, dpm, admin, command.type)
                 CommandClient.ack(
                     session,
                     command.id,
@@ -111,6 +99,7 @@ object CommandExecutor {
                 PolicyCacheStore(context).save("NONE", "NONE", bumpVersion(context))
             }
             "START_PACKAGE_SUSPEND" -> {
+                applyCleanup(context, dpm, admin, command.type)
                 val result = PackageSuspendHelper.suspendNonEssential(context, dpm, admin)
                 CommandClient.ack(
                     session,
@@ -124,6 +113,7 @@ object CommandExecutor {
                 }
             }
             "STOP_PACKAGE_SUSPEND" -> {
+                applyCleanup(context, dpm, admin, command.type)
                 val result = PackageSuspendHelper.unsuspendAll(context, dpm, admin)
                 CommandClient.ack(
                     session,
@@ -145,6 +135,42 @@ object CommandExecutor {
                     resultCode = "UNKNOWN_COMMAND",
                 )
             }
+        }
+    }
+
+    /**
+     * Matches [PolicyRecovery] side effects. WorkManager always passes applicationContext,
+     * so Lock Task exit goes through [LockClearRequest] / [MpPayLockActivity.onNewIntent].
+     */
+    private fun applyCleanup(
+        context: Context,
+        dpm: DevicePolicyManager,
+        admin: ComponentName,
+        type: String,
+    ) {
+        if (CommandCleanup.requiresCancelReminder(type)) {
+            ReminderNotifier.cancel(context)
+        }
+        if (CommandCleanup.requiresClearLockHome(type)) {
+            LockHomeHelper.clearLockHome(context, dpm, admin)
+        }
+        if (CommandCleanup.requiresClearLockUi(type)) {
+            if (context is Activity) {
+                try {
+                    context.stopLockTask()
+                } catch (_: Exception) {
+                    // already stopped
+                }
+            }
+            context.startActivity(
+                Intent(context, MpPayLockActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra(LockClearRequest.EXTRA_CLEAR_LOCK, true),
+            )
+        }
+        if (CommandCleanup.requiresUnsuspend(type) && type != "STOP_PACKAGE_SUSPEND") {
+            // STOP_PACKAGE_SUSPEND calls unsuspendAll as its primary action below.
+            PackageSuspendHelper.unsuspendAll(context, dpm, admin)
         }
     }
 
