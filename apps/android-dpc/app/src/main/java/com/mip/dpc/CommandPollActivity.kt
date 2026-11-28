@@ -5,14 +5,19 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.widget.TextView
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 /**
  * Lab poller for queued lock-task commands. UI tick; work runs via [CommandExecutor].
+ *
+ * Only one poll runs at a time — overlapping threads caused ANRs when the API was slow/down
+ * (each runOnce can block tens of seconds on connect timeouts).
  */
 class CommandPollActivity : Activity() {
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var statusView: TextView
+    private val pollInFlight = AtomicBoolean(false)
     private val tick = object : Runnable {
         override fun run() {
             pollOnce()
@@ -34,16 +39,26 @@ class CommandPollActivity : Activity() {
     }
 
     private fun pollOnce() {
+        if (!pollInFlight.compareAndSet(false, true)) {
+            return
+        }
         thread {
-            val result = CommandExecutor.runOnce(this)
-            runOnUiThread {
-                statusView.text = if (result.noSession) {
-                    "No agent token. Re-check-in first."
-                } else {
-                    "HB=${if (result.heartbeatOk) "ok" else "fail"}; " +
-                        "loc=${result.locationSource ?: "none"}; " +
-                        "polled ${result.commandCount} command(s)."
+            try {
+                val result = CommandExecutor.runOnce(applicationContext)
+                runOnUiThread {
+                    if (isFinishing) {
+                        return@runOnUiThread
+                    }
+                    statusView.text = if (result.noSession) {
+                        "No agent token. Re-check-in first."
+                    } else {
+                        "HB=${if (result.heartbeatOk) "ok" else "fail"}; " +
+                            "loc=${result.locationSource ?: "none"}; " +
+                            "polled ${result.commandCount} command(s)."
+                    }
                 }
+            } finally {
+                pollInFlight.set(false)
             }
         }
     }

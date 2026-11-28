@@ -7,9 +7,13 @@ import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.Executors
 
 object PushTokenClient {
     private const val TAG = "MipPushToken"
+    private val io = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "mip-push-token").apply { isDaemon = true }
+    }
 
     fun register(context: Context, token: String) {
         val session = AgentTokenStore(context.applicationContext).load()
@@ -39,9 +43,10 @@ object PushTokenClient {
     }
 
     fun registerIfPossible(context: Context) {
+        val app = context.applicationContext
         FirebaseMessaging.getInstance().token
-            .addOnSuccessListener { register(context.applicationContext, it) }
-            .addOnFailureListener { e ->
+            .addOnSuccessListener(io) { register(app, it) }
+            .addOnFailureListener(io) { e ->
                 Log.w(TAG, "FCM token fetch failed: ${e.message}")
             }
     }
