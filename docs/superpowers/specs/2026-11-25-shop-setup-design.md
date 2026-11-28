@@ -1,8 +1,8 @@
 # Shop Setup Checklist Design
 
 **Date:** 2026-11-25  
-**Status:** Approved design, not implemented  
-**Decision:** D-075 (proposed; record in `docs/project-management/DECISION-LOG.md` when implementation starts)  
+**Status:** Implemented  
+**Decision:** D-079  
 **Depends on:** Merchant Web enroll, `GET /api/v1/devices/enrollment/dpc-config-status`, `devices.enroll`
 
 ## Goal

@@ -61,6 +61,9 @@ describe('Serial unit through contract, QR, and check-in (e2e)', () => {
       await prisma.deviceEnrollmentSession.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
+      await prisma.tenantShopSetup.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
       await prisma.device.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
@@ -282,6 +285,17 @@ describe('Serial unit through contract, QR, and check-in (e2e)', () => {
       .post(`/api/v1/contracts/${contractId}/activate`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(201);
+
+    await request(app.getHttpServer())
+      .put('/api/v1/devices/shop-setup')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        dpcAttested: true,
+        googleAccountReady: true,
+        wipeNeedsOnDeviceUnlock: true,
+        noRemoteFrpBypass: true,
+      })
+      .expect(200);
 
     const session = await request(app.getHttpServer())
       .post('/api/v1/devices/enrollment-sessions')

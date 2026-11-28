@@ -32,6 +32,7 @@ function clearDpcEnv(): void {
 describe('EnrollmentService', () => {
   const prisma = {
     contract: { findFirst: jest.fn() },
+    tenantShopSetup: { findUnique: jest.fn() },
     deviceEnrollmentSession: {
       findFirst: jest.fn(),
       findMany: jest.fn(),
@@ -106,6 +107,47 @@ describe('EnrollmentService', () => {
     expect(prisma.deviceEnrollmentSession.create).not.toHaveBeenCalled();
   });
 
+  it('blocks Android create when the shop setup row is missing', async () => {
+    prisma.contract.findFirst.mockResolvedValue({
+      id: 'c1',
+      tenantId: 'tenant-a',
+      imeiUnitId: 'imei-1',
+      status: ContractStatus.ACTIVE,
+    });
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(null);
+    prisma.tenantShopSetup.findUnique.mockResolvedValue(null);
+    await expect(
+      service.create(tenantCtx, { contractId: 'c1', platform: 'ANDROID' }, 'idem-shop'),
+    ).rejects.toMatchObject({ message: 'SHOP_SETUP_REQUIRED' });
+    expect(prisma.deviceEnrollmentSession.create).not.toHaveBeenCalled();
+  });
+
+  it('does not require shop setup for iOS create', async () => {
+    prisma.contract.findFirst.mockResolvedValue({
+      id: 'c1',
+      tenantId: 'tenant-a',
+      imeiUnitId: 'imei-1',
+      status: ContractStatus.ACTIVE,
+    });
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(null);
+    prisma.deviceEnrollmentSession.create.mockImplementation(async (args: {
+      data: Record<string, unknown>;
+    }) => ({
+      id: 's-ios',
+      status: args.data.status,
+      platform: args.data.platform,
+      expiresAt: args.data.expiresAt,
+      tokenHash: args.data.tokenHash,
+    }));
+    const result = await service.create(
+      tenantCtx,
+      { contractId: 'c1', platform: 'IOS' },
+      'idem-ios',
+    );
+    expect(result.platform).toBe('IOS');
+    expect(prisma.tenantShopSetup.findUnique).not.toHaveBeenCalled();
+  });
+
   it('creates a session with hashed token and does not persist raw token', async () => {
     prisma.contract.findFirst.mockResolvedValue({
       id: 'c1',
@@ -114,6 +156,12 @@ describe('EnrollmentService', () => {
       status: ContractStatus.ACTIVE,
     });
     prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(null);
+    prisma.tenantShopSetup.findUnique.mockResolvedValue({
+      dpcAttested: true,
+      googleAccountReady: true,
+      wipeNeedsOnDeviceUnlock: true,
+      noRemoteFrpBypass: true,
+    });
     prisma.deviceEnrollmentSession.create.mockImplementation(async (args: {
       data: Record<string, unknown>;
     }) => ({
@@ -139,6 +187,40 @@ describe('EnrollmentService', () => {
     expect(created.status).toBe('WAITING_FOR_DEVICE');
   });
 
+  it('blocks Android QR when shop setup is not ready and still blocks when DPC is missing after a ready row', async () => {
+    const session = {
+      id: 's1',
+      tenantId: 'tenant-a',
+      platform: 'ANDROID',
+      status: 'WAITING_FOR_DEVICE',
+      expiresAt: new Date(Date.now() + 60_000),
+      tokenHash: 'aa'.repeat(32),
+    };
+    prisma.deviceEnrollmentSession.findFirst.mockResolvedValue(session);
+    prisma.tenantShopSetup.findUnique.mockResolvedValue({
+      dpcAttested: true,
+      googleAccountReady: false,
+      wipeNeedsOnDeviceUnlock: true,
+      noRemoteFrpBypass: true,
+    });
+    applyDpcEnv();
+    await expect(service.materializeQr(tenantCtx, 's1')).rejects.toMatchObject({
+      message: 'SHOP_SETUP_REQUIRED',
+    });
+    expect(prisma.deviceEnrollmentSession.update).not.toHaveBeenCalled();
+
+    prisma.tenantShopSetup.findUnique.mockResolvedValue({
+      dpcAttested: true,
+      googleAccountReady: true,
+      wipeNeedsOnDeviceUnlock: true,
+      noRemoteFrpBypass: true,
+    });
+    clearDpcEnv();
+    await expect(service.materializeQr(tenantCtx, 's1')).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+  });
+
   it('sets QR_GENERATED when Android QR is materialized', async () => {
     prisma.deviceEnrollmentSession.update.mockImplementation(async (args: {
       data: Record<string, unknown>;
@@ -149,6 +231,12 @@ describe('EnrollmentService', () => {
     }));
 
     applyDpcEnv();
+    prisma.tenantShopSetup.findUnique.mockResolvedValue({
+      dpcAttested: true,
+      googleAccountReady: true,
+      wipeNeedsOnDeviceUnlock: true,
+      noRemoteFrpBypass: true,
+    });
     const expiresAt = new Date(Date.now() + 60_000);
     prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
       id: 's1',
@@ -180,6 +268,12 @@ describe('EnrollmentService', () => {
 
   it('refuses QR when DPC settings are missing and leaves the session unchanged', async () => {
     clearDpcEnv();
+    prisma.tenantShopSetup.findUnique.mockResolvedValue({
+      dpcAttested: true,
+      googleAccountReady: true,
+      wipeNeedsOnDeviceUnlock: true,
+      noRemoteFrpBypass: true,
+    });
     prisma.deviceEnrollmentSession.findFirst.mockResolvedValue({
       id: 's1',
       tenantId: 'tenant-a',

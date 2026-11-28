@@ -7,13 +7,14 @@
 
 1. Prefer stock with **no personal Google account** (or a known shop FRP account). See [FRP-AND-REENROLL.md](./FRP-AND-REENROLL.md).
 2. Power on → Wi-Fi → if FRP appears, unlock **on the device** with the previous Google account (never type passwords into Merchant Web).
-3. Merchant Web → **Enroll**:
+3. Merchant Web → **ตั้งค่าร้าน** once per shop: tick all four items and save. One item is that someone at the shop can unlock FRP on the device with the shop Google account. Do not type that email or password into the page. Android QR stays blocked until this save.
+4. Merchant Web → **Enroll**:
    - Confirm DPC status shows ready (server `DPC_*` configured). If missing, stop — ops must host APK + set env ([DPC-HOSTING-CHECKLIST.md](./DPC-HOSTING-CHECKLIST.md)).
    - Complete three FRP attestations.
-   - Consent → Create session → Issue QR (no secrets in QR).
-4. On phone: Welcome **6 taps** → scan QR → wait for Device Owner + check-in (`ENROLLING`).
-5. Staff: activate device management + bind contract (reason required).
-6. Spot-check: heartbeat / policy panel; under LOCK, emergency dial **112** must work.
+   - Consent → Create session → Issue QR (no secrets in QR). If the page says shop setup is required, go back to **ตั้งค่าร้าน**.
+5. On phone: Welcome **6 taps** → scan QR → wait for Device Owner + check-in (`ENROLLING`).
+6. Staff: activate device management + bind contract (reason required).
+7. Spot-check: heartbeat / policy panel; under LOCK, emergency dial **112** must work.
 
 ## After customer wipe / re-enroll
 

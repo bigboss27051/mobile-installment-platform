@@ -7,6 +7,19 @@ describe('merchant api client', () => {
     vi.unstubAllGlobals();
   });
 
+  it('returns null when the response data field is null', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: null }),
+      }),
+    );
+
+    await expect(apiRequest('/api/v1/devices/shop-setup')).resolves.toBeNull();
+  });
+
   it('sends a Bearer token on authenticated requests', async () => {
     setAccessToken('staff-token');
     const fetchMock = vi.fn().mockResolvedValue({

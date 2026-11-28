@@ -320,6 +320,7 @@ model Tenant {
   lineAuditEvents         LineAuditEvent[]
   devicePolicySettings    TenantDevicePolicySettings?
   deviceLockApprovals     DeviceLockApproval[]
+  shopSetup               TenantShopSetup?
 
   @@map("tenants")
 }
@@ -365,6 +366,7 @@ model User {
   devicePolicyEvaluationRuns DevicePolicyEvaluationRun[]
   deviceRecoveryRequests    DeviceRecoveryRequest[]
   resolvedLockApprovals     DeviceLockApproval[] @relation("LockApprovalResolver")
+  shopSetupsCompleted       TenantShopSetup[] @relation("ShopSetupCompletedBy")
   branchAssignments UserBranchAssignment[]
 
   @@index([tenantId])
@@ -1050,6 +1052,22 @@ model DevicePolicyEvaluationRun {
   @@unique([tenantId, idempotencyKey])
   @@index([tenantId, createdAt])
   @@map("device_policy_evaluation_runs")
+}
+
+model TenantShopSetup {
+  tenantId                 String    @id @map("tenant_id") @db.Uuid
+  dpcAttested              Boolean   @map("dpc_attested")
+  googleAccountReady       Boolean   @map("google_account_ready")
+  wipeNeedsOnDeviceUnlock  Boolean   @map("wipe_needs_on_device_unlock")
+  noRemoteFrpBypass        Boolean   @map("no_remote_frp_bypass")
+  completedAt              DateTime? @map("completed_at")
+  completedByUserId        String?   @map("completed_by_user_id") @db.Uuid
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+  tenant                   Tenant    @relation(fields: [tenantId], references: [id])
+  completedBy              User?     @relation("ShopSetupCompletedBy", fields: [completedByUserId], references: [id])
+
+  @@map("tenant_shop_setups")
 }
 
 model TenantDevicePolicySettings {

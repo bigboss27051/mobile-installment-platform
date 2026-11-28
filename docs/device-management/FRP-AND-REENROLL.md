@@ -33,7 +33,7 @@ Xiaomi Pad 6 was Device Owner (`com.mip.dpc`). After factory reset, FRP appeared
 1. Confirm the person at the counter can unlock FRP with the **same Google account** previously used on the phone, **or** the unit is new / never personal-accounted.
 2. Complete FRP + Wi-Fi on the device (staff do not type customer Google passwords into Merchant Web).
 3. Staff: Merchant Web **Devices** → recovery panel → type `REENROLL` + reason (or API `POST /api/v1/devices/:id/recovery-requests`). This cancels open enrollment sessions for that device/IMEI, clears the device agent token, expires queued lock commands, and resets desired/platform policy to `NONE`. **No** remote FRP clear.
-4. Complete Merchant Web FRP checklist, then create a **new** enrollment session → show QR (no secrets in QR). Old `enc_` tokens are invalid.
+4. Merchant Web **ตั้งค่าร้าน** must already be saved (four attestations, no Google email or password). Then complete the enroll-page FRP checklist and create a **new** enrollment session → show QR (no secrets in QR). Old `enc_` tokens are invalid. If create or QR returns `SHOP_SETUP_REQUIRED`, save **ตั้งค่าร้าน** first.
 5. 6-tap → scan → custom DPC Device Owner → check-in → activate / bind as usual.
 6. Audit is `DeviceAuditAction.RECOVERY` — not a collections lock.
 
@@ -48,7 +48,7 @@ Normal customer re-enroll after wipe must **not** depend on USB debugging, `dpm 
 | 1 | Staff | Ask before wipe; confirm FRP account available |
 | 2 | Customer/staff on device | Unlock FRP on-device with previous Google account |
 | 3 | Staff | Merchant Web: recovery `REENROLL` + reason |
-| 4 | Staff | Enroll page: FRP attestations → Issue **new** QR |
+| 4 | Staff | **ตั้งค่าร้าน** saved, then enroll page: FRP attestations → Issue **new** QR |
 | 5 | Staff/customer | Welcome 6-tap → scan QR → wait for DO + check-in |
 | 6 | Staff | Activate + bind contract when session allows |
 

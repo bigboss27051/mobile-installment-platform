@@ -347,4 +347,66 @@ describe('EnrollPage QR issue button', () => {
     expect(container.textContent).toContain('รหัสเซสชัน 1674-EFEA');
     expect(container.textContent).not.toContain('1674efea-1d9e-4ed5-8074-ad4d371e6ba2');
   });
+
+  it('shows the shop-setup prompt and does not render a QR when create returns SHOP_SETUP_REQUIRED', async () => {
+    vi.stubGlobal('fetch', fetchMock);
+    const opened: string[] = [];
+    fetchMock.mockImplementation((path: string, init?: RequestInit) => {
+      if (String(path).includes('/enrollment-sessions/open')) {
+        return jsonResponse(200, { data: null });
+      }
+      if (String(path).includes('/dpc-config-status')) {
+        return jsonResponse(200, { data: { configured: true, missing: [] } });
+      }
+      if ((init?.method ?? 'GET') === 'GET' && String(path).includes('/api/v1/contracts')) {
+        return jsonResponse(200, {
+          data: [
+            {
+              id: '22222222-2222-4222-8222-222222222222',
+              status: 'ACTIVE',
+              principal: '8000.00',
+              termMonths: 6,
+            },
+          ],
+        });
+      }
+      if (init?.method === 'POST' && String(path).includes('/enrollment-sessions')) {
+        return jsonResponse(409, { error: { message: 'SHOP_SETUP_REQUIRED' } });
+      }
+      return jsonResponse(200, { data: null });
+    });
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <I18nProvider>
+          <EnrollPage
+            onError={() => undefined}
+            apiError={(message) => message}
+            onOpenShopSetup={() => opened.push('shop')}
+          />
+        </I18nProvider>,
+      );
+    });
+    await checkConsentAndFrp(container);
+    const form = container.querySelector('form') as HTMLFormElement;
+    await act(async () => {
+      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('ต้องบันทึกตั้งค่าร้าน');
+    expect(container.querySelector('[data-testid="enroll-qr"]')).toBeNull();
+    const open = container.querySelector(
+      '[data-testid="enroll-open-shop-setup"]',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      open.click();
+    });
+    expect(opened).toEqual(['shop']);
+  });
 });

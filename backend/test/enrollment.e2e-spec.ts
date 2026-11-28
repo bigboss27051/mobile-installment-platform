@@ -74,6 +74,9 @@ describe('Device enrollment sessions (e2e)', () => {
       await prisma.deviceEnrollmentSession.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
+      await prisma.tenantShopSetup.deleteMany({
+        where: { tenantId: { in: createdTenantIds } },
+      });
       await prisma.device.deleteMany({
         where: { tenantId: { in: createdTenantIds } },
       });
@@ -301,6 +304,33 @@ describe('Device enrollment sessions (e2e)', () => {
       .post(`/api/v1/contracts/${contractId}/activate`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(201);
+
+    const blockedAndroid = await request(app.getHttpServer())
+      .post('/api/v1/devices/enrollment-sessions')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .set('Idempotency-Key', `enroll-blocked-${now}`)
+      .send({ contractId, platform: 'ANDROID' })
+      .expect(409);
+    expect(blockedAndroid.body.error.message).toBe('SHOP_SETUP_REQUIRED');
+
+    const shopSetup = await request(app.getHttpServer())
+      .put('/api/v1/devices/shop-setup')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        dpcAttested: true,
+        googleAccountReady: true,
+        wipeNeedsOnDeviceUnlock: true,
+        noRemoteFrpBypass: true,
+      })
+      .expect(200);
+    expect(shopSetup.body.data.ready).toBe(true);
+    expect(shopSetup.body.data.completedByUserId).toBeUndefined();
+
+    const otherShop = await request(app.getHttpServer())
+      .get('/api/v1/devices/shop-setup')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(200);
+    expect(otherShop.body.data).toBeNull();
 
     const createdSession = await request(app.getHttpServer())
       .post('/api/v1/devices/enrollment-sessions')
@@ -575,6 +605,17 @@ describe('Device enrollment sessions (e2e)', () => {
       .post(`/api/v1/contracts/${contractId}/activate`)
       .set('Authorization', `Bearer ${tokenA}`)
       .expect(201);
+
+    await request(app.getHttpServer())
+      .put('/api/v1/devices/shop-setup')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        dpcAttested: true,
+        googleAccountReady: true,
+        wipeNeedsOnDeviceUnlock: true,
+        noRemoteFrpBypass: true,
+      })
+      .expect(200);
 
     const session = await request(app.getHttpServer())
       .post('/api/v1/devices/enrollment-sessions')

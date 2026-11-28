@@ -80,9 +80,11 @@ function EnrollmentQrImage({ value }: { value: string }) {
 export function EnrollPage({
   onError,
   apiError,
+  onOpenShopSetup,
 }: {
   onError: (message: string | null) => void;
   apiError: (message: string) => string;
+  onOpenShopSetup?: () => void;
 }) {
   const { t } = useI18n();
   const [contracts, setContracts] = useState<
@@ -109,6 +111,17 @@ export function EnrollPage({
   const [reason, setReason] = useState(() => t('enroll.defaultReason'));
   const [dpcConfigured, setDpcConfigured] = useState<boolean | null>(null);
   const [dpcMissing, setDpcMissing] = useState<string[]>([]);
+  const [shopSetupRequired, setShopSetupRequired] = useState(false);
+
+  function noteShopSetup(err: unknown): boolean {
+    if (err instanceof ApiError && err.message === 'SHOP_SETUP_REQUIRED') {
+      setShopSetupRequired(true);
+      setQr(null);
+      onError(apiError(err.message));
+      return true;
+    }
+    return false;
+  }
 
   useEffect(() => {
     void (async () => {
@@ -178,8 +191,10 @@ export function EnrollPage({
         { method: 'POST' },
       );
       setQr(material);
+      setShopSetupRequired(false);
       onError(null);
     } catch (err) {
+      if (noteShopSetup(err)) return;
       onError(err instanceof ApiError ? apiError(err.message) : t('enroll.failed'));
     }
   }
@@ -217,11 +232,13 @@ export function EnrollPage({
       setSession(created);
       setQr(null);
       setDeviceId(null);
+      setShopSetupRequired(false);
       onError(null);
       if (created.platform === 'ANDROID') {
         await loadQr(created.id);
       }
     } catch (err) {
+      if (noteShopSetup(err)) return;
       onError(err instanceof ApiError ? apiError(err.message) : t('enroll.failed'));
     }
   }
@@ -269,6 +286,19 @@ export function EnrollPage({
       <Section>
         <p>{t('enroll.stubNote')}</p>
         <Alert tone="info">{t('enroll.handoverBlocked')}</Alert>
+        {shopSetupRequired ? (
+          <Alert tone="error">
+            {t('enroll.shopSetupRequired')}
+            <Button
+              type="button"
+              variant="primary"
+              data-testid="enroll-open-shop-setup"
+              onClick={() => onOpenShopSetup?.()}
+            >
+              {t('enroll.openShopSetup')}
+            </Button>
+          </Alert>
+        ) : null}
       </Section>
 
       <Section title={platform === 'ANDROID' ? t('enroll.androidHow') : t('enroll.iosHow')}>
@@ -514,7 +544,11 @@ export function EnrollPage({
         </Section>
       ) : null}
 
-      {session?.platform === 'ANDROID' && qr && viewStatus && showsAndroidQr(viewStatus) ? (
+      {session?.platform === 'ANDROID' &&
+      qr &&
+      !shopSetupRequired &&
+      viewStatus &&
+      showsAndroidQr(viewStatus) ? (
         <Section>
           <p>{t('enroll.qrKind')}</p>
           <p>{t('enroll.fingerprint', { hash: qr.payloadFingerprint })}</p>

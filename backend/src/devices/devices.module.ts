@@ -15,6 +15,8 @@ import {
   EnrollmentDpcConfigController,
 } from './enrollment.controller';
 import { EnrollmentService } from './enrollment.service';
+import { ShopSetupController } from './shop-setup.controller';
+import { ShopSetupService } from './shop-setup.service';
 import { DeviceLockApprovalService } from './device-lock-approval.service';
 import { DevicePolicySettingsService } from './device-policy-settings.service';
 import { OverdueLockCronService } from './overdue-lock-cron.service';
@@ -26,6 +28,7 @@ import { MDM_PROVIDER } from './ports/mdm-provider.port';
 @Module({
   imports: [PrismaModule, ScheduleModule.forRoot()],
   controllers: [
+    ShopSetupController,
     EnrollmentDpcConfigController,
     EnrollmentController,
     DeviceAgentController,
@@ -33,6 +36,7 @@ import { MDM_PROVIDER } from './ports/mdm-provider.port';
   ],
   providers: [
     EnrollmentService,
+    ShopSetupService,
     DeviceCheckInService,
     DeviceLocationService,
     FcmPushAdapter,

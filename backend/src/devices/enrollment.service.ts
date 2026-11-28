@@ -20,6 +20,7 @@ import {
   resolveDpcQrSettings,
 } from './enrollment-qr';
 import { issueEnrollmentToken } from './enrollment-token';
+import { isShopSetupReady } from './shop-setup';
 
 const QR_ISSUABLE_STATUSES: EnrollmentSessionStatus[] = [
   EnrollmentSessionStatus.WAITING_FOR_DEVICE,
@@ -105,6 +106,10 @@ export class EnrollmentService {
       throw new ConflictException('SESSION_OPEN');
     }
 
+    if (dto.platform === DevicePlatform.ANDROID) {
+      await this.assertAndroidShopReady(tenantId);
+    }
+
     const token = issueEnrollmentToken();
     const ttlSeconds = dto.ttlSeconds ?? 3600;
     const created = await this.prisma.deviceEnrollmentSession.create({
@@ -171,6 +176,7 @@ export class EnrollmentService {
     if (!QR_ISSUABLE_STATUSES.includes(session.status)) {
       throw new ConflictException('SESSION_NOT_QR_READY');
     }
+    await this.assertAndroidShopReady(session.tenantId);
     const settings = resolveDpcQrSettings(process.env);
     if (!settings) {
       throw new ServiceUnavailableException('DPC_QR_NOT_CONFIGURED');
@@ -259,6 +265,15 @@ export class EnrollmentService {
       qrFingerprint: session.qrFingerprint,
       lastErrorCode: session.lastErrorCode,
     };
+  }
+
+  private async assertAndroidShopReady(tenantId: string): Promise<void> {
+    const row = await this.prisma.tenantShopSetup.findUnique({
+      where: { tenantId },
+    });
+    if (!row || !isShopSetupReady(row)) {
+      throw new ConflictException('SHOP_SETUP_REQUIRED');
+    }
   }
 
   private requireTenant(ctx: TenantContext): string {

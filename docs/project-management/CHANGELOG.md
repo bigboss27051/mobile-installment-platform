@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Shop setup checklist (D-079):** Merchant Web **ตั้งค่าร้าน** records four Android attestations per tenant, including that the shop can unlock FRP with its own Google account. No email or password is stored. Android session create and Android QR return `SHOP_SETUP_REQUIRED` until the row is ready. iOS is unchanged.
 - **RBAC branch scope + ops hardening (D-071):** `UserBranchAssignment`; STAFF inventory scoped by `branchIds`; OWNER `GET/PUT /api/v1/staff/:userId/branches`; Nest throttler on login/OTP; `GET /api/v1/health/ready`; `OPS-HARDENING-CHECKLIST.md` + `PDPA-OFFBOARDING-CHECKLIST.md`
 - **Android shop software pack (D-070):** DPC `lab`/`shop` flavors; `GET /api/v1/devices/enrollment/dpc-config-status`; Merchant Web enroll preflight; `SHOP-FLOOR-ANDROID-RUNBOOK.md`; checksum script outputs Android base64url
 - **Stripe PromptPay (D-069):** `StripePaymentAdapter`, `PAYMENT_PROVIDER=stripe`, webhook `/webhooks/payments/stripe`; Merchant Web + Customer Flutter prefer `imageUrlPng` / hosted URL; CI default remains sandbox

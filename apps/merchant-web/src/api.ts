@@ -66,7 +66,10 @@ export async function apiRequest<T>(
   if (!response.ok) {
     throw new ApiError(body.error?.message ?? 'Request failed', response.status);
   }
-  return (body.data as T) ?? (body as T);
+  if (Object.prototype.hasOwnProperty.call(body, 'data')) {
+    return body.data as T;
+  }
+  return body as T;
 }
 
 export async function apiUpload<T>(path: string, body: FormData): Promise<T> {

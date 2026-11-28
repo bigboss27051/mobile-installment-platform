@@ -27,6 +27,7 @@ import { KycPanel } from './kyc-panel';
 import { LineLinkPanel } from './line-link-panel';
 import { LineSettingsPage } from './line-settings-page';
 import { PolicyPage } from './policy-page';
+import { ShopSetupPage } from './shop-setup-page';
 import { displayStatus } from './i18n';
 import { LanguageSwitch, useI18n } from './i18n-context';
 import {
@@ -53,6 +54,7 @@ type AppPage =
   | 'contracts'
   | 'devices'
   | 'policy'
+  | 'shopSetup'
   | 'enroll'
   | 'line';
 
@@ -70,6 +72,7 @@ const PAGES: AppPage[] = [
   'contracts',
   'devices',
   'policy',
+  'shopSetup',
   'enroll',
   'line',
 ];
@@ -309,7 +312,26 @@ export function App() {
         {page === 'contracts' ? <ContractsPage onError={setError} apiError={apiError} /> : null}
         {page === 'devices' ? <DevicesPage onError={setError} apiError={apiError} /> : null}
         {page === 'policy' ? <PolicyPage onError={setError} apiError={apiError} /> : null}
-        {page === 'enroll' ? <EnrollPage onError={setError} apiError={apiError} /> : null}
+        {page === 'shopSetup' ? (
+          <ShopSetupPage
+            onError={setError}
+            apiError={apiError}
+            onOpenEnroll={() => {
+              setPage('enroll');
+              setError(null);
+            }}
+          />
+        ) : null}
+        {page === 'enroll' ? (
+          <EnrollPage
+            onError={setError}
+            apiError={apiError}
+            onOpenShopSetup={() => {
+              setPage('shopSetup');
+              setError(null);
+            }}
+          />
+        ) : null}
         {page === 'line' ? <LineSettingsPage onError={setError} apiError={apiError} /> : null}
       </Box>
     </Box>
