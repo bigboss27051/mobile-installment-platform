@@ -13,3 +13,4 @@ alwaysApply: false
 - Consistent design system components; accessible forms.
 - Device enrollment UI (R2) follows docs/device-management/DEVICE-PROVISIONING-ENROLLMENT.md; never embed enrollment secrets in client source.
 - Never render a UUID. Show contract number, name, IMEI/serial, SKU, or a translated status. Keep the UUID only as a request id or form value.
+- Vertical layout spacing is mandatory: use `Stack` with `MIP_STACK` from `ui/theme` (`section`: 2 between siblings in `Section`, `form`: 2 inside forms, `actions`: 1 for button rows). Do not stack `Alert`, buttons, checkboxes, or copy as bare siblings without spacing—they must not touch.

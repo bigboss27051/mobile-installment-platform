@@ -32,15 +32,17 @@ android {
     productFlavors {
         create("lab") {
             dimension = "channel"
-            versionCode = 21
-            versionName = "0.1.21-lab"
+            versionCode = 24
+            versionName = "0.1.24-lab"
             buildConfigField("String", "API_BASE_URL", "\"$labApiBaseUrl\"")
+            buildConfigField("boolean", "ALLOW_DEVELOPER_MODE", "true")
         }
         create("shop") {
             dimension = "channel"
             versionCode = 20
             versionName = "0.2.0-shop"
             buildConfigField("String", "API_BASE_URL", "\"$shopApiBaseUrl\"")
+            buildConfigField("boolean", "ALLOW_DEVELOPER_MODE", "false")
         }
     }
 
