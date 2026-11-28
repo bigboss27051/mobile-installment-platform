@@ -11,9 +11,13 @@ import java.util.concurrent.Executors
 
 object PushTokenClient {
     private const val TAG = "MipPushToken"
+    private const val MIN_REGISTER_INTERVAL_MS = 15L * 60L * 1000L
     private val io = Executors.newSingleThreadExecutor { r ->
         Thread(r, "mip-push-token").apply { isDaemon = true }
     }
+
+    @Volatile
+    private var lastRegisterAttemptAt = 0L
 
     fun register(context: Context, token: String) {
         val session = AgentTokenStore(context.applicationContext).load()
@@ -43,6 +47,11 @@ object PushTokenClient {
     }
 
     fun registerIfPossible(context: Context) {
+        val now = System.currentTimeMillis()
+        if (now - lastRegisterAttemptAt < MIN_REGISTER_INTERVAL_MS) {
+            return
+        }
+        lastRegisterAttemptAt = now
         val app = context.applicationContext
         FirebaseMessaging.getInstance().token
             .addOnSuccessListener(io) { register(app, it) }

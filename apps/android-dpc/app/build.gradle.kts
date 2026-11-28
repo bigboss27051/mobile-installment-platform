@@ -32,8 +32,8 @@ android {
     productFlavors {
         create("lab") {
             dimension = "channel"
-            versionCode = 20
-            versionName = "0.1.20-lab"
+            versionCode = 21
+            versionName = "0.1.21-lab"
             buildConfigField("String", "API_BASE_URL", "\"$labApiBaseUrl\"")
         }
         create("shop") {

@@ -41,6 +41,10 @@ object CommandExecutor {
             policyVersion = policy.policyVersion,
             location = location,
         )
+        // Keep FCM token fresh so POLL_NOW wake works after reinstall / token rotation.
+        if (hbOk) {
+            PushTokenClient.registerIfPossible(app)
+        }
         val commands = CommandClient.poll(session)
         for (command in commands) {
             handle(app, session, command)

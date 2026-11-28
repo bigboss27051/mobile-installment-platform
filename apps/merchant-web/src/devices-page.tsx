@@ -3,6 +3,7 @@ import { ApiError, apiRequest } from './api';
 import { DeviceStatusPanel } from './device-status-panel';
 import { displayStatus } from './i18n';
 import { useI18n } from './i18n-context';
+import { formatBangkokDateTime } from './format-bangkok-datetime';
 import { EmptyState, Page, Section, Spinner, Table } from './ui';
 
 type DeviceRow = {
@@ -66,7 +67,10 @@ export function DevicesPage({
                   <td>{displayStatus(t, 'platform', row.platform)}</td>
                   <td>{displayStatus(t, 'device', row.status)}</td>
                   <td>{displayStatus(t, 'presentation', row.desiredPresentation)}</td>
-                  <td>{row.lastHeartbeatAt ?? t('deviceStatus.heartbeatNever')}</td>
+                  <td>
+                    {formatBangkokDateTime(row.lastHeartbeatAt) ??
+                      t('deviceStatus.heartbeatNever')}
+                  </td>
                   <td>
                     <button type="button" onClick={() => setSelectedId(row.id)}>
                       {t('devices.open')}

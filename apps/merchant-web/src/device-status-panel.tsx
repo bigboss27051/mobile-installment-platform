@@ -3,6 +3,7 @@ import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
 import { DeviceCommandPanel } from './device-command-panel';
 import { DeviceRecoveryPanel } from './device-recovery-panel';
+import { formatBangkokDateTime } from './format-bangkok-datetime';
 import { displayStatus } from './i18n';
 import { useI18n } from './i18n-context';
 import { Alert, Section } from './ui';
@@ -96,7 +97,10 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
             </div>
             <div>
               <dt>{t('deviceStatus.heartbeat')}</dt>
-              <dd>{dash.lastHeartbeatAt ?? t('deviceStatus.heartbeatNever')}</dd>
+              <dd>
+                {formatBangkokDateTime(dash.lastHeartbeatAt) ??
+                  t('deviceStatus.heartbeatNever')}
+              </dd>
             </div>
             <div>
               <dt>{t('deviceStatus.lastKnownLocation')}</dt>
@@ -106,7 +110,7 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
                       t,
                       'location',
                       loc.source,
-                    )} · ±${loc.accuracyMeters ?? '?'}m · ${loc.capturedAt}`
+                    )} · ±${loc.accuracyMeters ?? '?'}m · ${formatBangkokDateTime(loc.capturedAt) ?? loc.capturedAt}`
                   : t('deviceStatus.lastKnownLocationNone')}
               </dd>
             </div>
@@ -139,7 +143,7 @@ export function DeviceStatusPanel({ deviceId }: { deviceId: string }) {
             {history.slice(0, 20).map((s) => (
               <li key={s.id}>
                 {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · {displayStatus(t, 'location', s.source)} ·{' '}
-                {s.capturedAt}
+                {formatBangkokDateTime(s.capturedAt) ?? s.capturedAt}
               </li>
             ))}
           </ul>

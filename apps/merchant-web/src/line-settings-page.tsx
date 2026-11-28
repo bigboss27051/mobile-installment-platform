@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import { ApiError, apiRequest, withIdempotency } from './api';
 import { displayStatus } from './i18n';
 import { useI18n } from './i18n-context';
+import { formatBangkokDateTime } from './format-bangkok-datetime';
 import { buildLineWebhookUrl, resolveApiOrigin } from './line-webhook-url';
 import {
   Alert,
@@ -211,9 +212,7 @@ export function LineSettingsPage({
         </p>
         <p>
           {t('line.lastWebhook')}:{' '}
-          {config.lastWebhookAt
-            ? new Date(config.lastWebhookAt).toLocaleString()
-            : t('line.webhookNever')}
+          {formatBangkokDateTime(config.lastWebhookAt) ?? t('line.webhookNever')}
         </p>
         {config.lastError ? <Alert tone="error">{config.lastError}</Alert> : null}
         <Alert tone="info">{t('line.sandboxNote')}</Alert>

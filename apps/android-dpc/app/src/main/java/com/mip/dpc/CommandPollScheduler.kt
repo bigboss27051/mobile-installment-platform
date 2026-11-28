@@ -6,6 +6,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
@@ -29,11 +30,15 @@ object CommandPollScheduler {
         )
     }
 
+    /** FCM POLL_NOW / lab wake — prefer expedited so unlock is not delayed by OEM batching. */
     fun enqueueNow(context: Context) {
+        val request = OneTimeWorkRequestBuilder<CommandPollWorker>()
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
         WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
             ONE_TIME_NAME,
             ExistingWorkPolicy.REPLACE,
-            OneTimeWorkRequestBuilder<CommandPollWorker>().build(),
+            request,
         )
     }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Stack from '@mui/material/Stack';
 import { ApiError, apiRequest } from './api';
+import { formatBangkokDateTime } from './format-bangkok-datetime';
 import { useI18n } from './i18n-context';
 import { Alert, Button, Section, Spinner } from './ui';
 
@@ -146,7 +147,8 @@ export function LineLinkPanel({
                 <code>LINK {invite.token}</code>
               </p>
               <p>
-                {t('line.tokenExpires')}: {new Date(invite.expiresAt).toLocaleString()}
+                {t('line.tokenExpires')}:{' '}
+                {formatBangkokDateTime(invite.expiresAt) ?? invite.expiresAt}
               </p>
               <Button type="button" variant="secondary" onClick={() => void copyInviteMessage()}>
                 {copied ? t('line.copied') : t('line.copyLinkCommand')}
