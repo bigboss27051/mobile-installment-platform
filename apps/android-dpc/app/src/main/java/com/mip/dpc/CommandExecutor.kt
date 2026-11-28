@@ -16,6 +16,7 @@ data class PollResult(
 object CommandExecutor {
     fun runOnce(context: Context): PollResult {
         val app = context.applicationContext
+        FactoryResetGuard.apply(app)
         val session = AgentTokenStore(app).load()
         if (session == null) {
             return PollResult(
@@ -25,7 +26,6 @@ object CommandExecutor {
                 noSession = true,
             )
         }
-        FactoryResetGuard.apply(app)
         val cache = PolicyCacheStore(app)
         val remote = PolicyClient.fetch(session)
         if (remote != null) {

@@ -10,6 +10,7 @@ import android.util.Log
 class MipDpcApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        FactoryResetGuard.apply(this)
         val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_PENDING, false)) {
             return
